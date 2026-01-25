@@ -41,11 +41,11 @@ cargo run --release
 
 ```
 Source (EDIT THESE):
-  ├── src/main.rs                  # The ONE file (does everything!)
+  ├── tools/al-gen/src/main.rs     # The generator (does everything!)
   ├── templates/
   │   ├── grammar.js.template     # AL grammar rules
   │   └── scanner.c.template      # External scanner
-  └── test_repos.toml             # Test configuration
+  └── tests/test_repos.toml       # Repo-test configuration
 
 Generated (DON'T EDIT):
   ├── grammar.js
@@ -57,7 +57,7 @@ Generated (DON'T EDIT):
 
 ## Configuration
 
-### Test Repositories (test_repos.toml)
+### Test Repositories (`tests/test_repos.toml`)
 
 ```toml
 [[repo]]
@@ -178,7 +178,7 @@ cargo run --release
 ```
 
 ### Skip Testing (faster iteration)
-Comment out repos in test_repos.toml:
+Comment out repos in `tests/test_repos.toml`:
 ```toml
 [[repo]]
 enabled = false  # Set to false
@@ -189,16 +189,16 @@ enabled = false  # Set to false
 - **Simple**: One command to run
 - **Fast**: Rust compiles to native binary
 - **Complete**: Generate + build + test all in one
-- **Clear**: All logic in src/main.rs (easy to understand)
+- **Clear**: All logic in `tools/al-gen/src/main.rs` (easy to understand)
 - **No scripts**: No bash scripts to maintain
 
 ## File Ownership
 
 | File | Edit? | Why? |
 |------|-------|------|
-| `src/main.rs` | ✅ YES | All the logic |
+| `tools/al-gen/src/main.rs` | ✅ YES | All the logic |
 | `templates/*.template` | ✅ YES | Source templates |
-| `test_repos.toml` | ✅ YES | Test config |
+| `tests/test_repos.toml` | ✅ YES | Test config |
 | `grammar.js` | ❌ NO | Generated |
 | `src/keywords.c` | ❌ NO | Generated |
 | `src/scanner.c` | ❌ NO | Generated |
@@ -206,7 +206,7 @@ enabled = false  # Set to false
 
 ## Summary
 
-- ✅ ONE Rust file (src/main.rs)
+- ✅ ONE Rust file (`tools/al-gen/src/main.rs`)
 - ✅ ONE command (cargo run)
 - ✅ Does everything (generate + build + test)
 - ✅ Templates (clean, editable)

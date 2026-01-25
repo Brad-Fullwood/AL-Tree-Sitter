@@ -9,7 +9,7 @@ enabled = true
 description = "Microsoft Business Central System Application"
 
 [[repo]]
-name = "ALAppExtensions" 
+name = "ALAppExtensions"
 url = "https://github.com/microsoft/ALAppExtensions"
 branch = "main"
 enabled = true
@@ -22,3 +22,4 @@ description = "Microsoft Business Central Application Extensions"
 # branch = "main"
 # enabled = true
 # description = "My AL project"
+

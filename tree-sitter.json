@@ -1,0 +1,22 @@
+{
+  "grammars": [
+    {
+      "name": "al",
+      "camelcase": "AL",
+      "scope": "source.al",
+      "path": ".",
+      "file-types": ["al", "dal"],
+      "highlights": "queries/highlights.scm"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "UNLICENSED",
+    "description": "AL grammar for tree-sitter (keywords extracted dynamically from the Cursor/VSCode AL extension)"
+  },
+  "bindings": {
+    "c": true,
+    "node": true
+  }
+}
+
