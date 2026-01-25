@@ -1,0 +1,16 @@
+[package]
+name = "al-grammar-generator"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "al-gen"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+regex = "1.10"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+walkdir = "2.4"
+indicatif = "0.17"

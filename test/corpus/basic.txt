@@ -1,0 +1,318 @@
+==================
+Simple Table Declaration
+==================
+
+table 50100 "Customer"
+{
+}
+
+---
+
+(source_file
+  (object_declaration
+    type: (object_type)
+    id: (integer_literal)
+    name: (string_literal)
+    body: (object_body)))
+
+==================
+Table with Fields
+==================
+
+table 50100 "Customer"
+{
+    fields
+    {
+        field(1; "No."; Code[20]) { }
+        field(2; Name; Text[100]) { }
+    }
+}
+
+---
+
+(source_file
+  (object_declaration
+    type: (object_type)
+    id: (integer_literal)
+    name: (string_literal)
+    body: (object_body
+      (field_section
+        (field_declaration
+          id: (integer_literal)
+          name: (string_literal)
+          type: (builtin_type))
+        (field_declaration
+          id: (integer_literal)
+          name: (identifier)
+          type: (builtin_type))))))
+
+==================
+Simple Procedure
+==================
+
+codeunit 50100 "My Codeunit"
+{
+    procedure MyProcedure()
+    begin
+    end;
+}
+
+---
+
+(source_file
+  (object_declaration
+    type: (object_type)
+    id: (integer_literal)
+    name: (string_literal)
+    body: (object_body
+      (procedure_declaration
+        name: (identifier)
+        parameters: (parameter_list)
+        body: (block_statement)))))
+
+==================
+Procedure with Parameters
+==================
+
+codeunit 50100 "My Codeunit"
+{
+    procedure Calculate(Amount: Decimal; Quantity: Integer): Decimal
+    begin
+        exit(Amount * Quantity);
+    end;
+}
+
+---
+
+(source_file
+  (object_declaration
+    type: (object_type)
+    id: (integer_literal)
+    name: (string_literal)
+    body: (object_body
+      (procedure_declaration
+        name: (identifier)
+        parameters: (parameter_list
+          (parameter
+            name: (identifier)
+            type: (builtin_type))
+          (parameter
+            name: (identifier)
+            type: (builtin_type)))
+        return_type: (return_value
+          type: (builtin_type))
+        body: (block_statement
+          (exit_statement
+            (parenthesized_expression
+              (binary_expression
+                left: (identifier)
+                operator: (*)
+                right: (identifier)))))))))
+
+==================
+Case Insensitive Keywords
+==================
+
+TABLE 50100 "Test"
+{
+    FIELDS
+    {
+        FIELD(1; Name; TEXT[50]) { }
+    }
+}
+
+---
+
+(source_file
+  (object_declaration
+    type: (object_type)
+    id: (integer_literal)
+    name: (string_literal)
+    body: (object_body
+      (field_section
+        (field_declaration
+          id: (integer_literal)
+          name: (identifier)
+          type: (builtin_type))))))
+
+==================
+If Statement
+==================
+
+codeunit 50100 Test
+{
+    procedure Test()
+    begin
+        if true then
+            exit;
+    end;
+}
+
+---
+
+(source_file
+  (object_declaration
+    type: (object_type)
+    id: (integer_literal)
+    name: (identifier)
+    body: (object_body
+      (procedure_declaration
+        name: (identifier)
+        parameters: (parameter_list)
+        body: (block_statement
+          (if_statement
+            condition: (boolean_literal)
+            consequence: (exit_statement)))))))
+
+==================
+Assignment Statement
+==================
+
+codeunit 50100 Test
+{
+    procedure Test()
+    var
+        Amount: Decimal;
+    begin
+        Amount := 100;
+    end;
+}
+
+---
+
+(source_file
+  (object_declaration
+    type: (object_type)
+    id: (integer_literal)
+    name: (identifier)
+    body: (object_body
+      (procedure_declaration
+        name: (identifier)
+        parameters: (parameter_list)
+        (var_section
+          (variable_declaration
+            name: (identifier)
+            type: (builtin_type)))
+        body: (block_statement
+          (assignment_statement
+            left: (identifier)
+            operator: (:=)
+            right: (integer_literal)))))))
+
+==================
+Properties
+==================
+
+table 50100 "Customer"
+{
+    DataPerCompany = false;
+    Caption = 'Customer';
+}
+
+---
+
+(source_file
+  (object_declaration
+    type: (object_type)
+    id: (integer_literal)
+    name: (string_literal)
+    body: (object_body
+      (property
+        name: (property_name)
+        value: (boolean_literal))
+      (property
+        name: (property_name)
+        value: (string_literal)))))
+
+==================
+Enum Declaration
+==================
+
+enum 50100 Status
+{
+    value(0; Open) { }
+    value(1; Closed) { }
+}
+
+---
+
+(source_file
+  (enum_declaration
+    id: (integer_literal)
+    name: (identifier)
+    (value_declaration
+      ordinal: (integer_literal)
+      name: (identifier))
+    (value_declaration
+      ordinal: (integer_literal)
+      name: (identifier))))
+
+==================
+Comments
+==================
+
+// Line comment
+table 50100 "Test"
+{
+    /* Block comment */
+    fields { }
+}
+
+---
+
+(source_file
+  (comment)
+  (object_declaration
+    type: (object_type)
+    id: (integer_literal)
+    name: (string_literal)
+    body: (object_body
+      (block_comment)
+      (field_section))))
+
+==================
+Namespace and Using
+==================
+
+namespace MyNamespace;
+
+using System;
+
+table 50100 "Test"
+{
+}
+
+---
+
+(source_file
+  (namespace_declaration
+    name: (identifier))
+  (using_directive
+    name: (identifier))
+  (object_declaration
+    type: (object_type)
+    id: (integer_literal)
+    name: (string_literal)
+    body: (object_body)))
+
+==================
+Preprocessor Directives
+==================
+
+#if DEBUG
+table 50100 "Test"
+{
+}
+#endif
+
+---
+
+(source_file
+  (preprocessor_if
+    condition: (preproc_expression))
+  (object_declaration
+    type: (object_type)
+    id: (integer_literal)
+    name: (string_literal)
+    body: (object_body))
+  (preprocessor_endif))

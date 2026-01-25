@@ -1,0 +1,160 @@
+// AL Tree-Sitter Grammar - Minimal Working Version
+// Edit this file then run: cargo run
+
+module.exports = grammar({
+  name: 'al',
+
+  externals: $ => [
+    $.keyword,  // All keywords from external scanner
+  ],
+
+  extras: $ => [
+    /\s/,
+    $.comment,
+  ],
+
+  word: $ => $.identifier,
+
+  conflicts: $ => [
+    [$.object_body, $.enum_body],
+  ],
+
+  rules: {
+    source_file: $ => repeat($._declaration),
+
+    _declaration: $ => choice(
+      $.table_declaration,
+      $.page_declaration,
+      $.codeunit_declaration,
+      $.enum_declaration,
+    ),
+
+    // Different object types as separate rules (no conflict)
+    table_declaration: $ => seq(
+      $.keyword,  // 'table'
+      $.integer,
+      choice($.identifier, $.string),
+      $.object_body,
+    ),
+
+    page_declaration: $ => seq(
+      $.keyword,  // 'page'
+      $.integer,
+      choice($.identifier, $.string),
+      $.object_body,
+    ),
+
+    codeunit_declaration: $ => seq(
+      $.keyword,  // 'codeunit'
+      $.integer,
+      choice($.identifier, $.string),
+      $.object_body,
+    ),
+
+    object_body: $ => seq(
+      '{',
+      repeat(choice(
+        $.property,
+        $.fields_section,
+        $.procedure_declaration,
+      )),
+      '}',
+    ),
+
+    enum_declaration: $ => seq(
+      $.keyword,  // 'enum'
+      $.integer,
+      $.identifier,
+      $.enum_body,
+    ),
+
+    enum_body: $ => seq(
+      '{',
+      repeat(choice(
+        $.property,
+        $.value_declaration,
+      )),
+      '}',
+    ),
+
+    value_declaration: $ => seq(
+      $.keyword,  // 'value'
+      '(',
+      $.integer,
+      ';',
+      choice($.identifier, $.string),
+      ')',
+      optional(seq('{', '}')),
+    ),
+
+    property: $ => seq(
+      $.identifier,
+      '=',
+      $._property_value,
+      ';',
+    ),
+
+    _property_value: $ => choice(
+      $.string,
+      $.integer,
+      $.identifier,
+      $.keyword,
+    ),
+
+    fields_section: $ => seq(
+      $.keyword,  // 'fields'
+      '{',
+      repeat($.field_declaration),
+      '}',
+    ),
+
+    field_declaration: $ => seq(
+      $.keyword,  // 'field'
+      '(',
+      $.integer,
+      ';',
+      choice($.identifier, $.string),
+      ';',
+      $.keyword,  // type
+      ')',
+      optional(seq('{', '}')),
+    ),
+
+    procedure_declaration: $ => seq(
+      $.keyword,  // 'procedure'
+      $.identifier,
+      '(',
+      ')',
+      $.block,
+    ),
+
+    block: $ => seq(
+      $.keyword,  // 'begin'
+      repeat($._statement),
+      $.keyword,  // 'end'
+      ';',
+    ),
+
+    _statement: $ => choice(
+      $.assignment,
+      ';',
+    ),
+
+    assignment: $ => seq(
+      $.identifier,
+      ':=',
+      $._expression,
+      ';',
+    ),
+
+    _expression: $ => choice(
+      $.identifier,
+      $.integer,
+    ),
+
+    identifier: $ => /[A-Za-z_][A-Za-z0-9_]*/,
+    integer: $ => /[0-9]+/,
+    string: $ => seq("'", /[^']*/, "'"),
+    comment: $ => token(seq('//', /.*/)),
+  }
+});
