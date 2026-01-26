@@ -643,3 +643,18 @@ static const AlTokenMapEntry AL_CONTROL_KW_TOKENS[] = {
 static bool al_lookup_control_kw_token(const char *word, TokenType *out_tok) {
   return al_kw_token_binsearch(word, AL_CONTROL_KW_TOKENS, sizeof(AL_CONTROL_KW_TOKENS) / sizeof(AL_CONTROL_KW_TOKENS[0]), out_tok);
 }
+
+static const AlTokenMapEntry AL_OPERATOR_WORD_TOKENS[] = {
+  {"and", OP_AND},
+  {"as", OP_AS},
+  {"div", OP_DIV},
+  {"is", OP_IS},
+  {"mod", OP_MOD},
+  {"not", OP_NOT},
+  {"or", OP_OR},
+  {"xor", OP_XOR},
+};
+
+static bool al_lookup_operator_word_token(const char *word, TokenType *out_tok) {
+  return al_kw_token_binsearch(word, AL_OPERATOR_WORD_TOKENS, sizeof(AL_OPERATOR_WORD_TOKENS) / sizeof(AL_OPERATOR_WORD_TOKENS[0]), out_tok);
+}

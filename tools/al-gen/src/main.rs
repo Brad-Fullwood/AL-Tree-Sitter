@@ -9,7 +9,7 @@
 //!   - `src/parser.c`    (via `tree-sitter generate`)
 //!   - Optional repo test run (via `tree-sitter parse`)
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use regex::Regex;
 use serde::Deserialize;
 use std::collections::BTreeSet;
@@ -113,7 +113,10 @@ fn token_spec(grammar: impl Into<String>, c_enum: impl Into<String>) -> External
 fn kw_token_spec(prefix: &str, kw: &str, c_prefix: &str) -> ExternalTokenSpec {
     // Keywords extracted from the TextMate grammar are identifier-like (ASCII, _, digits).
     // Keep names stable and predictable for use in grammar.js rules.
-    token_spec(format!("{prefix}_{kw}"), format!("{c_prefix}_{}", kw.to_ascii_uppercase()))
+    token_spec(
+        format!("{prefix}_{kw}"),
+        format!("{c_prefix}_{}", kw.to_ascii_uppercase()),
+    )
 }
 
 // IMPORTANT: order must match between:
@@ -136,6 +139,11 @@ fn build_external_tokens(keywords: &Keywords) -> Vec<ExternalTokenSpec> {
         out.push(kw_token_spec("kw", kw, "KW"));
     }
 
+    // Operator words as distinct tokens (derived from the extension; no hardcoded lists).
+    for kw in &keywords.operator_words {
+        out.push(kw_token_spec("op", kw, "OP"));
+    }
+
     // Preprocessor / directives
     out.push(token_spec("directive", "DIRECTIVE"));
     // Inactive preprocessor regions (extra token that consumes until next directive boundary).
@@ -148,7 +156,9 @@ fn render_template(template: &str, vars: &[(&str, &str)]) -> String {
     let mut out = template.to_string();
     for (key, value) in vars {
         let needle = format!("{{{{{}}}}}", key);
+        let needle_spaced = format!("{{{{ {} }}}}", key);
         out = out.replace(&needle, value);
+        out = out.replace(&needle_spaced, value);
     }
     out
 }
@@ -206,6 +216,12 @@ fn gen_scanner_keyword_dispatch_fragment() -> String {
     r#"  // Specific control-keyword tokens (kw_*) come first when the grammar asks for them.
   TokenType specific;
   if (al_lookup_control_kw_token(word, &specific) && valid_symbols[specific]) {
+    lexer->result_symbol = specific;
+    return true;
+  }
+
+  // Specific operator-word tokens (op_*) come next when the grammar asks for them.
+  if (al_lookup_operator_word_token(word, &specific) && valid_symbols[specific]) {
     lexer->result_symbol = specific;
     return true;
   }
@@ -269,7 +285,8 @@ fn find_al_extension() -> Result<PathBuf> {
                 })
                 .collect();
 
-            al_extensions.sort_by(|a, b| al_extension_version_key(a).cmp(&al_extension_version_key(b)));
+            al_extensions
+                .sort_by(|a, b| al_extension_version_key(a).cmp(&al_extension_version_key(b)));
             if let Some(latest) = al_extensions.last() {
                 return Ok(latest.clone());
             }
@@ -297,7 +314,10 @@ fn find_syntax_file(extension_path: &Path) -> Result<PathBuf> {
 
     let syntaxes_dir = extension_path.join("syntaxes");
     if !syntaxes_dir.is_dir() {
-        anyhow::bail!("No syntaxes directory in extension: {}", extension_path.display());
+        anyhow::bail!(
+            "No syntaxes directory in extension: {}",
+            extension_path.display()
+        );
     }
 
     let mut candidates = Vec::new();
@@ -373,7 +393,9 @@ fn extract_scope_name(syntax_file: &Path) -> Result<String> {
 
 fn is_identifier_like(s: &str) -> bool {
     let mut chars = s.chars();
-    let Some(first) = chars.next() else { return false };
+    let Some(first) = chars.next() else {
+        return false;
+    };
     if !(first.is_ascii_alphabetic() || first == '_') {
         return false;
     }
@@ -415,7 +437,9 @@ fn generate_keywords_c(keywords: &Keywords) -> Result<()> {
     out.push_str("#include <stddef.h>\n");
     out.push_str("#include <string.h>\n\n");
 
-    out.push_str("static bool al_kw_binsearch(const char *word, const char *const *arr, size_t count) {\n");
+    out.push_str(
+        "static bool al_kw_binsearch(const char *word, const char *const *arr, size_t count) {\n",
+    );
     out.push_str("  size_t lo = 0;\n");
     out.push_str("  size_t hi = count;\n");
     out.push_str("  while (lo < hi) {\n");
@@ -429,7 +453,11 @@ fn generate_keywords_c(keywords: &Keywords) -> Result<()> {
 
     write_kw_array(&mut out, "AL_KEYWORDS_ALL", &all);
     write_kw_array(&mut out, "AL_KEYWORDS_CONTROL", &keywords.control);
-    write_kw_array(&mut out, "AL_KEYWORDS_OPERATOR_WORDS", &keywords.operator_words);
+    write_kw_array(
+        &mut out,
+        "AL_KEYWORDS_OPERATOR_WORDS",
+        &keywords.operator_words,
+    );
     write_kw_array(&mut out, "AL_KEYWORDS_OBJECTS", &keywords.objects);
     write_kw_array(&mut out, "AL_KEYWORDS_TYPES", &keywords.types);
     write_kw_array(&mut out, "AL_KEYWORDS_METADATA", &keywords.metadata);
@@ -481,12 +509,35 @@ fn generate_keywords_c(keywords: &Keywords) -> Result<()> {
 
     out.push_str("static const AlTokenMapEntry AL_CONTROL_KW_TOKENS[] = {\n");
     for kw in &keywords.control {
-        out.push_str(&format!("  {{\"{}\", KW_{}}},\n", c_escape(kw), kw.to_ascii_uppercase()));
+        out.push_str(&format!(
+            "  {{\"{}\", KW_{}}},\n",
+            c_escape(kw),
+            kw.to_ascii_uppercase()
+        ));
     }
     out.push_str("};\n\n");
 
-    out.push_str("static bool al_lookup_control_kw_token(const char *word, TokenType *out_tok) {\n");
+    out.push_str(
+        "static bool al_lookup_control_kw_token(const char *word, TokenType *out_tok) {\n",
+    );
     out.push_str("  return al_kw_token_binsearch(word, AL_CONTROL_KW_TOKENS, sizeof(AL_CONTROL_KW_TOKENS) / sizeof(AL_CONTROL_KW_TOKENS[0]), out_tok);\n");
+    out.push_str("}\n");
+
+    // Operator word -> specific token lookup (op_* externals).
+    out.push_str("\nstatic const AlTokenMapEntry AL_OPERATOR_WORD_TOKENS[] = {\n");
+    for kw in &keywords.operator_words {
+        out.push_str(&format!(
+            "  {{\"{}\", OP_{}}},\n",
+            c_escape(kw),
+            kw.to_ascii_uppercase()
+        ));
+    }
+    out.push_str("};\n\n");
+
+    out.push_str(
+        "static bool al_lookup_operator_word_token(const char *word, TokenType *out_tok) {\n",
+    );
+    out.push_str("  return al_kw_token_binsearch(word, AL_OPERATOR_WORD_TOKENS, sizeof(AL_OPERATOR_WORD_TOKENS) / sizeof(AL_OPERATOR_WORD_TOKENS[0]), out_tok);\n");
     out.push_str("}\n");
 
     fs::write("src/keywords.c", out)?;
@@ -656,7 +707,8 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str) -> Result<()> {
         let paths_file = PathBuf::from("target").join(format!("paths-{}.txt", repo.name));
         write_paths_file(&paths_file, &files)?;
 
-        let (ok, failed, samples) = parse_paths_with_tree_sitter(parser_lib, scope_name, &paths_file)?;
+        let (ok, failed, samples) =
+            parse_paths_with_tree_sitter(parser_lib, scope_name, &paths_file)?;
         total_ok += ok;
 
         let pct = (ok as f64) * 100.0 / (files.len() as f64);
@@ -694,7 +746,8 @@ fn run_fixture_tests(parser_lib: &Path, scope_name: &str) -> Result<()> {
             println!("\n🧪 Fixture tests (invalid syntax must fail)...");
             let paths_file = PathBuf::from("target").join("paths-fixtures-invalid.txt");
             write_paths_file(&paths_file, &invalid)?;
-            let summaries = parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, &paths_file)?;
+            let summaries =
+                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, &paths_file)?;
 
             let mut unexpected_ok = Vec::new();
             for s in summaries {
@@ -713,7 +766,10 @@ fn run_fixture_tests(parser_lib: &Path, scope_name: &str) -> Result<()> {
                         .join("\n")
                 );
             }
-            println!("✅ Invalid fixtures: all failed as expected ({} files).", invalid.len());
+            println!(
+                "✅ Invalid fixtures: all failed as expected ({} files).",
+                invalid.len()
+            );
         }
     }
 
@@ -724,7 +780,8 @@ fn run_fixture_tests(parser_lib: &Path, scope_name: &str) -> Result<()> {
             println!("\n🧪 Fixture tests (valid syntax must succeed)...");
             let paths_file = PathBuf::from("target").join("paths-fixtures-valid.txt");
             write_paths_file(&paths_file, &valid)?;
-            let summaries = parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, &paths_file)?;
+            let summaries =
+                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, &paths_file)?;
 
             let mut unexpected_failed = Vec::new();
             for s in summaries {
@@ -743,14 +800,21 @@ fn run_fixture_tests(parser_lib: &Path, scope_name: &str) -> Result<()> {
                         .join("\n")
                 );
             }
-            println!("✅ Valid fixtures: all parsed successfully ({} files).", valid.len());
+            println!(
+                "✅ Valid fixtures: all parsed successfully ({} files).",
+                valid.len()
+            );
         }
     }
 
     Ok(())
 }
 
-fn print_failed_parse_details(parser_lib: &Path, scope_name: &str, samples: &[String]) -> Result<()> {
+fn print_failed_parse_details(
+    parser_lib: &Path,
+    scope_name: &str,
+    samples: &[String],
+) -> Result<()> {
     let limit = 3usize.min(samples.len());
     if limit == 0 {
         return Ok(());
@@ -869,7 +933,10 @@ fn clone_or_update_repo(repo: &RepoConfig, dest: &Path) -> Result<()> {
 
 fn collect_al_files(root: &Path) -> Result<Vec<PathBuf>> {
     let mut out = Vec::new();
-    for entry in walkdir::WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+    for entry in walkdir::WalkDir::new(root)
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
         if !entry.file_type().is_file() {
             continue;
         }
@@ -949,7 +1016,9 @@ fn parse_paths_with_tree_sitter_detailed(
             // If tree-sitter fails hard (bad args, no files, etc), it may not output JSON.
             // In that case, surface stderr and the JSON parse error.
             eprintln!("{}", String::from_utf8_lossy(&output.stderr));
-            return Err(anyhow!("Failed to parse tree-sitter --json-summary output: {e}"));
+            return Err(anyhow!(
+                "Failed to parse tree-sitter --json-summary output: {e}"
+            ));
         }
     };
 
@@ -962,7 +1031,10 @@ fn parse_paths_with_tree_sitter_detailed(
                 .and_then(|v| v.as_str())
                 .unwrap_or("<unknown>")
                 .to_string();
-            let successful = s.get("successful").and_then(|v| v.as_bool()).unwrap_or(false);
+            let successful = s
+                .get("successful")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             out.push(FileParseSummary { file, successful });
         }
         return Ok(out);
@@ -977,12 +1049,15 @@ fn parse_paths_with_tree_sitter_detailed(
                 .and_then(|v| v.as_str())
                 .unwrap_or("<unknown>")
                 .to_string();
-            let successful = f.get("success").and_then(|v| v.as_bool()).unwrap_or_else(|| {
-                f.get("error_count")
-                    .and_then(|v| v.as_u64())
-                    .map(|n| n == 0)
-                    .unwrap_or(false)
-            });
+            let successful = f
+                .get("success")
+                .and_then(|v| v.as_bool())
+                .unwrap_or_else(|| {
+                    f.get("error_count")
+                        .and_then(|v| v.as_u64())
+                        .map(|n| n == 0)
+                        .unwrap_or(false)
+                });
             out.push(FileParseSummary { file, successful });
         }
         return Ok(out);
@@ -1006,4 +1081,3 @@ fn extract_json_object_from_output(s: &str) -> Option<&str> {
     }
     None
 }
-
