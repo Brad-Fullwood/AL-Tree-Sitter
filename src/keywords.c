@@ -585,3 +585,61 @@ static bool is_al_property_keyword(const char *word) {
 static bool is_al_operator_word_keyword(const char *word) {
   return al_kw_binsearch(word, AL_KEYWORDS_OPERATOR_WORDS, sizeof(AL_KEYWORDS_OPERATOR_WORDS) / sizeof(AL_KEYWORDS_OPERATOR_WORDS[0]));
 }
+
+
+typedef struct { const char *word; TokenType tok; } AlTokenMapEntry;
+static bool al_kw_token_binsearch(const char *word, const AlTokenMapEntry *arr, size_t count, TokenType *out_tok) {
+  size_t lo = 0;
+  size_t hi = count;
+  while (lo < hi) {
+    size_t mid = lo + (hi - lo) / 2;
+    int cmp = strcmp(word, arr[mid].word);
+    if (cmp == 0) { *out_tok = arr[mid].tok; return true; }
+    if (cmp < 0) hi = mid; else lo = mid + 1;
+  }
+  return false;
+}
+
+static const AlTokenMapEntry AL_CONTROL_KW_TOKENS[] = {
+  {"array", KW_ARRAY},
+  {"asserterror", KW_ASSERTERROR},
+  {"begin", KW_BEGIN},
+  {"break", KW_BREAK},
+  {"case", KW_CASE},
+  {"continue", KW_CONTINUE},
+  {"do", KW_DO},
+  {"downto", KW_DOWNTO},
+  {"else", KW_ELSE},
+  {"end", KW_END},
+  {"event", KW_EVENT},
+  {"exit", KW_EXIT},
+  {"for", KW_FOR},
+  {"foreach", KW_FOREACH},
+  {"function", KW_FUNCTION},
+  {"if", KW_IF},
+  {"in", KW_IN},
+  {"indataset", KW_INDATASET},
+  {"internal", KW_INTERNAL},
+  {"local", KW_LOCAL},
+  {"of", KW_OF},
+  {"procedure", KW_PROCEDURE},
+  {"program", KW_PROGRAM},
+  {"protected", KW_PROTECTED},
+  {"repeat", KW_REPEAT},
+  {"runonclient", KW_RUNONCLIENT},
+  {"securityfiltering", KW_SECURITYFILTERING},
+  {"suppressdispose", KW_SUPPRESSDISPOSE},
+  {"temporary", KW_TEMPORARY},
+  {"then", KW_THEN},
+  {"to", KW_TO},
+  {"trigger", KW_TRIGGER},
+  {"until", KW_UNTIL},
+  {"var", KW_VAR},
+  {"while", KW_WHILE},
+  {"with", KW_WITH},
+  {"withevents", KW_WITHEVENTS},
+};
+
+static bool al_lookup_control_kw_token(const char *word, TokenType *out_tok) {
+  return al_kw_token_binsearch(word, AL_CONTROL_KW_TOKENS, sizeof(AL_CONTROL_KW_TOKENS) / sizeof(AL_CONTROL_KW_TOKENS[0]), out_tok);
+}

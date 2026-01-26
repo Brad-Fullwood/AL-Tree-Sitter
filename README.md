@@ -11,9 +11,10 @@ cargo run --release
 That's it! This single command:
 1. Finds your AL extension automatically
 2. Extracts 252 keywords
-3. Generates all files from templates
+3. Renders templates + injects generated fragments (no hardcoded keyword lists)
 4. Runs `tree-sitter generate`
-5. Tests against real Microsoft repositories
+5. Runs quick fixture validation (`tests/fixtures/*`)
+6. (Optional) Tests against real Microsoft repositories (`--test`)
 
 ## What It Does
 
@@ -23,19 +24,27 @@ cargo run --release
 ├─ STEP 1: Generate Grammar Files
 │  ├─ Find AL extension (auto)
 │  ├─ Extract keywords → src/keywords.c
-│  ├─ Copy template → src/scanner.c
-│  └─ Copy template → grammar.js
+│  ├─ Render template → src/scanner.c (inject externals + preprocessor support)
+│  └─ Render template → grammar.js (inject externals)
 │
 ├─ STEP 2: Run tree-sitter generate
 │  ├─ Generate src/parser.c
 │  └─ Check size (<20MB target)
 │
-└─ STEP 3: Test Real Repositories
+└─ STEP 3: Validate
+   ├─ Fixture suite (always-on)
    ├─ Clone/update BCApps
    ├─ Clone/update ALAppExtensions
    ├─ Parse all .al files
    └─ Report success rate (target: 99%+)
 ```
+
+## Preprocessor configuration
+
+The external scanner evaluates `#if/#elif/#else/#endif` with a small boolean expression parser.
+
+- **`AL_TS_DEFINES`**: a comma/semicolon/space-separated list of defined symbols (e.g. `AL_TS_DEFINES="CLEANROOM,BC,ONPREM"`). Used by `defined(X)` and bare identifiers.
+- **`AL_TS_UNKNOWN_TRUE`**: default for unknown identifiers in `#if` expressions (`1`/`0`, `true`/`false`). Defaults to `true` to avoid hiding code accidentally.
 
 ## Project Structure
 
@@ -52,7 +61,15 @@ Generated (DON'T EDIT):
   ├── src/keywords.c
   ├── src/scanner.c
   ├── src/parser.c
-  └── src/grammar.json
+  ├── src/grammar.json
+  ├── src/node-types.json
+  ├── queries/highlights.scm
+  └── tree-sitter.json
+
+Fixtures (validation):
+  └── tests/fixtures/
+      ├── valid/
+      └── invalid/
 ```
 
 ## Configuration

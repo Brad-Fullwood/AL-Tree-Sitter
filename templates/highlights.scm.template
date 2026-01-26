@@ -9,8 +9,14 @@
 (quoted_identifier) @string.special
 
 (integer) @number
+(decimal) @number
+(date_literal) @number
+(time_literal) @number
+(datetime_literal) @number
 
 (control_keyword) @keyword.control
+{{CONTROL_KW_TOKEN_HIGHLIGHTS}}
+(operator_word) @operator
 (object_keyword) @keyword
 (type_keyword) @type
 (metadata_keyword) @keyword.directive
@@ -18,6 +24,7 @@
 (keyword) @keyword
 
 (operator) @operator
-(punctuation) @punctuation.delimiter
+(semicolon) @punctuation.delimiter
+(comma) @punctuation.delimiter
 
 (identifier) @variable

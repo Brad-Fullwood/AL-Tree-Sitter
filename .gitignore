@@ -29,7 +29,6 @@ prebuilds/
 *.dll
 
 # Test repositories (cloned for validation)
-test_repos/
 tests/.repos/
 
 # Third-party cloned repos / fixtures
@@ -61,7 +60,7 @@ test/
 # KEEP THESE (Source Files)
 # ============================================================
 # templates/         - Source templates
-# src/main.rs        - Generator source
+# tools/al-gen/src/main.rs - Generator source
 # Cargo.toml         - Project config
 # binding.gyp        - Build config
 # build-full.sh      - Build script

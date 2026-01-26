@@ -9,30 +9,95 @@ module.exports = grammar({
     // (syntaxes/alsyntax.tmlanguage). No keyword strings are hardcoded here.
     $.keyword,
     $.control_keyword,
+    $.operator_word,
     $.object_keyword,
     $.type_keyword,
     $.metadata_keyword,
     $.property_keyword,
+    $.kw_array,
+    $.kw_asserterror,
+    $.kw_begin,
+    $.kw_break,
+    $.kw_case,
+    $.kw_continue,
+    $.kw_do,
+    $.kw_downto,
+    $.kw_else,
+    $.kw_end,
+    $.kw_event,
+    $.kw_exit,
+    $.kw_for,
+    $.kw_foreach,
+    $.kw_function,
+    $.kw_if,
+    $.kw_in,
+    $.kw_indataset,
+    $.kw_internal,
+    $.kw_local,
+    $.kw_of,
+    $.kw_procedure,
+    $.kw_program,
+    $.kw_protected,
+    $.kw_repeat,
+    $.kw_runonclient,
+    $.kw_securityfiltering,
+    $.kw_suppressdispose,
+    $.kw_temporary,
+    $.kw_then,
+    $.kw_to,
+    $.kw_trigger,
+    $.kw_until,
+    $.kw_var,
+    $.kw_while,
+    $.kw_with,
+    $.kw_withevents,
+    $.directive,
+    $.inactive_code,
+
   ],
 
   extras: $ => [
     /\s/,
     $.comment,
     $.directive,
+    $.inactive_code,
+  ],
+
+  conflicts: $ => [
+    [$.variable_declaration, $.property_assignment],
+    [$.object_variable_declaration, $.property_assignment],
+    [$.variable_declaration, $.procedure_declaration],
+    [$.variable_declaration, $.trigger_declaration],
+    [$.empty_if_statement, $.if_statement],
+    [$.of_clause, $.name_or_keyword],
+    [$.object_section, $.variable_declaration],
+    [$.object_section, $.object_variable_declaration],
   ],
 
   word: $ => $.identifier,
 
   rules: {
-    source_file: $ => repeat($._item),
-
-    _item: $ => choice(
+    // Top-level: in real AL, this is mostly namespace/using + object declarations.
+    // We keep a small amount of tolerance for stray tokens/directives.
+    source_file: $ => repeat(choice(
+      $.namespace_or_using_declaration,
       $.object_declaration,
-      $.braced_block,
-      $.parenthesized_block,
-      $.bracketed_block,
+      $.directive,
       $._atom,
+    )),
+
+    qualified_name: $ => seq(
+      $.name,
+      repeat1(seq('.', $.name)),
     ),
+
+    // NOTE: `namespace` and `using` are currently classified as metadata keywords by the TextMate grammar.
+    // We don't hardcode keyword strings; we parse by shape at top-level.
+    namespace_or_using_declaration: $ => prec(1, seq(
+      field('keyword', $.metadata_keyword),
+      field('name', $.qualified_name),
+      $.semicolon,
+    )),
 
     // Object declarations are the most common top-level AL construct.
     // We intentionally keep this tolerant while still using a keyword-derived object kind.
@@ -43,7 +108,7 @@ module.exports = grammar({
       // Conditional compilation in AL often repeats/varies the object header (e.g. #if/#else enum ...).
       // We stay tolerant and consume header-related tokens until the opening '{'.
       repeat($._pre_object_body),
-      field('body', $.braced_block),
+      field('body', $.object_body),
     )),
 
     // e.g. pageextension 50100 MyExt extends "Customer Card" { ... }
@@ -52,11 +117,16 @@ module.exports = grammar({
       field('target', $.name),
     ),
 
+    // e.g. codeunit 605 "Name" implements "Interface Name" { ... }
+    implements_clause: $ => prec(2, seq(
+      $.metadata_keyword, // 'implements'
+      $.name,
+    )),
+
     _pre_object_body: $ => choice(
       $.object_modifier,
-      // Allow directives between header pieces
-      $.directive,
-      // Header can include things like `implements (...)` or attribute lists
+      $.implements_clause,
+      // Header can include things like attribute lists
       $.parenthesized_block,
       $.bracketed_block,
       // Anything else *except* a bare metadata_keyword (to avoid conflicts with object_modifier)
@@ -66,13 +136,527 @@ module.exports = grammar({
       $.integer,
       $.identifier,
       $.control_keyword,
+      $.operator_word,
       $.object_keyword,
       $.type_keyword,
       $.property_keyword,
       $.keyword,
       $.operator,
-      $.punctuation,
+      $.semicolon,
+      $.comma,
     ),
+
+    object_body: $ => prec.right(seq(
+      '{',
+      repeat($._object_body_item),
+      '}',
+    )),
+
+    _object_body_item: $ => choice(
+      $.enum_value_declaration,
+      $.object_section,
+      $.property_assignment,
+      $.object_var_section,
+      $.empty_var_section,
+      $.procedure_declaration,
+      $.trigger_declaration,
+      $.braced_block,
+      $.parenthesized_block,
+      $.bracketed_block,
+    ),
+
+    // Covers the common braced sections inside objects:
+    // layout/actions/fields/keys/fieldgroups/requestpage/rendering/etc.
+    object_section: $ => prec(-1, seq(
+      field('keyword', choice($.metadata_keyword, $.keyword)),
+      // Some sections have header args before the body (e.g. modify/addafter/...).
+      // For page-specific: part(Name; "Page") and actionref(Name; Action) have semicolon patterns.
+      repeat($._section_header_piece),
+      field('body', $.braced_block),
+    )),
+
+    // Enum/enumextension values: value(<id>; <name>) { ... }
+    enum_value_declaration: $ => prec.right(seq(
+      field('keyword', $.object_keyword),
+      '(',
+      field('id', $.integer),
+      $.semicolon,
+      field('name', $.name),
+      ')',
+      optional($.braced_block),
+      optional($.semicolon),
+    )),
+
+
+    _section_header_piece: $ => choice(
+      $.name,
+      $.integer,
+      $.string,
+      $.verbatim_string,
+      $.operator,
+      $.operator_word,
+      $.semicolon,
+      $.comma,
+      $.parenthesized_block,
+      $.bracketed_block,
+      // Page-specific: part(Name; "Page") and actionref(Name; Action) patterns
+      // These are handled via the semicolon in _section_header_piece
+    ),
+
+    // Properties appear in many object bodies and nested sections:
+    //   Caption = '...';
+    //   ApplicationArea = All;
+    property_assignment: $ => prec(1, seq(
+      field('name', choice($.name, $.property_keyword, $.metadata_keyword, $.keyword)),
+      field('op', '='),
+      field('value', repeat1(choice(
+        $.name,
+        $.qualified_name,
+        $.string,
+        $.verbatim_string,
+        $.date_literal,
+        $.time_literal,
+        $.datetime_literal,
+        $.integer,
+        $.operator,
+        $.operator_word,
+        $.control_keyword,
+        $.object_keyword,
+        $.type_keyword,
+        $.metadata_keyword,
+        $.property_keyword,
+        $.keyword,
+        $.comma,
+        $.parenthesized_block,
+        $.bracketed_block,
+      ))),
+      $.semicolon,
+    )),
+
+    // --- Members (procedures/triggers/vars) ---
+
+    object_var_section: $ => prec.right(3, seq(
+      $.kw_var,
+      $.object_variable_declaration_list,
+    )),
+
+    object_variable_declaration_list: $ => prec.right(seq(
+      $.object_variable_declaration,
+      optional($.object_variable_declaration_list),
+    )),
+
+    object_variable_declaration: $ => prec(1, choice(
+      $.regular_variable_declaration,
+      $.label_declaration,
+    )),
+
+    var_section: $ => prec.right(3, seq(
+      $.kw_var,
+      $.variable_declaration,
+      repeat($.variable_declaration),
+    )),
+
+    // Empty var section (just "var" with no declarations)
+    empty_var_section: $ => prec(1, $.kw_var),
+
+    variable_declaration: $ => prec(1, choice(
+      seq(repeat1($.attribute), $.regular_variable_declaration),
+      seq(repeat1($.attribute), $.label_declaration),
+      // Regular variable declarations: name: Type; or name, name2: Type;
+      $.regular_variable_declaration,
+      // Label declarations: name: Label '...', Locked = true, Comment = '...';
+      // Must match when type_keyword is followed by a string (the label value).
+      $.label_declaration,
+    )),
+
+    label_declaration: $ => prec(2, seq(
+      field('name', $.name_or_keyword),
+      field('sep', $.operator), // ':'
+      field('type', choice($.type_keyword, $.identifier, $.metadata_keyword, $.keyword)), // 'Label' (can be identifier or keyword)
+      field('value', $.string), // Label value (required to distinguish from regular vars)
+      repeat($.label_property), // Locked = true, Comment = '...', etc.
+      $.semicolon,
+    )),
+
+    label_property: $ => seq(
+      $.comma,
+      field('name', $.identifier), // Locked, Comment, etc.
+      $.operator, // '='
+      field('value', choice($.string, $.identifier, $.integer)),
+    ),
+
+    regular_variable_declaration: $ => prec(1, seq(
+      field('name', $.name_or_keyword),
+      repeat(seq($.comma, field('name', $.name_or_keyword))),
+      field('sep', $.operator), // typically ':'
+      field('type', $.type_reference),
+      optional(seq(field('assign', $.operator), field('value', $.expression))), // typically '='
+      $.semicolon,
+    )),
+
+    // Type references in AL can be compound (e.g. `Record "Accounting Period" temporary`).
+    // Keep this permissive but structured: a leading type keyword may be followed by names/args/modifiers.
+    type_reference: $ => prec.right(1, choice(
+      seq(
+        choice($.type_keyword, $.object_keyword),
+        repeat(choice(
+          $.name_or_keyword,
+          $.parenthesized_block,
+          $.bracketed_block,
+          $.of_clause,
+          $.kw_temporary,
+        )),
+      ),
+      $.qualified_name,
+      $.name_or_keyword,
+      $.bracketed_block,      // e.g. Array[10] of ...
+      $.parenthesized_block,  // e.g. Codeunit "Foo"
+    )),
+
+    of_clause: $ => seq(
+      $.kw_of,
+      choice(
+        $.type_keyword,
+        $.qualified_name,
+        $.name_or_keyword,
+        $.bracketed_block,
+        $.parenthesized_block,
+      ),
+    ),
+
+    // NOTE: `kw_event` is handled separately (event declarations typically have no body).
+    member_modifier: $ => choice(
+      $.kw_local,
+      $.kw_internal,
+      $.kw_protected,
+      $.kw_withevents,
+      $.kw_runonclient,
+      $.kw_securityfiltering,
+      $.kw_suppressdispose,
+      $.kw_temporary,
+    ),
+
+    event_procedure_declaration: $ => prec.right(3, seq(
+      repeat($.member_modifier),
+      $.kw_event,
+      repeat($.member_modifier),
+      choice($.kw_procedure, $.kw_function),
+      field('name', $.name),
+      field('parameters', $.parameter_list),
+      optional(choice(
+        seq(field('return_var', $.name_or_keyword), field('returns', $.operator), field('return_type', $.type_reference)),
+        seq(field('returns', $.operator), field('return_type', $.type_reference)),
+      )),
+      $.semicolon,
+    )),
+
+    procedure_declaration: $ => choice(
+      $.event_procedure_declaration,
+      prec.right(2, seq(
+        repeat($.attribute),
+        repeat($.member_modifier),
+        choice($.kw_procedure, $.kw_function),
+        field('name', $.name),
+        field('parameters', $.parameter_list),
+        optional(choice(
+          // Return variable: procedure Name(params) ReturnVar: ReturnType
+          seq(
+            field('return_var', $.name_or_keyword),
+            field('returns', $.operator), // ':'
+            field('return_type', $.type_reference),
+          ),
+          // Return type only: procedure Name(params): ReturnType
+          seq(
+            field('returns', $.operator), // ':'
+            field('return_type', $.type_reference),
+          ),
+        )),
+        choice(
+          prec(1, seq(
+            optional($.semicolon),
+            choice(
+              seq($.var_section, $.begin_end_block),
+              seq($.empty_var_section, $.begin_end_block), // Allow empty var sections
+              $.begin_end_block,
+            ),
+            optional($.semicolon),
+          )),
+          // Interface-style signatures can omit the terminator entirely.
+          prec(-1, optional($.semicolon)),
+        ),
+      )),
+    ),
+
+    trigger_declaration: $ => prec.right(2, seq(
+      repeat($.attribute),
+      repeat($.member_modifier),
+      $.kw_trigger,
+      field('name', $.name_or_keyword),
+      field('parameters', $.parameter_list),
+      optional(choice(
+        // Return variable: trigger Name(params) ReturnVar: ReturnType
+        seq(
+          field('return_var', $.name_or_keyword),
+          field('returns', $.operator), // ':'
+          field('return_type', $.type_reference),
+        ),
+        // Return type only: trigger Name(params): ReturnType
+        seq(
+          field('returns', $.operator), // ':'
+          field('return_type', $.type_reference),
+        ),
+      )),
+      optional($.semicolon),
+      choice(
+        seq($.var_section, $.begin_end_block),
+        seq($.empty_var_section, $.begin_end_block), // Allow empty var sections
+        $.begin_end_block,
+      ),
+      optional($.semicolon),
+    )),
+
+    parameter_list: $ => seq(
+      '(',
+      optional(seq(
+        $.parameter,
+        repeat(seq($.semicolon, $.parameter)),
+      )),
+      ')',
+    ),
+
+    parameter: $ => seq(
+      optional($.kw_var),
+      field('name', $.name_or_keyword),
+      field('sep', $.operator), // typically ':'
+      field('type', $.type_reference),
+      optional(seq(field('assign', $.operator), field('default', $.expression))),
+    ),
+
+    // --- Statements / expressions (Pascal-like) ---
+
+    statement_list: $ => prec.right(seq(
+      choice(
+        $.statement,
+        seq($.semicolon, optional($.statement)),
+      ),
+      repeat(seq($.semicolon, optional($.statement))),
+    )),
+
+    begin_end_block: $ => prec.right(7, seq( // Very high precedence to ensure end is matched before postfix_expression extends
+      $.kw_begin,
+      optional($.statement_list),
+      $.kw_end,
+    )),
+
+    statement: $ => choice(
+      $.begin_end_block,
+      $.if_statement,
+      $.empty_if_statement, // Use only when no consequence follows
+      $.case_statement,
+      $.for_statement,
+      $.foreach_statement,
+      $.while_statement,
+      $.repeat_statement,
+      $.with_statement,
+      $.asserterror_statement,
+      $.exit_statement,
+      $.expression_statement,
+    ),
+
+    if_statement: $ => prec.right(2, seq(
+      $.kw_if,
+      field('condition', $.expression),
+      $.kw_then,
+      field('consequence', $.statement),
+      optional(seq($.kw_else, field('alternative', $.statement))),
+    )),
+
+    // Special handling for empty if statements: "if condition then;"
+    empty_if_statement: $ => prec.right(-1, seq(
+      $.kw_if,
+      field('condition', $.expression),
+      $.kw_then,
+    )),
+
+    case_statement: $ => seq(
+      $.kw_case,
+      field('value', $.expression),
+      $.kw_of,
+      repeat1($.case_branch),
+      optional(seq($.kw_else, field('else_body', $.statement), optional($.semicolon))),
+      $.kw_end,
+    ),
+
+    case_branch: $ => seq(
+      field('labels', $.expression_list),
+      field('sep', ':'), // case labels use ':'
+      field('body', $.statement), // Statement in case branch
+      optional($.semicolon),
+    ),
+
+    for_statement: $ => prec.right(seq(
+      $.kw_for,
+      field('iterator', $.identifier),
+      field('assign', $.operator), // typically ':='
+      field('from', $.expression),
+      field('direction', choice($.kw_to, $.kw_downto)),
+      field('to', $.expression),
+      $.kw_do,
+      field('body', $.statement),
+    )),
+
+    foreach_statement: $ => prec.right(seq(
+      $.kw_foreach,
+      field('iterator', $.identifier),
+      $.kw_in,
+      field('collection', $.expression),
+      $.kw_do,
+      field('body', $.statement),
+    )),
+
+    while_statement: $ => prec.right(seq(
+      $.kw_while,
+      field('condition', $.expression),
+      $.kw_do,
+      field('body', $.statement),
+    )),
+
+    repeat_statement: $ => prec.right(seq(
+      $.kw_repeat,
+      optional($.statement_list),
+      $.kw_until,
+      field('condition', $.expression),
+    )),
+
+    with_statement: $ => prec.right(seq(
+      $.kw_with,
+      field('value', $.expression),
+      $.kw_do,
+      field('body', $.statement),
+    )),
+
+    exit_statement: $ => prec.right(seq(
+      $.kw_exit,
+      optional($.argument_list),
+    )),
+
+    asserterror_statement: $ => prec.right(seq(
+      $.kw_asserterror,
+      field('body', $.statement),
+    )),
+
+    expression_statement: $ => $.expression, // No precedence - let expression parsing handle it naturally
+
+    expression_list: $ => seq(
+      $.expression,
+      repeat(seq($.comma, $.expression)),
+    ),
+
+    argument_list: $ => prec(4, seq( // Very high precedence to ensure it's matched before parenthesized_expression
+      '(',
+      optional($.expression_list),
+      ')',
+    )),
+
+    // Expression parsing is intentionally broad to keep conflicts low and parser.c small.
+    // We treat symbol runs as a single operator token, and operator-words as a distinct token.
+    expression: $ => prec.left(0, seq( // Lower precedence to allow postfix_expression to complete first
+      $.unary_expression,
+      repeat(seq($.binary_operator, $.unary_expression)),
+    )),
+
+    unary_expression: $ => prec.right(2, choice( // Lower precedence than postfix_expression to allow suffixes to be applied
+      seq($.unary_operator, $.unary_expression),
+      $.postfix_expression,
+    )),
+
+    unary_operator: $ => prec.right(choice(
+      $.operator_word, // e.g. `not`
+      token(/[+\-!]/), // Only +, -, ! as unary (not := or other assignment ops)
+    )),
+
+    binary_operator: $ => choice(
+      $.operator_word,
+      $.kw_in,
+      $.operator, // Includes :=, =, +, -, etc.
+    ),
+
+    postfix_expression: $ => prec.right(4, seq( // Use prec.right to ensure suffixes are applied greedily
+      $.primary_expression,
+      repeat(choice(
+        $.member_call_suffix,
+        $.scope_call_suffix,
+        prec(6, $.call_suffix), // Highest precedence for call_suffix to ensure it's tried first
+        $.member_suffix,
+        $.scope_suffix,
+        $.index_suffix,
+      )),
+    )),
+
+    // Support for property access without parentheses (e.g., .Count vs .Count())
+    // This is already handled by member_suffix, but we need to ensure it works in all contexts
+
+    call_suffix: $ => prec(5, field('call', $.argument_list)), // Very high precedence to ensure it's matched before parenthesized_expression
+
+    member_call_suffix: $ => prec(7, seq(
+      '.',
+      field('member', $.name),
+      field('call', $.argument_list),
+    )),
+
+    member_suffix: $ => seq(
+      '.',
+      field('member', $.name),
+    ),
+
+    scope_call_suffix: $ => prec(7, seq(
+      '::',
+      field('member', $.name),
+      field('call', $.argument_list),
+    )),
+
+    scope_suffix: $ => seq(
+      '::',
+      field('member', $.name),
+    ),
+
+    index_suffix: $ => field('index', $.bracketed_block),
+
+    primary_expression: $ => choice(
+      $.name,
+      $.type_keyword,
+      $.string,
+      $.verbatim_string,
+      $.date_literal,
+      $.time_literal,
+      $.datetime_literal,
+      $.decimal,
+      $.integer,
+      $.bracketed_block,
+      prec(-1, $.parenthesized_expression), // Very low precedence - only match when nothing else matches
+    ),
+
+    parenthesized_expression: $ => prec(0, seq('(', $.expression, ')')), // Very low precedence - only match when nothing else matches
+
+    // Attributes: [EventSubscriber(...)], [Test], etc.
+    attribute: $ => prec(3, seq(
+      '[',
+      field('name', $.identifier),
+      optional($.attribute_argument_list),
+      ']',
+    )),
+
+    attribute_argument_list: $ => seq(
+      '(',
+      optional($.attribute_argument),
+      repeat(seq($.comma, $.attribute_argument)),
+      ')',
+    ),
+
+    attribute_argument: $ => prec(1, choice(
+      seq(field('name', $.identifier), $.operator, field('value', $.expression)), // name = value
+      $.expression,
+    )),
 
     braced_block: $ => prec.right(seq(
       '{',
@@ -112,15 +696,28 @@ module.exports = grammar({
       $.quoted_identifier,
     ),
 
+    name_or_keyword: $ => choice(
+      $.name,
+      $.object_keyword,
+      $.metadata_keyword,
+      $.property_keyword,
+      $.keyword,
+    ),
+
     _atom: $ => choice(
       $.string,
       $.verbatim_string,
+      $.date_literal,
+      $.time_literal,
+      $.datetime_literal,
       $.quoted_identifier,
+      $.decimal,
       $.integer,
       $.identifier,
 
       // Keyword categories (from external scanner)
       $.control_keyword,
+      $.operator_word,
       $.object_keyword,
       $.type_keyword,
       $.metadata_keyword,
@@ -128,13 +725,19 @@ module.exports = grammar({
       $.keyword,
 
       $.operator,
-      $.punctuation,
+      $.semicolon,
+      $.comma,
     ),
 
     // AL identifiers can include non-ASCII letters in practice (e.g. demo datasets).
     // Keep keywords ASCII-only via the external scanner, but accept Unicode in identifiers for robustness.
     identifier: _ => /[A-Za-z_\u0080-\uFFFF][A-Za-z0-9_\u0080-\uFFFF]*/,
+    decimal: _ => token(/[0-9]+\.[0-9]+/),
     integer: _ => /[0-9]+/,
+    // Date/time literals: 20201231D, 121200T, 0DT
+    datetime_literal: _ => token(seq(/[0-9]{1,14}/, 'D', 'T')),
+    date_literal: _ => token(seq(/[0-9]{1,8}/, 'D')),
+    time_literal: _ => token(seq(/[0-9]{1,6}/, 'T')),
 
     // Strings: AL uses single quotes; escaping is done by doubling ''.
     // Use `token(...)` to keep lexing robust in free-form contexts.
@@ -144,11 +747,9 @@ module.exports = grammar({
     // Quoted identifiers: "My Field"; escaping is done by doubling "".
     quoted_identifier: _ => token(seq('"', repeat(choice(/[^"]/, '""')), '"')),
 
-    // Directives are line-oriented and start with '#'
-    directive: _ => token(seq('#', /[^\n]*/)),
-
     comment: _ => token(choice(
       seq('//', /[^\n]*/),
+      seq('#', /[^\n]*/),
       seq(
         '/*',
         /[^*]*\*+([^/*][^*]*\*+)*/,
@@ -159,9 +760,7 @@ module.exports = grammar({
     // Catch most operator/symbol runs (including % placeholders in label strings).
     operator: _ => token(/[!$%&*+\-./:<=>?@^|~]+/),
 
-    punctuation: _ => token(choice(
-      ';',
-      ',',
-    )),
+    semicolon: _ => ';',
+    comma: _ => ',',
   }
 });
