@@ -1405,6 +1405,10 @@
           "named": true
         },
         {
+          "type": "semicolon",
+          "named": true
+        },
+        {
           "type": "trigger_declaration",
           "named": true
         },

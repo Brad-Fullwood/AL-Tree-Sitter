@@ -124,6 +124,7 @@ module.exports = grammar({
     $.braced_block,
     $.parenthesized_block,
     $.bracketed_block,
+    $.semicolon, // Allow orphan semicolons
   ),
 
   // Covers the common braced sections inside objects:
@@ -315,12 +316,12 @@ module.exports = grammar({
   )),
 
   // Control add-in style event declarations: event Ready();
-  event_declaration: $ => seq(
+  event_declaration: $ => prec.left(seq(
     $.kw_event,
     field('name', $.name_or_keyword),
     field('parameters', $.parameter_list),
     optional($.semicolon),
-  ),
+  )),
 
   procedure_declaration: $ => choice(
     $.event_procedure_declaration,
@@ -459,7 +460,7 @@ module.exports = grammar({
     $.kw_case,
     field('value', $.expression),
     $.kw_of,
-    repeat1($.case_branch),
+    repeat($.case_branch),
     optional(seq(
       $.kw_else,
       optional(field('else_body', choice($.statement, $.statement_list))),
