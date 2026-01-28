@@ -82,6 +82,8 @@ module.exports = grammar({
     [$.object_section, $.object_variable_declaration],
     [$.name, $._pre_object_body],
     [$.name_or_keyword, $._pre_object_body],
+    [$.event_declaration, $.semicolon], 
+    [$.object_section, $.name_or_keyword], // Resolve conflict from increasing object_section precedence
     [$.statement_list, $.case_branch],
     [$.statement_list, $.case_statement],
   ],
@@ -317,7 +319,8 @@ module.exports = grammar({
       choice($.type_keyword, $.object_keyword),
       repeat(choice(
         $.qualified_name,
-        $.name_or_keyword,
+        // Restrict what can follow Option/Enum to avoid consuming 'begin', 'var'
+        prec(2, $.name_or_keyword),
         $.integer,
         $.string,
         $.parenthesized_block,
@@ -372,8 +375,16 @@ module.exports = grammar({
   // Control add-in style event declarations: event Ready();
   event_declaration: $ => prec.left(seq(
     $.kw_event,
-    field('name', $.name_or_keyword),
+    optional(field('name', $.name_or_keyword)),
     field('parameters', $.parameter_list),
+    optional(seq(field('returns', $.operator), field('return_type', $.type_reference))), // Added return type
+    optional($.semicolon),
+    optional(choice( // Added optional body
+      seq($.var_section, $.begin_end_block),
+      seq($.empty_var_section, $.begin_end_block),
+      $.begin_end_block,
+      $.braced_block, // For control add-in events that might have a JS-like body
+    )),
     optional($.semicolon),
   )),
 
