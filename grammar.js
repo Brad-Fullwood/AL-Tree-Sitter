@@ -765,7 +765,6 @@ module.exports = grammar({
   name_or_keyword: $ => choice(
     $.name,
     $.object_keyword,
-    $.type_keyword,
     $.metadata_keyword,
     $.property_keyword,
     $.kw_function,
