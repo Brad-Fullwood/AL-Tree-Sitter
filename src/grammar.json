@@ -128,7 +128,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "name"
+                  "name": "name_or_keyword"
                 },
                 {
                   "type": "BLANK"
@@ -1019,6 +1019,10 @@
                     {
                       "type": "SYMBOL",
                       "name": "integer"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "string"
                     },
                     {
                       "type": "SYMBOL",
@@ -3607,6 +3611,10 @@
     ],
     [
       "name",
+      "_pre_object_body"
+    ],
+    [
+      "name_or_keyword",
       "_pre_object_body"
     ],
     [

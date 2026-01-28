@@ -5,6 +5,9 @@
 #include <tree_sitter/parser.h>
 #include <ctype.h>
 #include <string.h>
+#ifndef __wasm__
+#include <stdlib.h>  // For getenv (not available in WASM)
+#endif
 
 typedef enum {
   KEYWORD,
@@ -112,6 +115,10 @@ static bool parse_bool_env(const char *s, bool default_value) {
 }
 
 static void scanner_load_defines_from_env(Scanner *scanner) {
+#ifdef __wasm__
+  // getenv not available in WASM - skip environment-based defines
+  return;
+#else
   const char *env = getenv("AL_TS_DEFINES");
   if (!env || !*env) return;
 
@@ -133,6 +140,7 @@ static void scanner_load_defines_from_env(Scanner *scanner) {
       p++;
     }
   }
+#endif
 }
 
 static bool scanner_is_active(const Scanner *scanner) {
@@ -448,7 +456,12 @@ static bool scanner_scan_inactive_code(Scanner *scanner, TSLexer *lexer, const b
 void *tree_sitter_al_external_scanner_create() {
   Scanner *scanner = (Scanner *)calloc(1, sizeof(Scanner));
   if (!scanner) return NULL;
+#ifdef __wasm__
+  // getenv not available in WASM - use defaults
+  scanner->default_unknown_true = true;
+#else
   scanner->default_unknown_true = parse_bool_env(getenv("AL_TS_UNKNOWN_TRUE"), true);
+#endif
   scanner_load_defines_from_env(scanner);
   return scanner;
 }

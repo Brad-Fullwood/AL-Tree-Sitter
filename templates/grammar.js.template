@@ -27,6 +27,7 @@ module.exports = grammar({
     [$.object_section, $.variable_declaration],
     [$.object_section, $.object_variable_declaration],
     [$.name, $._pre_object_body],
+    [$.name_or_keyword, $._pre_object_body],
     [$.statement_list, $.case_branch],
     [$.statement_list, $.case_statement],
   ],
@@ -61,7 +62,7 @@ module.exports = grammar({
   object_declaration: $ => prec(1, seq(
     field('kind', $.object_keyword),
     field('id', optional($.integer)),
-    field('name', optional($.name)),
+    field('name', optional($.name_or_keyword)),
     // Conditional compilation in AL often repeats/varies the object header (e.g. #if/#else enum ...).
     // We stay tolerant and consume header-related tokens until the opening '{'.
     repeat($._pre_object_body),
@@ -263,6 +264,7 @@ module.exports = grammar({
         $.qualified_name,
         $.name_or_keyword,
         $.integer,
+        $.string,
         $.parenthesized_block,
         $.bracketed_block,
         $.of_clause,
