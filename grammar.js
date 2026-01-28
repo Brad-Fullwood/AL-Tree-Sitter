@@ -289,7 +289,7 @@ module.exports = grammar({
   label_declaration: $ => prec(2, seq(
     field('name', $.name_or_keyword),
     field('sep', $.operator), // ':'
-    field('type', choice($.type_keyword, $.identifier, $.metadata_keyword, $.keyword)), // 'Label' (can be identifier or keyword)
+    field('type', choice($.type_keyword, $.identifier, $.metadata_keyword, $.keyword)),  // 'Label' (can be identifier or keyword)
     field('value', $.string), // Label value (required to distinguish from regular vars)
     repeat($.label_property), // Locked = true, Comment = '...', etc.
     optional($.comma),
@@ -319,8 +319,8 @@ module.exports = grammar({
       choice($.type_keyword, $.object_keyword),
       repeat(choice(
         $.qualified_name,
-        // Restrict what can follow Option/Enum to avoid consuming 'begin', 'var'
-        prec(2, $.name_or_keyword),
+        // Boost name_or_keyword to ensure Option values are caught
+        prec(2, $.name_or_keyword), 
         $.integer,
         $.string,
         $.parenthesized_block,
@@ -399,7 +399,7 @@ module.exports = grammar({
       optional(choice(
         // Return variable: procedure Name(params) ReturnVar: ReturnType
         seq(
-          field('return_var', $.return_var_name),
+          field('return_var', $.name_or_keyword),
           field('returns', $.operator), // ':'
           field('return_type', $.type_reference),
         ),
@@ -765,15 +765,14 @@ module.exports = grammar({
   name_or_keyword: $ => choice(
     $.name,
     $.object_keyword,
+    $.type_keyword,
     $.metadata_keyword,
     $.property_keyword,
+    $.kw_function,
     $.keyword,
   ),
 
-  return_var_name: $ => choice(
-    $.name_or_keyword,
-    $.kw_function,
-  ),
+  return_var_name: $ => $.name_or_keyword,
 
   _atom: $ => choice(
     $.string,

@@ -9,28 +9,27 @@
 #define free ts_free
 #define calloc ts_calloc
 #define realloc ts_realloc
+#endif
 
-static inline int scanner_tolower(int c) {
+static inline int al_tolower(int c) {
   if (c >= 'A' && c <= 'Z') return c + ('a' - 'A');
   return c;
 }
-#define tolower scanner_tolower
 
-static inline size_t scanner_strlen(const char *s) {
+static inline size_t al_strlen(const char *s) {
   size_t n = 0;
   while (s && s[n]) n++;
   return n;
 }
-#define strlen scanner_strlen
 
-static inline void *scanner_memcpy(void *dst, const void *src, size_t n) {
+static inline void *al_memcpy(void *dst, const void *src, size_t n) {
   char *d = (char *)dst;
   const char *s = (const char *)src;
   for (size_t i = 0; i < n; i++) d[i] = s[i];
   return dst;
 }
-#define memcpy scanner_memcpy
-#else
+
+#ifndef __wasm__
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>  // For getenv
@@ -121,7 +120,7 @@ typedef struct {
 
 static char *ts_strdup(const char *s) {
   if (!s) return NULL;
-  size_t n = strlen(s);
+  size_t n = al_strlen(s);
   char *out = (char *)malloc(n + 1);
   if (!out) return NULL;
   for (size_t i = 0; i <= n; i++) out[i] = s[i];
@@ -133,11 +132,11 @@ static bool parse_bool_env(const char *s, bool default_value) {
   // Accept common forms: 1/0, true/false, yes/no, on/off
   if (s[0] == '1') return true;
   if (s[0] == '0') return false;
-  if (tolower((unsigned char)s[0]) == 't') return true;
-  if (tolower((unsigned char)s[0]) == 'f') return false;
-  if (tolower((unsigned char)s[0]) == 'y') return true;
-  if (tolower((unsigned char)s[0]) == 'n') return false;
-  if (tolower((unsigned char)s[0]) == 'o') return true; // "on"
+  if (al_tolower((unsigned char)s[0]) == 't') return true;
+  if (al_tolower((unsigned char)s[0]) == 'f') return false;
+  if (al_tolower((unsigned char)s[0]) == 'y') return true;
+  if (al_tolower((unsigned char)s[0]) == 'n') return false;
+  if (al_tolower((unsigned char)s[0]) == 'o') return true; // "on"
   return default_value;
 }
 
@@ -163,7 +162,7 @@ static void scanner_load_defines_from_env(Scanner *scanner) {
     scanner->defines[scanner->defines_len++] = p;
     // Advance to next delimiter
     while (*p && *p != ' ' && *p != '\t' && *p != '\n' && *p != '\r' && *p != ',' && *p != ';') {
-      *p = (char)tolower((unsigned char)*p);
+      *p = (char)al_tolower((unsigned char)*p);
       p++;
     }
   }
@@ -182,7 +181,7 @@ static bool scanner_is_defined(const Scanner *scanner, const char *ident, int le
   for (uint16_t i = 0; i < scanner->defines_len; i++) {
     const char *d = scanner->defines[i];
     if (!d) continue;
-    if ((int)strlen(d) == len && strncmp(d, ident, (size_t)len) == 0) return true;
+    if ((int)al_strlen(d) == len && strncmp(d, ident, (size_t)len) == 0) return true;
   }
   return false;
 }
@@ -195,7 +194,7 @@ static void expr_skip_ws(const char **p) {
 
 static bool expr_match_word(const char **p, const char *word) {
   const char *s = *p;
-  size_t n = strlen(word);
+  size_t n = al_strlen(word);
   if (strncmp(s, word, n) != 0) return false;
   // Ensure word boundary
   char next = s[n];
@@ -393,7 +392,7 @@ static bool scanner_scan_directive(Scanner *scanner, TSLexer *lexer, const bool 
   while (kw_len < (int)sizeof(kw) - 1) {
     int32_t c = lexer->lookahead;
     if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_') {
-      kw[kw_len++] = (char)tolower((unsigned char)c);
+      kw[kw_len++] = (char)al_tolower((unsigned char)c);
       lexer->advance(lexer, false);
       continue;
     }
@@ -411,7 +410,7 @@ static bool scanner_scan_directive(Scanner *scanner, TSLexer *lexer, const bool 
   int expr_len = 0;
   while (lexer->lookahead != 0 && lexer->lookahead != '\n') {
     if (expr_len < (int)sizeof(expr) - 1) {
-      expr[expr_len++] = (char)tolower((unsigned char)lexer->lookahead);
+      expr[expr_len++] = (char)al_tolower((unsigned char)lexer->lookahead);
     }
     lexer->advance(lexer, false);
   }
@@ -555,7 +554,7 @@ static bool scan_word(TSLexer *lexer, char *out, int out_cap) {
         (ch >= 'A' && ch <= 'Z') ||
         (ch >= 'a' && ch <= 'z') ||
         (ch >= '0' && ch <= '9')) {
-      out[len++] = (char)tolower((unsigned char)ch);
+      out[len++] = (char)al_tolower((unsigned char)ch);
       lexer->advance(lexer, false);
       continue;
     }
