@@ -125,7 +125,17 @@ fn kw_token_spec(prefix: &str, kw: &str, c_prefix: &str) -> ExternalTokenSpec {
 fn build_external_tokens(keywords: &Keywords) -> Vec<ExternalTokenSpec> {
     let mut out = Vec::new();
 
-    // Category tokens (small, stable set)
+    // Control keywords as distinct tokens come FIRST (highest priority)
+    for kw in &keywords.control {
+        out.push(kw_token_spec("kw", kw, "KW"));
+    }
+
+    // Operator words as distinct tokens
+    for kw in &keywords.operator_words {
+        out.push(kw_token_spec("op", kw, "OP"));
+    }
+
+    // Category tokens (small, stable set) fallback
     out.push(token_spec("keyword", "KEYWORD"));
     out.push(token_spec("control_keyword", "CONTROL_KEYWORD"));
     out.push(token_spec("operator_word", "OPERATOR_WORD"));
@@ -133,16 +143,6 @@ fn build_external_tokens(keywords: &Keywords) -> Vec<ExternalTokenSpec> {
     out.push(token_spec("type_keyword", "TYPE_KEYWORD"));
     out.push(token_spec("metadata_keyword", "METADATA_KEYWORD"));
     out.push(token_spec("property_keyword", "PROPERTY_KEYWORD"));
-
-    // Control keywords as distinct tokens (derived from the extension; no hardcoded lists).
-    for kw in &keywords.control {
-        out.push(kw_token_spec("kw", kw, "KW"));
-    }
-
-    // Operator words as distinct tokens (derived from the extension; no hardcoded lists).
-    for kw in &keywords.operator_words {
-        out.push(kw_token_spec("op", kw, "OP"));
-    }
 
     // Preprocessor / directives
     out.push(token_spec("directive", "DIRECTIVE"));
@@ -375,6 +375,19 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
             } else if scope_name.contains("keyword.other.property") {
                 out.properties.insert(kw);
             }
+        }
+    }
+
+    // Ensure important types and objects get their own tokens for precise grammar rules
+    let important = [
+        "option", "record", "page", "table", "codeunit", "report", "xmlport", 
+        "enum", "query", "tableextension", "pageextension", "enumextension", 
+        "permissionset", "permissionsetextension", "interface"
+    ];
+    let all_extracted = keywords_all(&out);
+    for kw in important {
+        if all_extracted.contains(kw) {
+            out.control.insert(kw.to_string());
         }
     }
 

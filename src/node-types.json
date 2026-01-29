@@ -1560,6 +1560,58 @@
         "required": true,
         "types": [
           {
+            "type": "kw_codeunit",
+            "named": true
+          },
+          {
+            "type": "kw_enum",
+            "named": true
+          },
+          {
+            "type": "kw_enumextension",
+            "named": true
+          },
+          {
+            "type": "kw_interface",
+            "named": true
+          },
+          {
+            "type": "kw_page",
+            "named": true
+          },
+          {
+            "type": "kw_pageextension",
+            "named": true
+          },
+          {
+            "type": "kw_permissionset",
+            "named": true
+          },
+          {
+            "type": "kw_permissionsetextension",
+            "named": true
+          },
+          {
+            "type": "kw_query",
+            "named": true
+          },
+          {
+            "type": "kw_report",
+            "named": true
+          },
+          {
+            "type": "kw_table",
+            "named": true
+          },
+          {
+            "type": "kw_tableextension",
+            "named": true
+          },
+          {
+            "type": "kw_xmlport",
+            "named": true
+          },
+          {
             "type": "object_keyword",
             "named": true
           }
@@ -1835,33 +1887,6 @@
     }
   },
   {
-    "type": "option_member",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "name",
-          "named": true
-        },
-        {
-          "type": "name_or_keyword",
-          "named": true
-        },
-        {
-          "type": "string",
-          "named": true
-        },
-        {
-          "type": "verbatim_string",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "option_type",
     "named": true,
     "fields": {},
@@ -1874,11 +1899,19 @@
           "named": true
         },
         {
-          "type": "option_member",
+          "type": "identifier",
           "named": true
         },
         {
-          "type": "type_keyword",
+          "type": "kw_option",
+          "named": true
+        },
+        {
+          "type": "quoted_identifier",
+          "named": true
+        },
+        {
+          "type": "string",
           "named": true
         }
       ]
@@ -2885,7 +2918,39 @@
           "named": true
         },
         {
+          "type": "kw_codeunit",
+          "named": true
+        },
+        {
+          "type": "kw_enum",
+          "named": true
+        },
+        {
+          "type": "kw_page",
+          "named": true
+        },
+        {
+          "type": "kw_query",
+          "named": true
+        },
+        {
+          "type": "kw_record",
+          "named": true
+        },
+        {
+          "type": "kw_report",
+          "named": true
+        },
+        {
+          "type": "kw_table",
+          "named": true
+        },
+        {
           "type": "kw_temporary",
+          "named": true
+        },
+        {
+          "type": "kw_xmlport",
           "named": true
         },
         {
@@ -3175,6 +3240,10 @@
     "named": true
   },
   {
+    "type": "kw_codeunit",
+    "named": true
+  },
+  {
     "type": "kw_do",
     "named": true
   },
@@ -3188,6 +3257,14 @@
   },
   {
     "type": "kw_end",
+    "named": true
+  },
+  {
+    "type": "kw_enum",
+    "named": true
+  },
+  {
+    "type": "kw_enumextension",
     "named": true
   },
   {
@@ -3219,6 +3296,10 @@
     "named": true
   },
   {
+    "type": "kw_interface",
+    "named": true
+  },
+  {
     "type": "kw_internal",
     "named": true
   },
@@ -3231,6 +3312,26 @@
     "named": true
   },
   {
+    "type": "kw_option",
+    "named": true
+  },
+  {
+    "type": "kw_page",
+    "named": true
+  },
+  {
+    "type": "kw_pageextension",
+    "named": true
+  },
+  {
+    "type": "kw_permissionset",
+    "named": true
+  },
+  {
+    "type": "kw_permissionsetextension",
+    "named": true
+  },
+  {
     "type": "kw_procedure",
     "named": true
   },
@@ -3239,7 +3340,19 @@
     "named": true
   },
   {
+    "type": "kw_query",
+    "named": true
+  },
+  {
+    "type": "kw_record",
+    "named": true
+  },
+  {
     "type": "kw_repeat",
+    "named": true
+  },
+  {
+    "type": "kw_report",
     "named": true
   },
   {
@@ -3252,6 +3365,14 @@
   },
   {
     "type": "kw_suppressdispose",
+    "named": true
+  },
+  {
+    "type": "kw_table",
+    "named": true
+  },
+  {
+    "type": "kw_tableextension",
     "named": true
   },
   {
@@ -3288,6 +3409,10 @@
   },
   {
     "type": "kw_withevents",
+    "named": true
+  },
+  {
+    "type": "kw_xmlport",
     "named": true
   },
   {

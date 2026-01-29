@@ -1,21 +1,31 @@
 ; AL highlights for Zed/tree-sitter
-; AUTO-GENERATED - DO NOT EDIT (copied by generator)
+; AUTO-GENERATED - DO NOT EDIT (copied by AL Tree Sitter)
 
 (comment) @comment
-(directive) @comment
-
 (string) @string
-(verbatim_string) @string
-(quoted_identifier) @string.special
-
 (integer) @number
-(decimal) @number
-(date_literal) @number
-(time_literal) @number
-(datetime_literal) @number
 
 (control_keyword) @keyword.control
+
+; Specific keyword highlights
+(kw_option) @type.builtin
+(kw_record) @type.builtin
+(kw_page) @keyword.storage.type
+(kw_table) @keyword.storage.type
+(kw_codeunit) @keyword.storage.type
+(kw_report) @keyword.storage.type
+(kw_xmlport) @keyword.storage.type
+(kw_enum) @keyword.storage.type
+(kw_query) @keyword.storage.type
+(kw_interface) @keyword.storage.type
+(kw_tableextension) @keyword.storage.type
+(kw_pageextension) @keyword.storage.type
+(kw_enumextension) @keyword.storage.type
+(kw_permissionset) @keyword.storage.type
+(kw_permissionsetextension) @keyword.storage.type
+
 {{CONTROL_KW_TOKEN_HIGHLIGHTS}}
+
 (operator_word) @operator
 (object_keyword) @keyword
 (type_keyword) @type
@@ -23,8 +33,21 @@
 (property_keyword) @property
 (keyword) @keyword
 
+; --- Punctuation & Operators ---
 (operator) @operator
 (semicolon) @punctuation.delimiter
 (comma) @punctuation.delimiter
+["(" ")" "[" "]" "{" "}"] @punctuation.bracket
+
+; --- Names & Calls ---
+; Function calls
+(call_suffix) @function.call
+(member_call_suffix member: (_) @function.call)
+(scope_call_suffix member: (_) @function.call)
+
+; Definitions
+(procedure_declaration name: (_) @function.method)
+(trigger_declaration name: (_) @function.method)
+(event_declaration name: (_) @function.method)
 
 (identifier) @variable

@@ -35,23 +35,19 @@ static inline void *al_memcpy(void *dst, const void *src, size_t n) {
 #endif
 
 typedef enum {
-  KEYWORD,
-  CONTROL_KEYWORD,
-  OPERATOR_WORD,
-  OBJECT_KEYWORD,
-  TYPE_KEYWORD,
-  METADATA_KEYWORD,
-  PROPERTY_KEYWORD,
   KW_ARRAY,
   KW_ASSERTERROR,
   KW_BEGIN,
   KW_BREAK,
   KW_CASE,
+  KW_CODEUNIT,
   KW_CONTINUE,
   KW_DO,
   KW_DOWNTO,
   KW_ELSE,
   KW_END,
+  KW_ENUM,
+  KW_ENUMEXTENSION,
   KW_EVENT,
   KW_EXIT,
   KW_FOR,
@@ -60,16 +56,27 @@ typedef enum {
   KW_IF,
   KW_IN,
   KW_INDATASET,
+  KW_INTERFACE,
   KW_INTERNAL,
   KW_LOCAL,
   KW_OF,
+  KW_OPTION,
+  KW_PAGE,
+  KW_PAGEEXTENSION,
+  KW_PERMISSIONSET,
+  KW_PERMISSIONSETEXTENSION,
   KW_PROCEDURE,
   KW_PROGRAM,
   KW_PROTECTED,
+  KW_QUERY,
+  KW_RECORD,
   KW_REPEAT,
+  KW_REPORT,
   KW_RUNONCLIENT,
   KW_SECURITYFILTERING,
   KW_SUPPRESSDISPOSE,
+  KW_TABLE,
+  KW_TABLEEXTENSION,
   KW_TEMPORARY,
   KW_THEN,
   KW_TO,
@@ -79,6 +86,7 @@ typedef enum {
   KW_WHILE,
   KW_WITH,
   KW_WITHEVENTS,
+  KW_XMLPORT,
   OP_AND,
   OP_AS,
   OP_DIV,
@@ -87,6 +95,13 @@ typedef enum {
   OP_NOT,
   OP_OR,
   OP_XOR,
+  KEYWORD,
+  CONTROL_KEYWORD,
+  OPERATOR_WORD,
+  OBJECT_KEYWORD,
+  TYPE_KEYWORD,
+  METADATA_KEYWORD,
+  PROPERTY_KEYWORD,
   DIRECTIVE,
   INACTIVE_CODE,
 
@@ -568,23 +583,19 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
   Scanner *scanner = (Scanner *)payload;
 
   // Fast-path: if no keyword-like tokens are valid in this state, don't scan.
-  if (!valid_symbols[KEYWORD] &&
-      !valid_symbols[CONTROL_KEYWORD] &&
-      !valid_symbols[OPERATOR_WORD] &&
-      !valid_symbols[OBJECT_KEYWORD] &&
-      !valid_symbols[TYPE_KEYWORD] &&
-      !valid_symbols[METADATA_KEYWORD] &&
-      !valid_symbols[PROPERTY_KEYWORD] &&
-      !valid_symbols[KW_ARRAY] &&
+  if (!valid_symbols[KW_ARRAY] &&
       !valid_symbols[KW_ASSERTERROR] &&
       !valid_symbols[KW_BEGIN] &&
       !valid_symbols[KW_BREAK] &&
       !valid_symbols[KW_CASE] &&
+      !valid_symbols[KW_CODEUNIT] &&
       !valid_symbols[KW_CONTINUE] &&
       !valid_symbols[KW_DO] &&
       !valid_symbols[KW_DOWNTO] &&
       !valid_symbols[KW_ELSE] &&
       !valid_symbols[KW_END] &&
+      !valid_symbols[KW_ENUM] &&
+      !valid_symbols[KW_ENUMEXTENSION] &&
       !valid_symbols[KW_EVENT] &&
       !valid_symbols[KW_EXIT] &&
       !valid_symbols[KW_FOR] &&
@@ -593,16 +604,27 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
       !valid_symbols[KW_IF] &&
       !valid_symbols[KW_IN] &&
       !valid_symbols[KW_INDATASET] &&
+      !valid_symbols[KW_INTERFACE] &&
       !valid_symbols[KW_INTERNAL] &&
       !valid_symbols[KW_LOCAL] &&
       !valid_symbols[KW_OF] &&
+      !valid_symbols[KW_OPTION] &&
+      !valid_symbols[KW_PAGE] &&
+      !valid_symbols[KW_PAGEEXTENSION] &&
+      !valid_symbols[KW_PERMISSIONSET] &&
+      !valid_symbols[KW_PERMISSIONSETEXTENSION] &&
       !valid_symbols[KW_PROCEDURE] &&
       !valid_symbols[KW_PROGRAM] &&
       !valid_symbols[KW_PROTECTED] &&
+      !valid_symbols[KW_QUERY] &&
+      !valid_symbols[KW_RECORD] &&
       !valid_symbols[KW_REPEAT] &&
+      !valid_symbols[KW_REPORT] &&
       !valid_symbols[KW_RUNONCLIENT] &&
       !valid_symbols[KW_SECURITYFILTERING] &&
       !valid_symbols[KW_SUPPRESSDISPOSE] &&
+      !valid_symbols[KW_TABLE] &&
+      !valid_symbols[KW_TABLEEXTENSION] &&
       !valid_symbols[KW_TEMPORARY] &&
       !valid_symbols[KW_THEN] &&
       !valid_symbols[KW_TO] &&
@@ -612,6 +634,7 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
       !valid_symbols[KW_WHILE] &&
       !valid_symbols[KW_WITH] &&
       !valid_symbols[KW_WITHEVENTS] &&
+      !valid_symbols[KW_XMLPORT] &&
       !valid_symbols[OP_AND] &&
       !valid_symbols[OP_AS] &&
       !valid_symbols[OP_DIV] &&
@@ -620,6 +643,13 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
       !valid_symbols[OP_NOT] &&
       !valid_symbols[OP_OR] &&
       !valid_symbols[OP_XOR] &&
+      !valid_symbols[KEYWORD] &&
+      !valid_symbols[CONTROL_KEYWORD] &&
+      !valid_symbols[OPERATOR_WORD] &&
+      !valid_symbols[OBJECT_KEYWORD] &&
+      !valid_symbols[TYPE_KEYWORD] &&
+      !valid_symbols[METADATA_KEYWORD] &&
+      !valid_symbols[PROPERTY_KEYWORD] &&
       !valid_symbols[DIRECTIVE] &&
       !valid_symbols[INACTIVE_CODE]) {
     return false;

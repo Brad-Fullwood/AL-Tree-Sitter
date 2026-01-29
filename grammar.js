@@ -7,23 +7,19 @@ module.exports = grammar({
   externals: $ => [
     // Keyword categories come from the Cursor/VSCode AL extension's TextMate grammar
     // (syntaxes/alsyntax.tmlanguage). No keyword strings are hardcoded here.
-        $.keyword,
-    $.control_keyword,
-    $.operator_word,
-    $.object_keyword,
-    $.type_keyword,
-    $.metadata_keyword,
-    $.property_keyword,
-    $.kw_array,
+        $.kw_array,
     $.kw_asserterror,
     $.kw_begin,
     $.kw_break,
     $.kw_case,
+    $.kw_codeunit,
     $.kw_continue,
     $.kw_do,
     $.kw_downto,
     $.kw_else,
     $.kw_end,
+    $.kw_enum,
+    $.kw_enumextension,
     $.kw_event,
     $.kw_exit,
     $.kw_for,
@@ -32,16 +28,27 @@ module.exports = grammar({
     $.kw_if,
     $.kw_in,
     $.kw_indataset,
+    $.kw_interface,
     $.kw_internal,
     $.kw_local,
     $.kw_of,
+    $.kw_option,
+    $.kw_page,
+    $.kw_pageextension,
+    $.kw_permissionset,
+    $.kw_permissionsetextension,
     $.kw_procedure,
     $.kw_program,
     $.kw_protected,
+    $.kw_query,
+    $.kw_record,
     $.kw_repeat,
+    $.kw_report,
     $.kw_runonclient,
     $.kw_securityfiltering,
     $.kw_suppressdispose,
+    $.kw_table,
+    $.kw_tableextension,
     $.kw_temporary,
     $.kw_then,
     $.kw_to,
@@ -51,6 +58,7 @@ module.exports = grammar({
     $.kw_while,
     $.kw_with,
     $.kw_withevents,
+    $.kw_xmlport,
     $.op_and,
     $.op_as,
     $.op_div,
@@ -59,6 +67,13 @@ module.exports = grammar({
     $.op_not,
     $.op_or,
     $.op_xor,
+    $.keyword,
+    $.control_keyword,
+    $.operator_word,
+    $.object_keyword,
+    $.type_keyword,
+    $.metadata_keyword,
+    $.property_keyword,
     $.directive,
     $.inactive_code,
 
@@ -91,6 +106,7 @@ module.exports = grammar({
     [$.option_member, $.name_or_keyword], // Resolve conflict for option_type parsing
     [$.key_declaration, $._atom], // Resolve conflict for key_declaration vs atoms in braced blocks
     [$.type_reference, $.option_member], // Resolve conflict for option members vs type_reference tokens
+    [$.option_member, $.name], // Resolve conflict for identifier in option_type
     [$.option_type], // Resolve ambiguity in option_type repeat patterns
   ],
 
@@ -120,9 +136,15 @@ module.exports = grammar({
   )),
 
   // Object declarations are the most common top-level AL construct.
-  // We intentionally keep this tolerant while still using a keyword-derived object kind.
-  object_declaration: $ => prec(1, seq(
-    field('kind', $.object_keyword),
+  // We use specific tokens where possible for better precision.
+  object_declaration: $ => prec(2, seq(
+    field('kind', choice(
+      $.kw_page, $.kw_table, $.kw_codeunit, $.kw_report, $.kw_xmlport, 
+      $.kw_enum, $.kw_query, $.kw_tableextension, $.kw_pageextension, 
+      $.kw_enumextension, $.kw_permissionset, $.kw_permissionsetextension,
+      $.kw_interface,
+      $.object_keyword
+    )),
     field('id', optional($.integer)),
     field('name', optional($.name_or_keyword)),
     // Conditional compilation in AL often repeats/varies the object header (e.g. #if/#else enum ...).
@@ -335,9 +357,9 @@ module.exports = grammar({
   // Type references in AL can be compound (e.g. `Record "Accounting Period" temporary`).
   // Keep this permissive but structured: a leading type keyword may be followed by names/args/modifiers.
   type_reference: $ => prec.right(1, choice(
-    prec(4, $.option_type), // Higher precedence for Option with commas
+    prec(4, $.option_type), // Using dedicated kw_option
     seq(
-      choice($.type_keyword, $.object_keyword),
+      choice($.kw_record, $.kw_page, $.kw_table, $.kw_codeunit, $.kw_report, $.kw_xmlport, $.kw_enum, $.kw_query, $.type_keyword, $.object_keyword),
       repeat(choice(
         $.qualified_name,
         // Boost name_or_keyword to ensure Option values are caught
@@ -357,23 +379,23 @@ module.exports = grammar({
   )),
 
   // Option type with inline member values: Option Member1,Member2,Member3
-  // Also handles empty members: Option ,,,Report,,,XMLport (multiple consecutive commas)
-  // Simplified pattern: Just comma-separated list with at least one comma
-  option_type: $ => prec.right(3, seq(
-    $.type_keyword, // Must be 'Option' keyword
-    choice(
-      // At least one comma AND one member: Option A,B or Option A, or Option ,,,Report
-      seq($.option_member, repeat1(seq($.comma, optional($.option_member)))),
-      // Only commas (no members at all): Option ,,,
-      repeat1($.comma),
-    ),
-  )),
+  // Uses dedicated $.kw_option token for unambiguous matching.
+  option_type: $ => seq(
+    $.kw_option,
+    repeat1(prec(30, choice(
+       $.identifier,
+       $.quoted_identifier,
+       $.comma,
+       $.string
+    )))
+  ),
 
   option_member: $ => choice(
-    $.name_or_keyword,
-    $.name,
+    $.quoted_identifier,
+    $.identifier,
     $.string,
     $.verbatim_string,
+    $.name_or_keyword,
   ),
 
   of_clause: $ => seq(

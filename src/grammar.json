@@ -92,7 +92,7 @@
     },
     "object_declaration": {
       "type": "PREC",
-      "value": 1,
+      "value": 2,
       "content": {
         "type": "SEQ",
         "members": [
@@ -100,8 +100,65 @@
             "type": "FIELD",
             "name": "kind",
             "content": {
-              "type": "SYMBOL",
-              "name": "object_keyword"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_page"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_table"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_codeunit"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_report"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_xmlport"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_enum"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_query"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_tableextension"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_pageextension"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_enumextension"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_permissionset"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_permissionsetextension"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "kw_interface"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "object_keyword"
+                }
+              ]
             }
           },
           {
@@ -1111,6 +1168,38 @@
                 "members": [
                   {
                     "type": "SYMBOL",
+                    "name": "kw_record"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "kw_page"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "kw_table"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "kw_codeunit"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "kw_report"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "kw_xmlport"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "kw_enum"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "kw_query"
+                  },
+                  {
+                    "type": "SYMBOL",
                     "name": "type_keyword"
                   },
                   {
@@ -1185,73 +1274,52 @@
       }
     },
     "option_type": {
-      "type": "PREC_RIGHT",
-      "value": 3,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "type_keyword"
-          },
-          {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "option_member"
-                  },
-                  {
-                    "type": "REPEAT1",
-                    "content": {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "SYMBOL",
-                          "name": "comma"
-                        },
-                        {
-                          "type": "CHOICE",
-                          "members": [
-                            {
-                              "type": "SYMBOL",
-                              "name": "option_member"
-                            },
-                            {
-                              "type": "BLANK"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  }
-                ]
-              },
-              {
-                "type": "REPEAT1",
-                "content": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "kw_option"
+        },
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "PREC",
+            "value": 30,
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "identifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "quoted_identifier"
+                },
+                {
                   "type": "SYMBOL",
                   "name": "comma"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "string"
                 }
-              }
-            ]
+              ]
+            }
           }
-        ]
-      }
+        }
+      ]
     },
     "option_member": {
       "type": "CHOICE",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "name_or_keyword"
+          "name": "quoted_identifier"
         },
         {
           "type": "SYMBOL",
-          "name": "name"
+          "name": "identifier"
         },
         {
           "type": "SYMBOL",
@@ -1260,6 +1328,10 @@
         {
           "type": "SYMBOL",
           "name": "verbatim_string"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "name_or_keyword"
         }
       ]
     },
@@ -3948,39 +4020,15 @@
       "option_member"
     ],
     [
+      "option_member",
+      "name"
+    ],
+    [
       "option_type"
     ]
   ],
   "precedences": [],
   "externals": [
-    {
-      "type": "SYMBOL",
-      "name": "keyword"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "control_keyword"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "operator_word"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "object_keyword"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "type_keyword"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "metadata_keyword"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "property_keyword"
-    },
     {
       "type": "SYMBOL",
       "name": "kw_array"
@@ -4003,6 +4051,10 @@
     },
     {
       "type": "SYMBOL",
+      "name": "kw_codeunit"
+    },
+    {
+      "type": "SYMBOL",
       "name": "kw_continue"
     },
     {
@@ -4020,6 +4072,14 @@
     {
       "type": "SYMBOL",
       "name": "kw_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_enum"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_enumextension"
     },
     {
       "type": "SYMBOL",
@@ -4055,6 +4115,10 @@
     },
     {
       "type": "SYMBOL",
+      "name": "kw_interface"
+    },
+    {
+      "type": "SYMBOL",
       "name": "kw_internal"
     },
     {
@@ -4064,6 +4128,26 @@
     {
       "type": "SYMBOL",
       "name": "kw_of"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_option"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_page"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_pageextension"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_permissionset"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_permissionsetextension"
     },
     {
       "type": "SYMBOL",
@@ -4079,7 +4163,19 @@
     },
     {
       "type": "SYMBOL",
+      "name": "kw_query"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_record"
+    },
+    {
+      "type": "SYMBOL",
       "name": "kw_repeat"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_report"
     },
     {
       "type": "SYMBOL",
@@ -4092,6 +4188,14 @@
     {
       "type": "SYMBOL",
       "name": "kw_suppressdispose"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_table"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_tableextension"
     },
     {
       "type": "SYMBOL",
@@ -4131,6 +4235,10 @@
     },
     {
       "type": "SYMBOL",
+      "name": "kw_xmlport"
+    },
+    {
+      "type": "SYMBOL",
       "name": "op_and"
     },
     {
@@ -4160,6 +4268,34 @@
     {
       "type": "SYMBOL",
       "name": "op_xor"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "keyword"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "control_keyword"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "operator_word"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "object_keyword"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "type_keyword"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "metadata_keyword"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "property_keyword"
     },
     {
       "type": "SYMBOL",
