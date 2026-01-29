@@ -336,58 +336,105 @@ fn find_syntax_file(extension_path: &Path) -> Result<PathBuf> {
 }
 
 fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
-    let xml = fs::read_to_string(syntax_file)
-        .with_context(|| format!("Failed to read {}", syntax_file.display()))?;
-
-    // Find match/name pairs. This is a pragmatic parser for the AL TextMate plist:
-    // we only care about `match` patterns that include `(?i:(...))` keyword lists.
-    let pattern_re = Regex::new(
-        r#"<key>match</key>\s*<string>(.*?)</string>[\s\S]*?<key>name</key>\s*<string>(.*?)</string>"#,
-    )?;
-    let keyword_list_re = Regex::new(r"\(\?i:\((.*?)\)\)")?;
-
+    let xml = read_encoding_aware(syntax_file)?;
     let mut out = Keywords::default();
 
-    for caps in pattern_re.captures_iter(&xml) {
-        let pattern = &caps[1];
-        let scope_name = &caps[2];
+    // Find all keyword lists like (?i:(k1|k2|...))
+    // Note: many keywords in AL TM grammar are just VAR or BEGIN without the group, but
+    // usually they are in a choice group for performance.
+    let kw_list_re = Regex::new(r#"(?i)\(\?i:\((.*?)\)\)"#)?;
+    let name_re = Regex::new(r#"(?s)<key>name</key>\s*<string>([^<]+)</string>"#)?;
 
-        let Some(kw_caps) = keyword_list_re.captures(pattern) else {
-            continue;
-        };
+    // We also search for individual matches for safety
+    let single_kw_re = Regex::new(r#"(?i)<key>match</key>\s*<string>\\b\(\?i:([a-zA-Z0-9_]+)\)\\b</string>"#)?;
 
-        for raw in kw_caps[1].split('|') {
-            let kw = raw.trim().to_lowercase();
-            if !is_identifier_like(&kw) {
-                continue;
+    for mat in kw_list_re.find_iter(&xml) {
+        let kw_list_str = &xml[mat.start()..mat.end()];
+        
+        // Find the nearest scope name by searching backwards and forwards around this match
+        let start_search = mat.start().saturating_sub(1000);
+        let end_search = (mat.end() + 1000).min(xml.len());
+        let search_window = &xml[start_search..end_search];
+        
+        let mut scope_name = "keyword.control"; // fallback
+        // Find nearest name in window (closest to the match)
+        let mut best_dist = usize::MAX;
+        for name_caps in name_re.captures_iter(search_window) {
+            let name_mat = name_caps.get(0).unwrap();
+            let dist = if name_mat.start() + start_search < mat.start() {
+                mat.start() - (name_mat.end() + start_search)
+            } else {
+                (name_mat.start() + start_search) - mat.end()
+            };
+            if dist < best_dist {
+                best_dist = dist;
+                scope_name = name_caps.get(1).unwrap().as_str();
             }
+        }
 
-            if scope_name.contains("keyword.control") {
-                out.control.insert(kw);
-            } else if scope_name.contains("keyword.operators.al") {
-                out.operator_words.insert(kw);
-            } else if scope_name.contains("applicationobject") {
-                // Application objects (Table, Page, Codeunit, Option) get dedicated tokens
-                out.objects.insert(kw.clone());
-                out.control.insert(kw);
-            } else if scope_name.contains("builtintypes") {
-                // Built-in types (Record, Integer, Text) get dedicated tokens
-                out.types.insert(kw.clone());
-                out.control.insert(kw);
-            } else if scope_name.contains("keyword.other.metadata") {
-                out.metadata.insert(kw);
-            } else if scope_name.contains("keyword.other.property") {
-                out.properties.insert(kw);
+        if let Some(kw_caps) = kw_list_re.captures(kw_list_str) {
+            for raw in kw_caps[1].split('|') {
+                let kw = raw.trim().to_lowercase();
+                if !is_identifier_like(&kw) {
+                    continue;
+                }
+
+                if scope_name.contains("keyword.control") {
+                    out.control.insert(kw);
+                } else if scope_name.contains("keyword.operators.al") {
+                    out.operator_words.insert(kw);
+                } else if scope_name.contains("applicationobject") {
+                    out.objects.insert(kw.clone());
+                    out.control.insert(kw);
+                } else if scope_name.contains("builtintypes") {
+                    out.types.insert(kw.clone());
+                    out.control.insert(kw);
+                } else if scope_name.contains("metadata") {
+                    out.metadata.insert(kw);
+                } else if scope_name.contains("property") || 
+                           scope_name.contains("variable.other") || 
+                           scope_name.contains("support.variable") {
+                    out.properties.insert(kw);
+                }
             }
+        }
+    }
+
+    // Process single keyword matches too
+    for caps in single_kw_re.captures_iter(&xml) {
+        let kw = caps[1].trim().to_lowercase();
+        if is_identifier_like(&kw) {
+             out.control.insert(kw);
         }
     }
 
     Ok(out)
 }
 
+fn read_encoding_aware(path: &Path) -> Result<String> {
+    let bytes = fs::read(path)?;
+    if bytes.len() >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE {
+        // UTF-16 LE
+        let utf16: Vec<u16> = bytes[2..]
+            .chunks_exact(2)
+            .map(|c| u16::from_le_bytes([c[0], c[1]]))
+            .collect();
+        String::from_utf16(&utf16).context("Failed to decode UTF-16LE")
+    } else if bytes.len() >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF {
+        // UTF-16 BE
+        let utf16: Vec<u16> = bytes[2..]
+            .chunks_exact(2)
+            .map(|c| u16::from_be_bytes([c[0], c[1]]))
+            .collect();
+        String::from_utf16(&utf16).context("Failed to decode UTF-16BE")
+    } else {
+        // Fallback to UTF-8
+        String::from_utf8(bytes).context("Failed to decode UTF-8")
+    }
+}
+
 fn extract_scope_name(syntax_file: &Path) -> Result<String> {
-    let xml = fs::read_to_string(syntax_file)
-        .with_context(|| format!("Failed to read {}", syntax_file.display()))?;
+    let xml = read_encoding_aware(syntax_file)?;
     let re = Regex::new(r#"<key>scopeName</key>\s*<string>([^<]+)</string>"#)?;
     let caps = re
         .captures(&xml)
@@ -652,19 +699,21 @@ fn generate_highlights(keywords: &Keywords) -> Result<()> {
     let template = fs::read_to_string("templates/highlights.scm.template")?;
     
     let mut control_kw = String::new();
-    for kw in &keywords.control {
-        // Categorize for better highlighting
-        let capture = if keywords.objects.contains(kw) {
-            "@keyword.storage.type"
-        } else if keywords.types.contains(kw) {
-            "@type.builtin"
-        } else if keywords.metadata.contains(kw) {
-            "@keyword.directive"
-        } else {
-            "@keyword.control"
-        };
-        control_kw.push_str(&format!("(kw_{}) {}\n", kw, capture));
-    }
+    
+    // Helper to add highlights for a category
+    let mut add_cat = |set: &BTreeSet<String>, capture: &str| {
+        for kw in set {
+            control_kw.push_str(&format!("(kw_{}) {}\n", kw, capture));
+        }
+    };
+
+    // Category mapping
+    add_cat(&keywords.control, "@keyword.control");
+    add_cat(&keywords.objects, "@keyword.storage.type");
+    add_cat(&keywords.types, "@type.builtin");
+    add_cat(&keywords.metadata, "@keyword.directive");
+    add_cat(&keywords.properties, "@keyword.property");
+    add_cat(&keywords.operator_words, "@keyword.operator");
 
     let rendered = render_template(&template, &[("CONTROL_KW_TOKEN_HIGHLIGHTS", &control_kw)]);
     fs::write("queries/highlights.scm", rendered)?;

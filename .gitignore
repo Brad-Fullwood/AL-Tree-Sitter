@@ -5,13 +5,13 @@
 # or `tree-sitter` tools.
 
 # Core generated files
-grammar.js
+# grammar.js
 grammar.json
 node-types.json
 
 # Entire folders that are generation targets
-src/
-queries/
+# src/
+# queries/
 target/
 build/
 prebuilds/

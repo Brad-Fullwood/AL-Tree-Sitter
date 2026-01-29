@@ -9,12 +9,15 @@
 ; This ensures categorization follows the TextMate grammar scopes (storage type, built-in type, etc.)
 {{CONTROL_KW_TOKEN_HIGHLIGHTS}}
 
-(operator_word) @operator
-(object_keyword) @keyword
-(type_keyword) @type
+(operator_word) @keyword.operator
+(object_keyword) @keyword.storage.type
+(type_keyword) @type.builtin
 (metadata_keyword) @keyword.directive
-(property_keyword) @property
-(keyword) @keyword
+(property_keyword) @keyword.property
+(keyword) @keyword.control
+
+; Highlight any name in a property assignment as a property (heuristic for missing TM keywords)
+(property_assignment name: (_) @keyword.property)
 
 ; --- Punctuation & Operators ---
 (operator) @operator
