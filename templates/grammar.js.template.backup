@@ -7,61 +7,7 @@ module.exports = grammar({
   externals: $ => [
     // Keyword categories come from the Cursor/VSCode AL extension's TextMate grammar
     // (syntaxes/alsyntax.tmlanguage). No keyword strings are hardcoded here.
-        $.keyword,
-    $.control_keyword,
-    $.operator_word,
-    $.object_keyword,
-    $.type_keyword,
-    $.metadata_keyword,
-    $.property_keyword,
-    $.kw_array,
-    $.kw_asserterror,
-    $.kw_begin,
-    $.kw_break,
-    $.kw_case,
-    $.kw_continue,
-    $.kw_do,
-    $.kw_downto,
-    $.kw_else,
-    $.kw_end,
-    $.kw_event,
-    $.kw_exit,
-    $.kw_for,
-    $.kw_foreach,
-    $.kw_function,
-    $.kw_if,
-    $.kw_in,
-    $.kw_indataset,
-    $.kw_internal,
-    $.kw_local,
-    $.kw_of,
-    $.kw_procedure,
-    $.kw_program,
-    $.kw_protected,
-    $.kw_repeat,
-    $.kw_runonclient,
-    $.kw_securityfiltering,
-    $.kw_suppressdispose,
-    $.kw_temporary,
-    $.kw_then,
-    $.kw_to,
-    $.kw_trigger,
-    $.kw_until,
-    $.kw_var,
-    $.kw_while,
-    $.kw_with,
-    $.kw_withevents,
-    $.op_and,
-    $.op_as,
-    $.op_div,
-    $.op_is,
-    $.op_mod,
-    $.op_not,
-    $.op_or,
-    $.op_xor,
-    $.directive,
-    $.inactive_code,
-
+    {{ EXTERNALS_LIST }}
   ],
 
   extras: $ => [
@@ -335,7 +281,7 @@ module.exports = grammar({
   // Type references in AL can be compound (e.g. `Record "Accounting Period" temporary`).
   // Keep this permissive but structured: a leading type keyword may be followed by names/args/modifiers.
   type_reference: $ => prec.right(1, choice(
-    prec(4, $.option_type), // Higher precedence for Option with commas
+    $.option_type,
     seq(
       choice($.type_keyword, $.object_keyword),
       repeat(choice(
@@ -361,12 +307,8 @@ module.exports = grammar({
   // Simplified pattern: Just comma-separated list with at least one comma
   option_type: $ => prec.right(3, seq(
     $.type_keyword, // Must be 'Option' keyword
-    choice(
-      // At least one comma AND one member: Option A,B or Option A, or Option ,,,Report
-      seq($.option_member, repeat1(seq($.comma, optional($.option_member)))),
-      // Only commas (no members at all): Option ,,,
-      repeat1($.comma),
-    ),
+    repeat($.option_member), // Initial members before comma
+    repeat1(seq($.comma, repeat($.option_member))), // At least one comma, followed by optional members
   )),
 
   option_member: $ => choice(
