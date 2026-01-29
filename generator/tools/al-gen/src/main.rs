@@ -34,8 +34,8 @@ fn main() -> Result<()> {
     let syntax_file = find_syntax_file(&extension_path)?;
     println!("📄 Using syntax: {}\n", syntax_file.display());
 
-    // We are running from 'generator/' dir, but want to output to repo root
-    let root_offset = "../";
+    // We are running from 'generator/tools/al-gen' dir, but want to output to repo root
+    let root_offset = "../../../";
 
     println!("📖 Extracting keywords from TextMate grammar...");
     let keywords = extract_keywords(&syntax_file)?;
