@@ -34,6 +34,9 @@ fn main() -> Result<()> {
     let syntax_file = find_syntax_file(&extension_path)?;
     println!("📄 Using syntax: {}\n", syntax_file.display());
 
+    // We are running from 'generator/' dir, but want to output to repo root
+    let root_offset = "../";
+
     println!("📖 Extracting keywords from TextMate grammar...");
     let keywords = extract_keywords(&syntax_file)?;
     let scope_name = extract_scope_name(&syntax_file).unwrap_or_else(|_| "source.al".to_string());
@@ -41,28 +44,40 @@ fn main() -> Result<()> {
 
     println!("\n🔧 Generating C scanner files...");
     let external_tokens = build_external_tokens(&keywords);
-    generate_keywords_c(&keywords)?;
-    generate_scanner_c(&keywords, &external_tokens)?;
+    
+    let src_dir = format!("{}src", root_offset);
+    fs::create_dir_all(&src_dir)?;
+    
+    generate_keywords_c(&keywords, &src_dir)?;
+    generate_scanner_c(&keywords, &external_tokens, &src_dir)?;
     println!("✅ Generated src/keywords.c and src/scanner.c");
 
     println!("\n📝 Generating grammar.js...");
-    generate_grammar_js(&keywords, &external_tokens)?;
+    generate_grammar_js(&keywords, &external_tokens, root_offset)?;
     println!("✅ Generated grammar.js");
 
-    println!("\n🎨 Generating highlight queries...");
-    generate_highlights(&keywords)?;
-    println!("✅ Generated queries/highlights.scm");
+    println!("🎨 Generating highlight queries...");
+    
+    // Create queries dir in root
+    let queries_dir = format!("{}queries", root_offset);
+    fs::create_dir_all(&queries_dir)?;
+    
+    let highlights_path = format!("{}/highlights.scm", queries_dir);
+    
+    generate_highlights(&keywords, &highlights_path)?;
+    println!("✅ Generated {}", highlights_path);
 
     println!("\n🌳 Running tree-sitter generate...");
-    run_tree_sitter_generate()?;
+    run_tree_sitter_generate(root_offset)?;
 
     // Build a parser library once; used for fast `tree-sitter parse` runs.
+    // Build a parser library once; used for fast `tree-sitter parse` runs.
     println!("\n🔨 Building parser library...");
-    let lib_path = run_tree_sitter_build()?;
+    let lib_path = run_tree_sitter_build(root_offset)?;
     println!("✅ Built: {}", lib_path.display());
 
     // Quick always-on fixture validation (guards against false positives/over-tolerance).
-    run_fixture_tests(&lib_path, &scope_name)?;
+    run_fixture_tests(&lib_path, &scope_name, root_offset)?;
 
     // Optional: real-world validation against Microsoft repos.
     // Opt-in only: `cargo run --release -- --test`
@@ -72,7 +87,7 @@ fn main() -> Result<()> {
     if do_tests {
         if Path::new(REPO_TEST_CONFIG).exists() {
             println!("\n🧪 Testing against real repositories...");
-            run_repo_tests(&lib_path, &scope_name)?;
+            run_repo_tests(&lib_path, &scope_name, root_offset)?;
         } else {
             println!("\nℹ️  {} not found; skipping repo tests.", REPO_TEST_CONFIG);
         }
@@ -475,8 +490,7 @@ fn keywords_all(k: &Keywords) -> BTreeSet<String> {
     all
 }
 
-fn generate_keywords_c(keywords: &Keywords) -> Result<()> {
-    fs::create_dir_all("src")?;
+fn generate_keywords_c(keywords: &Keywords, out_dir: &str) -> Result<()> {
 
     let all = keywords_all(keywords);
 
@@ -591,7 +605,8 @@ fn generate_keywords_c(keywords: &Keywords) -> Result<()> {
     out.push_str("  return al_kw_token_binsearch(word, AL_OPERATOR_WORD_TOKENS, sizeof(AL_OPERATOR_WORD_TOKENS) / sizeof(AL_OPERATOR_WORD_TOKENS[0]), out_tok);\n");
     out.push_str("}\n");
 
-    fs::write("src/keywords.c", out)?;
+    let path = format!("{}/keywords.c", out_dir);
+    fs::write(path, out)?;
     Ok(())
 }
 
@@ -608,8 +623,8 @@ fn c_escape(s: &str) -> String {
     s.replace('\\', "\\\\").replace('\"', "\\\"")
 }
 
-fn generate_scanner_c(_keywords: &Keywords, external_tokens: &[ExternalTokenSpec]) -> Result<()> {
-    fs::create_dir_all("src")?;
+fn generate_scanner_c(_keywords: &Keywords, external_tokens: &[ExternalTokenSpec], out_dir: &str) -> Result<()> {
+    // out_dir is assumed to be "src" equivalent relative path
     let template = fs::read_to_string("templates/scanner.c.template")?;
 
     let token_enum = gen_scanner_token_enum_fragment(external_tokens);
@@ -627,11 +642,12 @@ fn generate_scanner_c(_keywords: &Keywords, external_tokens: &[ExternalTokenSpec
         ],
     );
 
-    fs::write("src/scanner.c", rendered)?;
+    let path = format!("{}/scanner.c", out_dir);
+    fs::write(path, rendered)?;
     Ok(())
 }
 
-fn generate_grammar_js(keywords: &Keywords, external_tokens: &[ExternalTokenSpec]) -> Result<()> {
+fn generate_grammar_js(keywords: &Keywords, external_tokens: &[ExternalTokenSpec], root: &str) -> Result<()> {
     let template = fs::read_to_string("templates/grammar.js.template")?;
     let externals = gen_grammar_externals_fragment(external_tokens);
     let objects = gen_choice_fragment(&keywords.objects, &[]);
@@ -671,7 +687,19 @@ fn generate_grammar_js(keywords: &Keywords, external_tokens: &[ExternalTokenSpec
         .collect();
 
     let rendered = render_template(&template, &render_pairs);
-    fs::write("grammar.js", rendered)?;
+    let out_path = format!("{}grammar.js", root);
+    
+    let header = "// -------------------------------------------------------------------------\n\
+                  // AUTO-GENERATED FILE - DO NOT EDIT MANUALLY\n\
+                  // -------------------------------------------------------------------------\n\
+                  // This file was automatically generated by `tree-sitter-al-gen`.\n\
+                  // It extracts keywords dynamically from the official AL TextMate grammar.\n\
+                  //\n\
+                  // Any strict keyword tokens (e.g., $.kw_begin) are runtime artifacts\n\
+                  // of that generation process, NOT hardcoded source values.\n\
+                  // -------------------------------------------------------------------------\n\n";
+
+    fs::write(out_path, format!("{}{}", header, rendered))?;
     Ok(())
 }
 
@@ -694,7 +722,7 @@ fn gen_choice_fragment(elements: &BTreeSet<String>, exclude: &[&str]) -> String 
     out
 }
 
-fn generate_highlights(keywords: &Keywords) -> Result<()> {
+fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     fs::create_dir_all("queries")?;
     let template = fs::read_to_string("templates/highlights.scm.template")?;
     
@@ -716,12 +744,17 @@ fn generate_highlights(keywords: &Keywords) -> Result<()> {
     add_cat(&keywords.operator_words, "@keyword.operator");
 
     let rendered = render_template(&template, &[("CONTROL_KW_TOKEN_HIGHLIGHTS", &control_kw)]);
-    fs::write("queries/highlights.scm", rendered)?;
+    fs::write(out_path, rendered)?;
     Ok(())
 }
 
-fn run_tree_sitter_generate() -> Result<()> {
+fn run_tree_sitter_generate(root: &str) -> Result<()> {
+    let root_abs = fs::canonicalize(root).context("Failed to canonicalize root")?;
+    println!("   Generate root absolute: {}", root_abs.display());
+
+    // Run tree-sitter generate in the root directory
     let output = Command::new("tree-sitter")
+        .current_dir(&root_abs)
         .arg("generate")
         .output()
         .context("Failed to run tree-sitter")?;
@@ -743,11 +776,19 @@ fn run_tree_sitter_generate() -> Result<()> {
     Ok(())
 }
 
-fn run_tree_sitter_build() -> Result<PathBuf> {
-    fs::create_dir_all("target")?;
-    let out_path = PathBuf::from("target").join("tree-sitter-al.so");
+fn run_tree_sitter_build(root: &str) -> Result<PathBuf> {
+    let root_abs = fs::canonicalize(root).context("Failed to canonicalize root")?;
+    println!("   Build root absolute: {}", root_abs.display());
+
+    let out_path = root_abs.join("target/tree-sitter-al.so");
+    
+    // Ensure target dir exists relative to root
+    if let Some(parent) = out_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
 
     let status = Command::new("tree-sitter")
+        .current_dir(&root_abs)
         .arg("build")
         .arg("-o")
         .arg(&out_path)
@@ -783,20 +824,27 @@ fn default_branch() -> String {
     "main".to_string()
 }
 
-fn run_repo_tests(parser_lib: &Path, scope_name: &str) -> Result<()> {
-    let cfg_text = fs::read_to_string(REPO_TEST_CONFIG)
-        .with_context(|| format!("Failed to read {}", REPO_TEST_CONFIG))?;
+fn run_repo_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()> {
+    // REPO_TEST_CONFIG is relative to generator execution or root?
+    // It's in tests/test_repos.toml. Ideally we read it from root.
+    
+    let config_path = Path::new(root).join(REPO_TEST_CONFIG);
+    let cfg_text = fs::read_to_string(&config_path)
+        .with_context(|| format!("Failed to read {}", config_path.display()))?;
     let cfg: RepoList = toml::from_str(&cfg_text)
-        .with_context(|| format!("Failed to parse {}", REPO_TEST_CONFIG))?;
+        .with_context(|| format!("Failed to parse {}", config_path.display()))?;
 
     let enabled: Vec<_> = cfg.repo.into_iter().filter(|r| r.enabled).collect();
     if enabled.is_empty() {
-        println!("ℹ️  No enabled repos in {} ; skipping.", REPO_TEST_CONFIG);
+        println!("ℹ️  No enabled repos in {} ; skipping.", config_path.display());
         return Ok(());
     }
 
-    fs::create_dir_all(REPO_TEST_WORKDIR)?;
-    fs::create_dir_all("target")?;
+    let work_dir = Path::new(root).join(REPO_TEST_WORKDIR);
+    fs::create_dir_all(&work_dir)?;
+    
+    let target_dir = Path::new(root).join("target");
+    fs::create_dir_all(&target_dir)?;
 
     let mut total_files = 0usize;
     let mut total_ok = 0usize;
@@ -808,7 +856,7 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str) -> Result<()> {
         }
         println!("   URL: {}", repo.url);
 
-        let repo_dir = PathBuf::from(REPO_TEST_WORKDIR).join(&repo.name);
+        let repo_dir = work_dir.join(&repo.name);
         clone_or_update_repo(&repo, &repo_dir)?;
 
         let files = collect_al_files(&repo_dir)?;
@@ -819,11 +867,11 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str) -> Result<()> {
             continue;
         }
 
-        let paths_file = PathBuf::from("target").join(format!("paths-{}.txt", repo.name));
+        let paths_file = target_dir.join(format!("paths-{}.txt", repo.name));
         write_paths_file(&paths_file, &files)?;
 
         let (ok, failed, samples) =
-            parse_paths_with_tree_sitter(parser_lib, scope_name, &paths_file)?;
+            parse_paths_with_tree_sitter(parser_lib, scope_name, &paths_file, root)?;
         total_ok += ok;
 
         let pct = (ok as f64) * 100.0 / (files.len() as f64);
@@ -853,16 +901,28 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str) -> Result<()> {
     Ok(())
 }
 
-fn run_fixture_tests(parser_lib: &Path, scope_name: &str) -> Result<()> {
+fn run_fixture_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()> {
+    let invalid_dir = Path::new(root).join(FIXTURES_INVALID_DIR);
+    let valid_dir = Path::new(root).join(FIXTURES_VALID_DIR);
+    let target_dir = Path::new(root).join("target");
+    fs::create_dir_all(&target_dir)?;
+
     // Invalid fixtures must FAIL to parse.
-    if Path::new(FIXTURES_INVALID_DIR).exists() {
-        let invalid = collect_al_files(Path::new(FIXTURES_INVALID_DIR))?;
+    if invalid_dir.exists() {
+        let invalid = collect_al_files(&invalid_dir)?;
         if !invalid.is_empty() {
             println!("\n🧪 Fixture tests (invalid syntax must fail)...");
-            let paths_file = PathBuf::from("target").join("paths-fixtures-invalid.txt");
-            write_paths_file(&paths_file, &invalid)?;
+            let paths_file = target_dir.join("paths-fixtures-invalid.txt");
+            
+            let files_rel: Vec<PathBuf> = invalid.iter()
+                .map(|p| p.strip_prefix(root).unwrap_or(p).to_path_buf())
+                .collect();
+            
+            write_paths_file(&paths_file, &files_rel)?;
+            let paths_file_rel = paths_file.strip_prefix(root).unwrap_or(&paths_file);
+
             let summaries =
-                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, &paths_file)?;
+                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, paths_file_rel, root)?;
 
             let mut unexpected_ok = Vec::new();
             for s in summaries {
@@ -889,14 +949,21 @@ fn run_fixture_tests(parser_lib: &Path, scope_name: &str) -> Result<()> {
     }
 
     // Valid fixtures must SUCCEED to parse.
-    if Path::new(FIXTURES_VALID_DIR).exists() {
-        let valid = collect_al_files(Path::new(FIXTURES_VALID_DIR))?;
+    if valid_dir.exists() {
+        let valid = collect_al_files(&valid_dir)?;
         if !valid.is_empty() {
             println!("\n🧪 Fixture tests (valid syntax must succeed)...");
-            let paths_file = PathBuf::from("target").join("paths-fixtures-valid.txt");
-            write_paths_file(&paths_file, &valid)?;
+            let paths_file = target_dir.join("paths-fixtures-valid.txt");
+            
+            let files_rel: Vec<PathBuf> = valid.iter()
+                .map(|p| p.strip_prefix(root).unwrap_or(p).to_path_buf())
+                .collect();
+                
+            write_paths_file(&paths_file, &files_rel)?;
+            let paths_file_rel = paths_file.strip_prefix(root).unwrap_or(&paths_file);
+            
             let summaries =
-                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, &paths_file)?;
+                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, paths_file_rel, root)?;
 
             let mut unexpected_failed = Vec::new();
             for s in summaries {
@@ -1078,8 +1145,9 @@ fn parse_paths_with_tree_sitter(
     parser_lib: &Path,
     scope_name: &str,
     paths_file: &Path,
+    root: &str
 ) -> Result<(usize, usize, Vec<String>)> {
-    let summaries = parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, paths_file)?;
+    let summaries = parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, paths_file, root)?;
     let mut ok = 0usize;
     let mut failed = 0usize;
     let mut samples = Vec::new();
@@ -1106,8 +1174,10 @@ fn parse_paths_with_tree_sitter_detailed(
     parser_lib: &Path,
     scope_name: &str,
     paths_file: &Path,
+    root: &str
 ) -> Result<Vec<FileParseSummary>> {
     let output = Command::new("tree-sitter")
+        .current_dir(root)
         .arg("parse")
         .arg("--quiet")
         .arg("--json-summary")
