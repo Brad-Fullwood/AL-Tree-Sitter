@@ -5,25 +5,8 @@
 (string) @string
 (integer) @number
 
-(control_keyword) @keyword.control
-
-; Specific keyword highlights
-(kw_option) @type.builtin
-(kw_record) @type.builtin
-(kw_page) @keyword.storage.type
-(kw_table) @keyword.storage.type
-(kw_codeunit) @keyword.storage.type
-(kw_report) @keyword.storage.type
-(kw_xmlport) @keyword.storage.type
-(kw_enum) @keyword.storage.type
-(kw_query) @keyword.storage.type
-(kw_interface) @keyword.storage.type
-(kw_tableextension) @keyword.storage.type
-(kw_pageextension) @keyword.storage.type
-(kw_enumextension) @keyword.storage.type
-(kw_permissionset) @keyword.storage.type
-(kw_permissionsetextension) @keyword.storage.type
-
+; All keyword highlighting is provided by the generator via this placeholder.
+; This ensures categorization follows the TextMate grammar scopes (storage type, built-in type, etc.)
 {{CONTROL_KW_TOKEN_HIGHLIGHTS}}
 
 (operator_word) @operator

@@ -367,27 +367,18 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
             } else if scope_name.contains("keyword.operators.al") {
                 out.operator_words.insert(kw);
             } else if scope_name.contains("applicationobject") {
-                out.objects.insert(kw);
+                // Application objects (Table, Page, Codeunit, Option) get dedicated tokens
+                out.objects.insert(kw.clone());
+                out.control.insert(kw);
             } else if scope_name.contains("builtintypes") {
-                out.types.insert(kw);
+                // Built-in types (Record, Integer, Text) get dedicated tokens
+                out.types.insert(kw.clone());
+                out.control.insert(kw);
             } else if scope_name.contains("keyword.other.metadata") {
                 out.metadata.insert(kw);
             } else if scope_name.contains("keyword.other.property") {
                 out.properties.insert(kw);
             }
-        }
-    }
-
-    // Ensure important types and objects get their own tokens for precise grammar rules
-    let important = [
-        "option", "record", "page", "table", "codeunit", "report", "xmlport", 
-        "enum", "query", "tableextension", "pageextension", "enumextension", 
-        "permissionset", "permissionsetextension", "interface"
-    ];
-    let all_extracted = keywords_all(&out);
-    for kw in important {
-        if all_extracted.contains(kw) {
-            out.control.insert(kw.to_string());
         }
     }
 
@@ -593,26 +584,88 @@ fn generate_scanner_c(_keywords: &Keywords, external_tokens: &[ExternalTokenSpec
     Ok(())
 }
 
-fn generate_grammar_js(_keywords: &Keywords, external_tokens: &[ExternalTokenSpec]) -> Result<()> {
+fn generate_grammar_js(keywords: &Keywords, external_tokens: &[ExternalTokenSpec]) -> Result<()> {
     let template = fs::read_to_string("templates/grammar.js.template")?;
     let externals = gen_grammar_externals_fragment(external_tokens);
-    let rendered = render_template(&template, &[("EXTERNALS_LIST", &externals)]);
+    let objects = gen_choice_fragment(&keywords.objects, &[]);
+    let types_excluding_option = gen_choice_fragment(&keywords.types, &["option"]);
+    
+    // Build initial placeholder map
+    let mut placeholders = vec![
+        ("EXTERNALS_LIST".to_string(), externals),
+        ("OBJECT_DECLARE_KIND".to_string(), objects),
+        ("TYPE_REFERENCE_KIND".to_string(), types_excluding_option),
+    ];
+
+    // Build dynamic {{KW:name}} placeholders for every keyword found in the template
+    let kw_placeholder_re = Regex::new(r"\{\{KW:([a-zA-Z_]+)\}\}")?;
+    for caps in kw_placeholder_re.captures_iter(&template) {
+        let kw_name = &caps[1].to_lowercase();
+        let placeholder_key = format!("KW:{}", &caps[1]); // e.g. "KW:if"
+        
+        // Find the actual token name
+        let token = if keywords.control.contains(kw_name) || 
+                       keywords.operator_words.contains(kw_name) ||
+                       keywords.objects.contains(kw_name) ||
+                       keywords.types.contains(kw_name) ||
+                       keywords.metadata.contains(kw_name) ||
+                       keywords.properties.contains(kw_name) {
+            format!("$.kw_{}", kw_name)
+        } else {
+            format!("$._kw_{}_missing", kw_name)
+        };
+        
+        placeholders.push((placeholder_key, token));
+    }
+
+    // Convert to the required format for render_template
+    let render_pairs: Vec<(&str, &str)> = placeholders.iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+
+    let rendered = render_template(&template, &render_pairs);
     fs::write("grammar.js", rendered)?;
     Ok(())
 }
 
-fn gen_control_kw_token_highlights_fragment(keywords: &Keywords) -> String {
-    let mut out = String::new();
-    for kw in &keywords.control {
-        out.push_str(&format!("(kw_{}) @keyword.control\n", kw));
+fn gen_choice_fragment(elements: &BTreeSet<String>, exclude: &[&str]) -> String {
+    let filtered: Vec<_> = elements.iter()
+        .filter(|e| !exclude.contains(&e.as_str()))
+        .collect();
+
+    if filtered.is_empty() {
+        return "$._dummy_never_match".to_string();
     }
+    if filtered.len() == 1 {
+        return format!("$.kw_{}", filtered[0]);
+    }
+    let mut out = "choice(\n".to_string();
+    for kw in filtered {
+        out.push_str(&format!("      $.kw_{},\n", kw));
+    }
+    out.push_str("    )");
     out
 }
 
 fn generate_highlights(keywords: &Keywords) -> Result<()> {
     fs::create_dir_all("queries")?;
     let template = fs::read_to_string("templates/highlights.scm.template")?;
-    let control_kw = gen_control_kw_token_highlights_fragment(keywords);
+    
+    let mut control_kw = String::new();
+    for kw in &keywords.control {
+        // Categorize for better highlighting
+        let capture = if keywords.objects.contains(kw) {
+            "@keyword.storage.type"
+        } else if keywords.types.contains(kw) {
+            "@type.builtin"
+        } else if keywords.metadata.contains(kw) {
+            "@keyword.directive"
+        } else {
+            "@keyword.control"
+        };
+        control_kw.push_str(&format!("(kw_{}) {}\n", kw, capture));
+    }
+
     let rendered = render_template(&template, &[("CONTROL_KW_TOKEN_HIGHLIGHTS", &control_kw)]);
     fs::write("queries/highlights.scm", rendered)?;
     Ok(())
@@ -633,8 +686,8 @@ fn run_tree_sitter_generate() -> Result<()> {
         let size_mb = metadata.len() / 1024 / 1024;
         println!("   parser.c: {}MB", size_mb);
 
-        if size_mb < 30 {
-            println!("   🎉 <30MB - GOOD!");
+        if size_mb < 3 {
+            println!("   🎉 <3MB - GOOD!");
         }
     }
 

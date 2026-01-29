@@ -67,13 +67,10 @@ module.exports = grammar({
   )),
 
   // Object declarations are the most common top-level AL construct.
-  // We use specific tokens where possible for better precision.
+  // We use placeholders that the generator fills based on TM scopes.
   object_declaration: $ => prec(2, seq(
     field('kind', choice(
-      $.kw_page, $.kw_table, $.kw_codeunit, $.kw_report, $.kw_xmlport, 
-      $.kw_enum, $.kw_query, $.kw_tableextension, $.kw_pageextension, 
-      $.kw_enumextension, $.kw_permissionset, $.kw_permissionsetextension,
-      $.kw_interface,
+      {{OBJECT_DECLARE_KIND}},
       $.object_keyword
     )),
     field('id', optional($.integer)),
@@ -228,7 +225,7 @@ module.exports = grammar({
 
   object_var_section: $ => prec.right(3, seq(
     repeat($.member_modifier),
-    $.kw_var,
+    {{KW:var}},
     repeat1($.object_variable_declaration),
   )),
 
@@ -238,7 +235,7 @@ module.exports = grammar({
   )),
 
   var_section: $ => prec.right(3, seq(
-    $.kw_var,
+    {{KW:var}},
     $.variable_declaration,
     repeat($.variable_declaration),
   )),
@@ -246,7 +243,7 @@ module.exports = grammar({
   // Empty var section (just "var" with no declarations)
   empty_var_section: $ => prec(1, seq(
     repeat($.member_modifier),
-    $.kw_var,
+    {{KW:var}},
   )),
 
   variable_declaration: $ => prec(1, choice(
@@ -290,7 +287,11 @@ module.exports = grammar({
   type_reference: $ => prec.right(1, choice(
     prec(4, $.option_type), // Using dedicated kw_option
     seq(
-      choice($.kw_record, $.kw_page, $.kw_table, $.kw_codeunit, $.kw_report, $.kw_xmlport, $.kw_enum, $.kw_query, $.type_keyword, $.object_keyword),
+      choice(
+        {{TYPE_REFERENCE_KIND}},
+        $.type_keyword,
+        $.object_keyword
+      ),
       repeat(choice(
         $.qualified_name,
         // Boost name_or_keyword to ensure Option values are caught
@@ -300,7 +301,7 @@ module.exports = grammar({
         $.parenthesized_block,
         $.bracketed_block,
         $.of_clause,
-        $.kw_temporary,
+        {{KW:temporary}},
       )),
     ),
     $.qualified_name,
@@ -310,9 +311,9 @@ module.exports = grammar({
   )),
 
   // Option type with inline member values: Option Member1,Member2,Member3
-  // Uses dedicated $.kw_option token for unambiguous matching.
+  // Uses dynamic placeholder for unambiguous matching.
   option_type: $ => seq(
-    $.kw_option,
+    {{KW:option}},
     repeat1(prec(30, choice(
        $.identifier,
        $.quoted_identifier,
@@ -330,7 +331,7 @@ module.exports = grammar({
   ),
 
   of_clause: $ => seq(
-    $.kw_of,
+    {{KW:of}},
     choice(
       $.type_keyword,
       $.qualified_name,
@@ -342,20 +343,20 @@ module.exports = grammar({
 
   // NOTE: `kw_event` is handled separately (event declarations typically have no body).
   member_modifier: $ => choice(
-    $.kw_local,
-    $.kw_internal,
-    $.kw_protected,
-    $.kw_withevents,
-    $.kw_runonclient,
-    $.kw_securityfiltering,
-    $.kw_suppressdispose,
+    {{KW:local}},
+    {{KW:internal}},
+    {{KW:protected}},
+    {{KW:withevents}},
+    {{KW:runonclient}},
+    {{KW:securityfiltering}},
+    {{KW:suppressdispose}},
   ),
 
   event_procedure_declaration: $ => prec.right(3, seq(
     repeat($.member_modifier),
-    $.kw_event,
+    {{KW:event}},
     repeat($.member_modifier),
-    choice($.kw_procedure, $.kw_function),
+    choice({{KW:procedure}}, {{KW:function}}),
     field('name', $.name),
     field('parameters', $.parameter_list),
     optional(choice(
@@ -367,7 +368,7 @@ module.exports = grammar({
 
   // Control add-in style event declarations: event Ready();
   event_declaration: $ => prec.left(seq(
-    $.kw_event,
+    {{KW:event}},
     optional(field('name', $.name_or_keyword)),
     field('parameters', $.parameter_list),
     optional(seq(field('returns', $.operator), field('return_type', $.type_reference))), // Added return type
@@ -386,7 +387,7 @@ module.exports = grammar({
     prec.right(2, seq(
       repeat($.attribute),
       repeat($.member_modifier),
-      choice($.kw_procedure, $.kw_function),
+      choice({{KW:procedure}}, {{KW:function}}),
       field('name', $.name),
       field('parameters', $.parameter_list),
       optional(choice(
@@ -421,7 +422,7 @@ module.exports = grammar({
   trigger_declaration: $ => prec.right(2, seq(
     repeat($.attribute),
     repeat($.member_modifier),
-    $.kw_trigger,
+    {{KW:trigger}},
     field('name', choice($.name_or_keyword, $.scoped_name)),
     field('parameters', $.parameter_list),
     optional(choice(
@@ -461,7 +462,7 @@ module.exports = grammar({
   ),
 
   parameter: $ => seq(
-    optional($.kw_var),
+    optional({{KW:var}}),
     field('name', $.name_or_keyword),
     field('sep', $.operator), // typically ':'
     field('type', $.type_reference),
@@ -479,9 +480,9 @@ module.exports = grammar({
   )),
 
   begin_end_block: $ => prec.right(7, seq( // Very high precedence to ensure end is matched before postfix_expression extends
-    $.kw_begin,
+    {{KW:begin}},
     optional($.statement_list),
-    $.kw_end,
+    {{KW:end}},
   )),
 
   statement: $ => choice(
@@ -500,31 +501,31 @@ module.exports = grammar({
   ),
 
   if_statement: $ => prec.right(2, seq(
-    $.kw_if,
+    {{KW:if}},
     field('condition', $.expression),
-    $.kw_then,
+    {{KW:then}},
     field('consequence', $.statement),
-    optional(seq($.kw_else, field('alternative', $.statement))),
+    optional(seq({{KW:else}}, field('alternative', $.statement))),
   )),
 
   // Special handling for empty if statements: "if condition then;"
   empty_if_statement: $ => prec.right(-1, seq(
-    $.kw_if,
+    {{KW:if}},
     field('condition', $.expression),
-    $.kw_then,
+    {{KW:then}},
   )),
 
   case_statement: $ => seq(
-    $.kw_case,
+    {{KW:case}},
     field('value', $.expression),
-    $.kw_of,
+    {{KW:of}},
     repeat($.case_branch),
     optional(seq(
-      $.kw_else,
+      {{KW:else}},
       optional(field('else_body', choice($.statement, $.statement_list))),
       optional($.semicolon),
     )),
-    $.kw_end,
+    {{KW:end}},
   ),
 
   case_branch: $ => choice(
@@ -554,53 +555,53 @@ module.exports = grammar({
   )),
 
   for_statement: $ => prec.right(seq(
-    $.kw_for,
+    {{KW:for}},
     field('iterator', $.identifier),
     field('assign', $.operator), // typically ':='
     field('from', $.expression),
-    field('direction', choice($.kw_to, $.kw_downto)),
+    field('direction', choice({{KW:to}}, {{KW:downto}})),
     field('to', $.expression),
-    $.kw_do,
+    {{KW:do}},
     field('body', $.statement),
   )),
 
   foreach_statement: $ => prec.right(seq(
-    $.kw_foreach,
+    {{KW:foreach}},
     field('iterator', $.name_or_keyword),
-    $.kw_in,
+    {{KW:in}},
     field('collection', $.expression),
-    $.kw_do,
+    {{KW:do}},
     field('body', $.statement),
   )),
 
   while_statement: $ => prec.right(seq(
-    $.kw_while,
+    {{KW:while}},
     field('condition', $.expression),
-    $.kw_do,
+    {{KW:do}},
     field('body', $.statement),
   )),
 
   repeat_statement: $ => prec.right(seq(
-    $.kw_repeat,
+    {{KW:repeat}},
     optional($.statement_list),
-    $.kw_until,
+    {{KW:until}},
     field('condition', $.expression),
   )),
 
   with_statement: $ => prec.right(seq(
-    $.kw_with,
+    {{KW:with}},
     field('value', $.expression),
-    $.kw_do,
+    {{KW:do}},
     field('body', $.statement),
   )),
 
   exit_statement: $ => prec.right(seq(
-    $.kw_exit,
+    {{KW:exit}},
     optional($.argument_list),
   )),
 
   asserterror_statement: $ => prec.right(seq(
-    $.kw_asserterror,
+    {{KW:asserterror}},
     field('body', $.statement),
   )),
 
@@ -636,7 +637,7 @@ module.exports = grammar({
 
   binary_operator: $ => choice(
     $.operator_word,
-    $.kw_in,
+    {{KW:in}},
     $.operator, // Includes :=, =, +, -, etc.
   ),
 
@@ -761,7 +762,7 @@ module.exports = grammar({
     $.object_keyword,
     $.metadata_keyword,
     $.property_keyword,
-    $.kw_function,
+    {{KW:function}},
     $.keyword,
   ),
 
