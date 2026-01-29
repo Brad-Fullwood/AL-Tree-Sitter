@@ -1,8 +1,0 @@
-
-
-[31mError:[0m Error in query file "highlights.scm"
-
-Caused by:
-    Query error at 73:21. Impossible pattern:
-    (member_call_suffix member: (identifier) @function)
-                        ^
