@@ -115,45 +115,143 @@ struct Keywords {
     scope_captures: std::collections::HashMap<String, String>,
 }
 
-/// Maps TextMate scope names to tree-sitter capture names
-/// Based on standard naming conventions: https://macromates.com/manual/en/language_grammars#naming_conventions
-fn textmate_to_treesitter_capture(scope: &str) -> &'static str {
-    // TextMate uses hierarchical scopes like "keyword.control.al"
-    // Tree-sitter uses captures like "@keyword"
-    if scope.contains("keyword.control") {
-        "@keyword"
-    } else if scope.contains("keyword.operator") {
-        "@operator"
-    } else if scope.contains("applicationobject") || scope.contains("storage.type") {
-        "@keyword"  // Object declaration keywords like codeunit, table
-    } else if scope.contains("builtintypes") || scope.contains("support.type") {
-        "@type.builtin"  // Built-in types like Record, Code, Integer
-    } else if scope.contains("keyword.other.metadata") {
-        "@keyword"  // Metadata keywords like field, layout
-    } else if scope.contains("keyword.other.property") || scope.contains("variable.other") {
-        "@keyword"  // Property keywords like tabledata, where
-    } else if scope.contains("entity.name.function") {
-        "@function"
-    } else if scope.contains("entity.name.type") {
-        "@type"
-    } else if scope.contains("constant.numeric") {
-        "@number"
-    } else if scope.contains("constant.language") {
-        "@constant.builtin"
-    } else if scope.contains("constant") {
-        "@constant"
-    } else if scope.contains("string") {
-        "@string"
-    } else if scope.contains("comment") {
-        "@comment"
-    } else if scope.contains("variable.parameter") {
-        "@variable.parameter"
-    } else if scope.contains("variable") {
-        "@variable"
-    } else if scope.contains("punctuation") {
-        "@punctuation"
-    } else {
-        "@keyword"  // Default fallback
+/// Dynamically maps TextMate scope names to tree-sitter capture names
+/// by parsing the hierarchical scope structure.
+///
+/// TextMate scopes follow the convention: category.subcategory.detail.language
+/// e.g., "keyword.control.al", "entity.name.function.al", "constant.numeric.al"
+///
+/// See: https://macromates.com/manual/en/language_grammars#naming_conventions
+fn textmate_to_treesitter_capture(scope: &str) -> String {
+    // Parse the scope hierarchy
+    let parts: Vec<&str> = scope.split('.').collect();
+    if parts.is_empty() {
+        return "@keyword".to_string();
+    }
+
+    // The first part is the main category
+    let category = parts[0];
+
+    // Build the capture name based on the TextMate hierarchy
+    // This follows the standard TextMate naming conventions dynamically
+    match category {
+        "keyword" => {
+            // keyword.control, keyword.operator, keyword.operators, keyword.other.*, etc.
+            if parts.len() > 1 && (parts[1] == "operator" || parts[1] == "operators") {
+                "@operator".to_string()
+            } else if parts.len() > 2 && parts[1] == "other" {
+                // Handle keyword.other.* scopes which often have special meanings
+                match parts[2] {
+                    "builtintypes" | "type" => "@type.builtin".to_string(),
+                    "applicationobject" | "storage" => "@keyword".to_string(), // object declarations
+                    _ => "@keyword".to_string()
+                }
+            } else {
+                "@keyword".to_string()
+            }
+        }
+        "entity" => {
+            // entity.name.function, entity.name.type, entity.name.class, etc.
+            if parts.len() > 2 {
+                match parts[2] {
+                    "function" | "method" => "@function".to_string(),
+                    "type" | "class" | "struct" | "enum" | "interface" => "@type".to_string(),
+                    "tag" => "@tag".to_string(),
+                    "section" => "@title".to_string(),
+                    _ => format!("@{}", parts[2])
+                }
+            } else if parts.len() > 1 && parts[1] == "name" {
+                "@function".to_string() // Default for entity.name
+            } else {
+                "@variable".to_string()
+            }
+        }
+        "constant" => {
+            // constant.numeric, constant.character, constant.language, etc.
+            if parts.len() > 1 {
+                match parts[1] {
+                    "numeric" => "@number".to_string(),
+                    "character" => "@character".to_string(),
+                    "language" => "@constant.builtin".to_string(),
+                    _ => "@constant".to_string()
+                }
+            } else {
+                "@constant".to_string()
+            }
+        }
+        "string" => "@string".to_string(),
+        "comment" => "@comment".to_string(),
+        "variable" => {
+            // variable.parameter, variable.other, variable.language, etc.
+            if parts.len() > 1 {
+                match parts[1] {
+                    "parameter" => "@variable.parameter".to_string(),
+                    "language" => "@variable.builtin".to_string(),
+                    _ => "@variable".to_string()
+                }
+            } else {
+                "@variable".to_string()
+            }
+        }
+        "storage" => {
+            // storage.type, storage.modifier
+            if parts.len() > 1 && parts[1] == "type" {
+                "@type".to_string()
+            } else {
+                "@keyword".to_string()
+            }
+        }
+        "support" => {
+            // support.function, support.class, support.type, support.variable
+            if parts.len() > 1 {
+                match parts[1] {
+                    "function" => "@function.builtin".to_string(),
+                    "class" | "type" => "@type.builtin".to_string(),
+                    "variable" => "@variable.builtin".to_string(),
+                    "constant" => "@constant.builtin".to_string(),
+                    _ => "@keyword".to_string()
+                }
+            } else {
+                "@keyword".to_string()
+            }
+        }
+        "punctuation" => {
+            // punctuation.definition, punctuation.separator, punctuation.terminator
+            if parts.len() > 1 {
+                match parts[1] {
+                    "bracket" => "@punctuation.bracket".to_string(),
+                    "delimiter" | "separator" | "terminator" => "@punctuation.delimiter".to_string(),
+                    _ => "@punctuation".to_string()
+                }
+            } else {
+                "@punctuation".to_string()
+            }
+        }
+        "meta" => {
+            // meta.* scopes are usually structural, map to keyword or embedded
+            "@keyword".to_string()
+        }
+        "markup" => {
+            // markup.heading, markup.bold, markup.italic, etc.
+            if parts.len() > 1 {
+                match parts[1] {
+                    "heading" => "@title".to_string(),
+                    "bold" => "@text.strong".to_string(),
+                    "italic" => "@text.emphasis".to_string(),
+                    "underline" => "@text.underline".to_string(),
+                    "raw" | "inline" => "@text.literal".to_string(),
+                    "link" => "@text.uri".to_string(),
+                    _ => "@text".to_string()
+                }
+            } else {
+                "@text".to_string()
+            }
+        }
+        "invalid" => "@error".to_string(),
+        _ => {
+            // For any unknown category, try to use it directly as a capture
+            format!("@{}", category)
+        }
     }
 }
 
