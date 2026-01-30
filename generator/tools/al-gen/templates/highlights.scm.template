@@ -1,13 +1,19 @@
 ; AL highlights for Zed/tree-sitter
 ; AUTO-GENERATED - DO NOT EDIT (copied by AL Tree Sitter)
 
+; --- Basic Literals ---
 (comment) @comment
 (string) @string
 (integer) @number
 (decimal) @number
 
+; --- Generic Identifier Fallback ---
+; MUST be early so specific patterns below can override it
+(identifier) @variable
+(quoted_identifier) @string.special
+
+; --- Keywords ---
 ; All keyword highlighting is provided by the generator via this placeholder.
-; This ensures categorization follows the TextMate grammar scopes (storage type, built-in type, etc.)
 {{CONTROL_KW_TOKEN_HIGHLIGHTS}}
 
 (operator_word) @keyword.operator
@@ -17,28 +23,47 @@
 (property_keyword) @keyword.property
 (keyword) @keyword.control
 
-; Highlight any name in a property assignment as a property (heuristic for missing TM keywords)
-(property_assignment name: (_) @keyword.property)
-
-; --- Attributes ---
-; Attributes like [EventSubscriber(...)], [Test], [IntegrationEvent(...)], etc.
-(attribute name: (identifier) @attribute)
-
 ; --- Punctuation & Operators ---
 (operator) @operator
 (semicolon) @punctuation.delimiter
 (comma) @punctuation.delimiter
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
 
+; --- Object Declarations ---
+; Highlight object names (codeunit "Name", table "Name", etc.)
+(object_declaration (quoted_identifier) @title)
+
+; --- Property Assignments ---
+; Property names in assignments like: Caption = 'value';
+(property_assignment name: (_) @property)
+
+; --- Attributes ---
+; Attribute names like [EventSubscriber(...)], [Test], etc.
+(attribute name: (identifier) @attribute)
+
 ; --- Definitions ---
-; Procedure, trigger, and event definitions
-(procedure_declaration name: (_) @function.method)
-(trigger_declaration name: (_) @function.method)
-(event_declaration name: (_) @function.method)
+; Procedure, trigger, and event definition names
+(procedure_declaration name: (name (identifier) @function.definition))
+(procedure_declaration name: (name (quoted_identifier) @function.definition))
+(trigger_declaration name: (_) @function.definition)
+(event_declaration name: (_) @function.definition)
+
+; --- Variable Declarations ---
+; Variable names in declarations
+(regular_variable_declaration name: (name_or_keyword (name (identifier) @variable.declaration)))
+(regular_variable_declaration name: (name_or_keyword (name (quoted_identifier) @variable.declaration)))
+(parameter name: (name_or_keyword (name (identifier) @variable.parameter)))
+(parameter name: (name_or_keyword (name (quoted_identifier) @variable.parameter)))
+
+; --- Type References ---
+; Type names in variable declarations, parameters, and return types
+(type_reference (name_or_keyword (name (identifier) @type)))
+(type_reference (name_or_keyword (name (quoted_identifier) @type)))
+(type_reference (qualified_name) @type)
+(label_declaration type: (_) @type)
 
 ; --- Function Calls ---
 ; Direct function calls: FunctionName(args...)
-; Match identifier followed by call_suffix in postfix_expression
 (postfix_expression
   (primary_expression (name (identifier) @function.call))
   (call_suffix))
@@ -47,21 +72,9 @@
   (call_suffix))
 
 ; Method calls on objects: object.Method(args...)
-(member_call_suffix member: (name (identifier) @function.call))
-(member_call_suffix member: (name (quoted_identifier) @function.call))
+(member_call_suffix member: (name (identifier) @function.method.call))
+(member_call_suffix member: (name (quoted_identifier) @function.method.call))
 
 ; Scoped calls: Type::Method(args...)
 (scope_call_suffix member: (name (identifier) @function.call))
 (scope_call_suffix member: (name (quoted_identifier) @function.call))
-
-; --- Type References ---
-; Type names in variable declarations, parameters, and return types
-; The type_reference contains name_or_keyword which contains name which contains identifier/quoted_identifier
-(type_reference (name_or_keyword (name (identifier) @type)))
-(type_reference (name_or_keyword (name (quoted_identifier) @type)))
-(type_reference (qualified_name) @type)
-(label_declaration type: (_) @type)
-
-; --- Variables ---
-; Generic identifier fallback (should be last to not override more specific captures)
-(identifier) @variable
