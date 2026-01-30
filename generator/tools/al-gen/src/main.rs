@@ -910,6 +910,19 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
         specific_tokens.push_str(&format!("(op_{}) {}\n", kw, operator_capture));
     }
 
+    // Type keywords need their own rules with @type.builtin
+    // These must come AFTER control keywords to override them (tree-sitter last-match-wins)
+    let type_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("builtintypes"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@type.builtin");
+
+    specific_tokens.push_str("\n; Type keywords (override control keyword captures)\n");
+    for kw in &keywords.types {
+        specific_tokens.push_str(&format!("(kw_{}) {}\n", kw, type_capture));
+    }
+
     // Generate dynamic category captures from TextMate scopes
     let object_capture = keywords.scope_captures
         .iter()
@@ -917,11 +930,7 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
         .map(|(_, cap)| cap.as_str())
         .unwrap_or("@keyword");
 
-    let type_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("builtintypes"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@type.builtin");
+    // Note: type_capture is already defined above for individual type keywords
 
     let metadata_capture = keywords.scope_captures
         .iter()
