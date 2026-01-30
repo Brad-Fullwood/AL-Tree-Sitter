@@ -729,25 +729,23 @@ fn gen_choice_fragment(elements: &BTreeSet<String>, exclude: &[&str]) -> String 
 fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     let template_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tools/al-gen/templates");
     let template = fs::read_to_string(format!("{}/highlights.scm.template", template_dir))?;
-    
-    let mut control_kw = String::new();
-    
-    // Helper to add highlights for a category
-    let mut add_cat = |set: &BTreeSet<String>, capture: &str| {
-        for kw in set {
-            control_kw.push_str(&format!("(kw_{}) {}\n", kw, capture));
-        }
-    };
 
-    // Category mapping
-    add_cat(&keywords.control, "@keyword.control");
-    add_cat(&keywords.objects, "@keyword.storage.type");
-    add_cat(&keywords.types, "@type.builtin");
-    add_cat(&keywords.metadata, "@keyword.directive");
-    add_cat(&keywords.properties, "@keyword.property");
-    add_cat(&keywords.operator_words, "@keyword.operator");
+    let mut specific_tokens = String::new();
 
-    let rendered = render_template(&template, &[("CONTROL_KW_TOKEN_HIGHLIGHTS", &control_kw)]);
+    // Only control keywords and operator words have individual grammar tokens (kw_* and op_*).
+    // Other categories use the category tokens in the template (object_keyword, type_keyword, etc.)
+
+    // Control keywords get kw_* tokens
+    for kw in &keywords.control {
+        specific_tokens.push_str(&format!("(kw_{}) @keyword.control\n", kw));
+    }
+
+    // Operator words get op_* tokens
+    for kw in &keywords.operator_words {
+        specific_tokens.push_str(&format!("(op_{}) @keyword.operator\n", kw));
+    }
+
+    let rendered = render_template(&template, &[("CONTROL_KW_TOKEN_HIGHLIGHTS", &specific_tokens)]);
     fs::write(out_path, rendered)?;
     Ok(())
 }
@@ -863,7 +861,10 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()>
         let repo_dir = work_dir.join(&repo.name);
         clone_or_update_repo(&repo, &repo_dir)?;
 
-        let files = collect_al_files(&repo_dir)?;
+        // Canonicalize repo_dir so collected files have absolute paths
+        let repo_dir_abs = fs::canonicalize(&repo_dir)
+            .with_context(|| format!("Failed to canonicalize {}", repo_dir.display()))?;
+        let files = collect_al_files(&repo_dir_abs)?;
         total_files += files.len();
 
         if files.is_empty() {
@@ -874,8 +875,12 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()>
         let paths_file = target_dir.join(format!("paths-{}.txt", repo.name));
         write_paths_file(&paths_file, &files)?;
 
+        // Canonicalize for tree-sitter which changes cwd to root
+        let paths_file_abs = fs::canonicalize(&paths_file)
+            .with_context(|| format!("Failed to canonicalize {}", paths_file.display()))?;
+
         let (ok, failed, samples) =
-            parse_paths_with_tree_sitter(parser_lib, scope_name, &paths_file, root)?;
+            parse_paths_with_tree_sitter(parser_lib, scope_name, &paths_file_abs, root)?;
         total_ok += ok;
 
         let pct = (ok as f64) * 100.0 / (files.len() as f64);
@@ -913,20 +918,18 @@ fn run_fixture_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<
 
     // Invalid fixtures must FAIL to parse.
     if invalid_dir.exists() {
-        let invalid = collect_al_files(&invalid_dir)?;
+        let invalid_dir_abs = fs::canonicalize(&invalid_dir)?;
+        let invalid = collect_al_files(&invalid_dir_abs)?;
         if !invalid.is_empty() {
             println!("\n🧪 Fixture tests (invalid syntax must fail)...");
             let paths_file = target_dir.join("paths-fixtures-invalid.txt");
-            
-            let files_rel: Vec<PathBuf> = invalid.iter()
-                .map(|p| p.strip_prefix(root).unwrap_or(p).to_path_buf())
-                .collect();
-            
-            write_paths_file(&paths_file, &files_rel)?;
-            let paths_file_rel = paths_file.strip_prefix(root).unwrap_or(&paths_file);
+
+            // Files already have absolute paths from canonicalized directory
+            write_paths_file(&paths_file, &invalid)?;
+            let paths_file_abs = fs::canonicalize(&paths_file)?;
 
             let summaries =
-                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, paths_file_rel, root)?;
+                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, &paths_file_abs, root)?;
 
             let mut unexpected_ok = Vec::new();
             for s in summaries {
@@ -954,20 +957,18 @@ fn run_fixture_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<
 
     // Valid fixtures must SUCCEED to parse.
     if valid_dir.exists() {
-        let valid = collect_al_files(&valid_dir)?;
+        let valid_dir_abs = fs::canonicalize(&valid_dir)?;
+        let valid = collect_al_files(&valid_dir_abs)?;
         if !valid.is_empty() {
             println!("\n🧪 Fixture tests (valid syntax must succeed)...");
             let paths_file = target_dir.join("paths-fixtures-valid.txt");
-            
-            let files_rel: Vec<PathBuf> = valid.iter()
-                .map(|p| p.strip_prefix(root).unwrap_or(p).to_path_buf())
-                .collect();
-                
-            write_paths_file(&paths_file, &files_rel)?;
-            let paths_file_rel = paths_file.strip_prefix(root).unwrap_or(&paths_file);
-            
+
+            // Files already have absolute paths from canonicalized directory
+            write_paths_file(&paths_file, &valid)?;
+            let paths_file_abs = fs::canonicalize(&paths_file)?;
+
             let summaries =
-                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, paths_file_rel, root)?;
+                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, &paths_file_abs, root)?;
 
             let mut unexpected_failed = Vec::new();
             for s in summaries {
