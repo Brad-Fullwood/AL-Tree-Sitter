@@ -56,11 +56,11 @@
 
 ; --- Type References ---
 ; Type names in variable declarations, parameters, and return types
-(regular_variable_declaration type: (type_reference (name (identifier) @type)))
-(regular_variable_declaration type: (type_reference (name (quoted_identifier) @type)))
+; The type_reference contains name_or_keyword which contains name which contains identifier/quoted_identifier
+(type_reference (name_or_keyword (name (identifier) @type)))
+(type_reference (name_or_keyword (name (quoted_identifier) @type)))
+(type_reference (qualified_name) @type)
 (label_declaration type: (_) @type)
-(parameter type: (type_reference (name (identifier) @type)))
-(parameter type: (type_reference (name (quoted_identifier) @type)))
 
 ; --- Variables ---
 ; Generic identifier fallback (should be last to not override more specific captures)
