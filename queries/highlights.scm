@@ -10,7 +10,12 @@
 ; --- Generic Identifier Fallback ---
 ; MUST be early so specific patterns below can override it
 (identifier) @variable
-(quoted_identifier) @string.special
+(quoted_identifier) @string
+
+; --- Boolean Literals ---
+; true/false should be constants, not variables
+((identifier) @constant.builtin
+ (#match? @constant.builtin "^(true|false)$"))
 
 ; --- Keywords ---
 ; All keyword highlighting is provided by the generator via this placeholder.
@@ -273,3 +278,8 @@
 ; Scoped calls: Type::Method(args...)
 (scope_call_suffix member: (name (identifier) @function.call))
 (scope_call_suffix member: (name (quoted_identifier) @function.call))
+
+; --- Scope References (non-call) ---
+; Type::Member references (like ObjectType::Codeunit, Enum::Value)
+(scope_suffix member: (name (identifier) @type))
+(scope_suffix member: (name (quoted_identifier) @type))
