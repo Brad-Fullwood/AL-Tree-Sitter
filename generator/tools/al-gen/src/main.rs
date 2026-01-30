@@ -181,6 +181,11 @@ fn textmate_to_treesitter_capture(scope: &str) -> String {
         }
         "string" => "@string".to_string(),
         "comment" => "@comment".to_string(),
+        "identifier" => {
+            // identifier.quoted.double.al - these are quoted identifiers, NOT strings
+            // In AL, "..." is an identifier (like table names), not a string literal
+            "@variable".to_string()
+        }
         "variable" => {
             // variable.parameter, variable.other, variable.language, etc.
             if parts.len() > 1 {
@@ -570,6 +575,19 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
         }
     }
 
+    // Extract ALL scope names from the TextMate grammar (not just keyword patterns)
+    // This captures scopes like string.quoted.single.al, identifier.quoted.double.al, comment.*, etc.
+    for name_caps in name_re.captures_iter(&xml) {
+        let scope_name = name_caps.get(1).unwrap().as_str();
+        // Skip punctuation and very generic scopes we don't need to map
+        if !scope_name.starts_with("punctuation.whitespace") &&
+           !scope_name.starts_with("source.") &&
+           !out.scope_captures.contains_key(scope_name) {
+            let capture = textmate_to_treesitter_capture(scope_name);
+            out.scope_captures.insert(scope_name.to_string(), capture);
+        }
+    }
+
     // Print extracted scope mappings for debugging
     println!("\n📋 TextMate scope → Tree-sitter capture mappings:");
     for (scope, capture) in &out.scope_captures {
@@ -944,12 +962,21 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
         .map(|(_, cap)| cap.as_str())
         .unwrap_or("@keyword");
 
+    // Quoted identifiers ("...") - extracted from identifier.quoted.double.al scope
+    // In AL, these are identifiers (table names, etc.), NOT string literals
+    let quoted_identifier_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("identifier.quoted"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@variable");
+
     let rendered = render_template(&template, &[
         ("CONTROL_KW_TOKEN_HIGHLIGHTS", &specific_tokens),
         ("OBJECT_CAPTURE", object_capture),
         ("TYPE_CAPTURE", type_capture),
         ("METADATA_CAPTURE", metadata_capture),
         ("PROPERTY_CAPTURE", property_capture),
+        ("QUOTED_IDENTIFIER_CAPTURE", quoted_identifier_capture),
     ]);
     fs::write(out_path, rendered)?;
     Ok(())

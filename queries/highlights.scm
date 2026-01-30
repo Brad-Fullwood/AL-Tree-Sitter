@@ -10,7 +10,8 @@
 ; --- Generic Identifier Fallback ---
 ; MUST be early so specific patterns below can override it
 (identifier) @variable
-(quoted_identifier) @string
+; Quoted identifiers ("...") are identifiers in AL, NOT strings (extracted from TextMate scope)
+(quoted_identifier) @variable
 
 ; --- Boolean Literals ---
 ; true/false should be constants, not variables
