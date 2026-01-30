@@ -21,12 +21,12 @@
 ; All keyword highlighting is provided by the generator via this placeholder.
 {{CONTROL_KW_TOKEN_HIGHLIGHTS}}
 
-; Use standard capture names that Zed themes will recognize
-(operator_word) @keyword
-(object_keyword) @keyword
-(type_keyword) @type.builtin
-(metadata_keyword) @keyword
-(property_keyword) @keyword
+; Category captures dynamically generated from TextMate grammar scopes
+(operator_word) @operator
+(object_keyword) {{OBJECT_CAPTURE}}
+(type_keyword) {{TYPE_CAPTURE}}
+(metadata_keyword) {{METADATA_CAPTURE}}
+(property_keyword) {{PROPERTY_CAPTURE}}
 (keyword) @keyword
 
 ; --- Punctuation & Operators ---

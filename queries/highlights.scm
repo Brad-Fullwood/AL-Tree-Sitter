@@ -197,18 +197,18 @@
 (kw_xmlreadoptions) @keyword
 (kw_xmltext) @keyword
 (kw_xmlwriteoptions) @keyword
-(op_and) @keyword
-(op_as) @keyword
-(op_div) @keyword
-(op_is) @keyword
-(op_mod) @keyword
-(op_not) @keyword
-(op_or) @keyword
-(op_xor) @keyword
+(op_and) @operator
+(op_as) @operator
+(op_div) @operator
+(op_is) @operator
+(op_mod) @operator
+(op_not) @operator
+(op_or) @operator
+(op_xor) @operator
 
 
-; Use standard capture names that Zed themes will recognize
-(operator_word) @keyword
+; Category captures dynamically generated from TextMate grammar scopes
+(operator_word) @operator
 (object_keyword) @keyword
 (type_keyword) @type.builtin
 (metadata_keyword) @keyword

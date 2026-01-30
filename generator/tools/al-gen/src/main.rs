@@ -111,6 +111,50 @@ struct Keywords {
     types: BTreeSet<String>,
     metadata: BTreeSet<String>,
     properties: BTreeSet<String>,
+    // Store TextMate scope -> tree-sitter capture mappings
+    scope_captures: std::collections::HashMap<String, String>,
+}
+
+/// Maps TextMate scope names to tree-sitter capture names
+/// Based on standard naming conventions: https://macromates.com/manual/en/language_grammars#naming_conventions
+fn textmate_to_treesitter_capture(scope: &str) -> &'static str {
+    // TextMate uses hierarchical scopes like "keyword.control.al"
+    // Tree-sitter uses captures like "@keyword"
+    if scope.contains("keyword.control") {
+        "@keyword"
+    } else if scope.contains("keyword.operator") {
+        "@operator"
+    } else if scope.contains("applicationobject") || scope.contains("storage.type") {
+        "@keyword"  // Object declaration keywords like codeunit, table
+    } else if scope.contains("builtintypes") || scope.contains("support.type") {
+        "@type.builtin"  // Built-in types like Record, Code, Integer
+    } else if scope.contains("keyword.other.metadata") {
+        "@keyword"  // Metadata keywords like field, layout
+    } else if scope.contains("keyword.other.property") || scope.contains("variable.other") {
+        "@keyword"  // Property keywords like tabledata, where
+    } else if scope.contains("entity.name.function") {
+        "@function"
+    } else if scope.contains("entity.name.type") {
+        "@type"
+    } else if scope.contains("constant.numeric") {
+        "@number"
+    } else if scope.contains("constant.language") {
+        "@constant.builtin"
+    } else if scope.contains("constant") {
+        "@constant"
+    } else if scope.contains("string") {
+        "@string"
+    } else if scope.contains("comment") {
+        "@comment"
+    } else if scope.contains("variable.parameter") {
+        "@variable.parameter"
+    } else if scope.contains("variable") {
+        "@variable"
+    } else if scope.contains("punctuation") {
+        "@punctuation"
+    } else {
+        "@keyword"  // Default fallback
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -395,6 +439,10 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
                     continue;
                 }
 
+                // Store the TextMate scope -> tree-sitter capture mapping
+                let capture = textmate_to_treesitter_capture(scope_name);
+                out.scope_captures.insert(scope_name.to_string(), capture.to_string());
+
                 if scope_name.contains("keyword.control") {
                     out.control.insert(kw);
                 } else if scope_name.contains("keyword.operators.al") {
@@ -407,8 +455,8 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
                     out.control.insert(kw);
                 } else if scope_name.contains("metadata") {
                     out.metadata.insert(kw);
-                } else if scope_name.contains("property") || 
-                           scope_name.contains("variable.other") || 
+                } else if scope_name.contains("property") ||
+                           scope_name.contains("variable.other") ||
                            scope_name.contains("support.variable") {
                     out.properties.insert(kw);
                 }
@@ -422,6 +470,12 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
         if is_identifier_like(&kw) {
              out.control.insert(kw);
         }
+    }
+
+    // Print extracted scope mappings for debugging
+    println!("\n📋 TextMate scope → Tree-sitter capture mappings:");
+    for (scope, capture) in &out.scope_captures {
+        println!("   {} → {}", scope, capture);
     }
 
     Ok(out)
@@ -735,17 +789,61 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     // Only control keywords and operator words have individual grammar tokens (kw_* and op_*).
     // Other categories use the category tokens in the template (object_keyword, type_keyword, etc.)
 
-    // Control keywords get kw_* tokens - use @keyword for broad theme compatibility
+    // Control keywords get kw_* tokens
+    // Use the dynamically extracted capture from TextMate scopes
+    let control_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("keyword.control"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@keyword");
+
     for kw in &keywords.control {
-        specific_tokens.push_str(&format!("(kw_{}) @keyword\n", kw));
+        specific_tokens.push_str(&format!("(kw_{}) {}\n", kw, control_capture));
     }
 
-    // Operator words get op_* tokens - use @keyword for consistency
+    // Operator words get op_* tokens
+    let operator_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("keyword.operator"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@operator");
+
     for kw in &keywords.operator_words {
-        specific_tokens.push_str(&format!("(op_{}) @keyword\n", kw));
+        specific_tokens.push_str(&format!("(op_{}) {}\n", kw, operator_capture));
     }
 
-    let rendered = render_template(&template, &[("CONTROL_KW_TOKEN_HIGHLIGHTS", &specific_tokens)]);
+    // Generate dynamic category captures from TextMate scopes
+    let object_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("applicationobject"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@keyword");
+
+    let type_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("builtintypes"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@type.builtin");
+
+    let metadata_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("metadata"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@keyword");
+
+    let property_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("property"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@keyword");
+
+    let rendered = render_template(&template, &[
+        ("CONTROL_KW_TOKEN_HIGHLIGHTS", &specific_tokens),
+        ("OBJECT_CAPTURE", object_capture),
+        ("TYPE_CAPTURE", type_capture),
+        ("METADATA_CAPTURE", metadata_capture),
+        ("PROPERTY_CAPTURE", property_capture),
+    ]);
     fs::write(out_path, rendered)?;
     Ok(())
 }
