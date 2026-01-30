@@ -37,6 +37,15 @@
 ; Property names in assignments like: Caption = 'value';
 (property_assignment name: (_) @property)
 
+; Property values - identifiers like r, RIMD, All, true, false (after name: field)
+(property_assignment
+  name: (_)
+  (name (identifier) @constant))
+; Property values - table/object names in permissions (after name: field)
+(property_assignment
+  name: (_)
+  (name (quoted_identifier) @type))
+
 ; --- Attributes ---
 ; Attribute names like [EventSubscriber(...)], [Test], etc.
 (attribute name: (identifier) @attribute)
