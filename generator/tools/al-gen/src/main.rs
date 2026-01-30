@@ -735,14 +735,14 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     // Only control keywords and operator words have individual grammar tokens (kw_* and op_*).
     // Other categories use the category tokens in the template (object_keyword, type_keyword, etc.)
 
-    // Control keywords get kw_* tokens
+    // Control keywords get kw_* tokens - use @keyword for broad theme compatibility
     for kw in &keywords.control {
-        specific_tokens.push_str(&format!("(kw_{}) @keyword.control\n", kw));
+        specific_tokens.push_str(&format!("(kw_{}) @keyword\n", kw));
     }
 
-    // Operator words get op_* tokens
+    // Operator words get op_* tokens - use @keyword for consistency
     for kw in &keywords.operator_words {
-        specific_tokens.push_str(&format!("(op_{}) @keyword.operator\n", kw));
+        specific_tokens.push_str(&format!("(op_{}) @keyword\n", kw));
     }
 
     let rendered = render_template(&template, &[("CONTROL_KW_TOKEN_HIGHLIGHTS", &specific_tokens)]);
