@@ -34,8 +34,8 @@ fn main() -> Result<()> {
     let syntax_file = find_syntax_file(&extension_path)?;
     println!("📄 Using syntax: {}\n", syntax_file.display());
 
-    // We are running from 'generator/tools/al-gen' dir, but want to output to repo root
-    let root_offset = "../../../";
+    // We are running from 'generator/' dir (cargo runs from manifest dir), output to repo root
+    let root_offset = "../";
 
     println!("📖 Extracting keywords from TextMate grammar...");
     let keywords = extract_keywords(&syntax_file)?;
@@ -625,7 +625,9 @@ fn c_escape(s: &str) -> String {
 
 fn generate_scanner_c(_keywords: &Keywords, external_tokens: &[ExternalTokenSpec], out_dir: &str) -> Result<()> {
     // out_dir is assumed to be "src" equivalent relative path
-    let template = fs::read_to_string("templates/scanner.c.template")?;
+    // Templates are in the same directory as this source file
+    let template_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tools/al-gen/templates");
+    let template = fs::read_to_string(format!("{}/scanner.c.template", template_dir))?;
 
     let token_enum = gen_scanner_token_enum_fragment(external_tokens);
     let fastpath = gen_scanner_valid_symbols_fastpath_fragment(external_tokens);
@@ -648,7 +650,8 @@ fn generate_scanner_c(_keywords: &Keywords, external_tokens: &[ExternalTokenSpec
 }
 
 fn generate_grammar_js(keywords: &Keywords, external_tokens: &[ExternalTokenSpec], root: &str) -> Result<()> {
-    let template = fs::read_to_string("templates/grammar.js.template")?;
+    let template_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tools/al-gen/templates");
+    let template = fs::read_to_string(format!("{}/grammar.js.template", template_dir))?;
     let externals = gen_grammar_externals_fragment(external_tokens);
     let objects = gen_choice_fragment(&keywords.objects, &[]);
     let types_excluding_option = gen_choice_fragment(&keywords.types, &["option"]);
@@ -723,8 +726,8 @@ fn gen_choice_fragment(elements: &BTreeSet<String>, exclude: &[&str]) -> String 
 }
 
 fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
-    fs::create_dir_all("queries")?;
-    let template = fs::read_to_string("templates/highlights.scm.template")?;
+    let template_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tools/al-gen/templates");
+    let template = fs::read_to_string(format!("{}/highlights.scm.template", template_dir))?;
     
     let mut control_kw = String::new();
     
