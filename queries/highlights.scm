@@ -1,16 +1,19 @@
 ; AL highlights for Zed/tree-sitter
-; AUTO-GENERATED - DO NOT EDIT (copied by AL Tree Sitter)
+; AUTO-GENERATED - DO NOT EDIT
+; All basic token captures are dynamically extracted from the VS Code AL extension's TextMate grammar
 
-; --- Basic Literals ---
+; --- Basic Literals (dynamically extracted from TextMate scopes) ---
 (comment) @comment
 (string) @string
+(verbatim_string) @string
 (integer) @number
 (decimal) @number
+(date_literal) @number
 
 ; --- Generic Identifier Fallback ---
 ; MUST be early so specific patterns below can override it
 (identifier) @variable
-; Quoted identifiers ("...") are identifiers in AL, NOT strings (extracted from TextMate scope)
+; Quoted identifiers ("...") - from TextMate identifier.quoted.double.al scope
 (quoted_identifier) @variable
 
 ; --- Boolean Literals ---
@@ -19,7 +22,7 @@
  (#match? @constant.builtin "^(true|false)$"))
 
 ; --- Keywords ---
-; All keyword highlighting is provided by the generator via this placeholder.
+; All keyword highlighting is dynamically generated from TextMate grammar scopes
 (kw_action) @keyword
 (kw_actionref) @keyword
 (kw_array) @keyword
@@ -343,17 +346,23 @@
 
 ; Category captures dynamically generated from TextMate grammar scopes
 (operator_word) @operator
-(object_keyword) @keyword
+(object_keyword) @applicationobject
 (type_keyword) @type.builtin
 (metadata_keyword) @keyword
-(property_keyword) @keyword
-(keyword) @keyword
+(property_keyword) @operator
+(keyword) @type.builtin
 
-; --- Punctuation & Operators ---
+; --- Punctuation & Operators (from TextMate punctuation.al scope) ---
 (operator) @operator
-(semicolon) @punctuation.delimiter
-(comma) @punctuation.delimiter
+(semicolon) @punctuation
+(comma) @punctuation
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
+
+; =============================================================================
+; STRUCTURAL PATTERNS (AST-based - cannot be derived from TextMate)
+; These patterns understand syntax structure, which TextMate regex cannot.
+; The CAPTURES use dynamically extracted scopes where applicable.
+; =============================================================================
 
 ; --- Object Declarations ---
 ; Highlight object names (codeunit "Name", table "Name", etc.)
@@ -366,11 +375,11 @@
 ; Property values - identifiers like r, RIMD, All, true, false (after name: field)
 (property_assignment
   name: (_)
-  (name (identifier) @constant))
+  (name (identifier) @constant.builtin))
 ; Property values - table/object names in permissions (after name: field)
 (property_assignment
   name: (_)
-  (name (quoted_identifier) @type))
+  (name (quoted_identifier) @type.builtin))
 
 ; --- Attributes ---
 ; Attribute names like [EventSubscriber(...)], [Test], etc.
@@ -378,10 +387,10 @@
 
 ; --- Definitions ---
 ; Procedure, trigger, and event definition names
-(procedure_declaration name: (name (identifier) @function.definition))
-(procedure_declaration name: (name (quoted_identifier) @function.definition))
-(trigger_declaration name: (_) @function.definition)
-(event_declaration name: (_) @function.definition)
+(procedure_declaration name: (name (identifier) @function))
+(procedure_declaration name: (name (quoted_identifier) @function))
+(trigger_declaration name: (_) @function)
+(event_declaration name: (_) @function)
 
 ; --- Variable Declarations ---
 ; Variable names in declarations
@@ -392,10 +401,10 @@
 
 ; --- Type References ---
 ; Type names in variable declarations, parameters, and return types
-(type_reference (name_or_keyword (name (identifier) @type)))
-(type_reference (name_or_keyword (name (quoted_identifier) @type)))
-(type_reference (qualified_name) @type)
-(label_declaration type: (_) @type)
+(type_reference (name_or_keyword (name (identifier) @type.builtin)))
+(type_reference (name_or_keyword (name (quoted_identifier) @type.builtin)))
+(type_reference (qualified_name) @type.builtin)
+(label_declaration type: (_) @type.builtin)
 
 ; --- Function Calls ---
 ; Direct function calls: FunctionName(args...)
@@ -416,7 +425,5 @@
 
 ; --- Scope References (non-call) ---
 ; Type::Member references (like ObjectType::Codeunit, Enum::Value)
-; Use @type.builtin to match the type keywords for consistency
 (scope_suffix member: (name (identifier) @type.builtin))
-; Quoted identifiers after :: are object/type references, not string literals
-(scope_suffix member: (name (quoted_identifier) @type))
+(scope_suffix member: (name (quoted_identifier) @type.builtin))

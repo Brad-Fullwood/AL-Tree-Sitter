@@ -970,6 +970,57 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
         .map(|(_, cap)| cap.as_str())
         .unwrap_or("@variable");
 
+    // Basic literal captures - ALL extracted from TextMate grammar
+    let comment_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.starts_with("comment."))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@comment");
+
+    let string_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.starts_with("string."))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@string");
+
+    let number_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("constant.numeric"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@number");
+
+    let variable_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.starts_with("variable."))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@variable");
+
+    // For boolean constants (true/false), prefer constant.language scope, fallback to @constant.builtin
+    // Note: AL TextMate grammar doesn't define constant.language - that's handled by semantic tokens
+    let constant_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("constant.language"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@constant.builtin");
+
+    let keyword_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.as_str() == "keyword.control.al" || (scope.starts_with("keyword.") && !scope.contains("operator")))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@keyword");
+
+    let punctuation_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.as_str() == "punctuation.al")
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@punctuation.delimiter");
+
+    let function_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("entity.name.function"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@function.definition");
+
     let rendered = render_template(&template, &[
         ("CONTROL_KW_TOKEN_HIGHLIGHTS", &specific_tokens),
         ("OBJECT_CAPTURE", object_capture),
@@ -977,6 +1028,15 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
         ("METADATA_CAPTURE", metadata_capture),
         ("PROPERTY_CAPTURE", property_capture),
         ("QUOTED_IDENTIFIER_CAPTURE", quoted_identifier_capture),
+        ("COMMENT_CAPTURE", comment_capture),
+        ("STRING_CAPTURE", string_capture),
+        ("NUMBER_CAPTURE", number_capture),
+        ("VARIABLE_CAPTURE", variable_capture),
+        ("CONSTANT_CAPTURE", constant_capture),
+        ("OPERATOR_CAPTURE", operator_capture),
+        ("KEYWORD_CAPTURE", keyword_capture),
+        ("PUNCTUATION_CAPTURE", punctuation_capture),
+        ("FUNCTION_CAPTURE", function_capture),
     ]);
     fs::write(out_path, rendered)?;
     Ok(())
