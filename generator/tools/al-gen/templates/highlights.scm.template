@@ -98,4 +98,5 @@
 ; Type::Member references (like ObjectType::Codeunit, Enum::Value)
 ; Use @type.builtin to match the type keywords for consistency
 (scope_suffix member: (name (identifier) @type.builtin))
-(scope_suffix member: (name (quoted_identifier) @string))
+; Quoted identifiers after :: are object/type references, not string literals
+(scope_suffix member: (name (quoted_identifier) @type))
