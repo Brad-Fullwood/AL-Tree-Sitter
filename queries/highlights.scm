@@ -4,6 +4,7 @@
 (comment) @comment
 (string) @string
 (integer) @number
+(decimal) @number
 
 ; All keyword highlighting is provided by the generator via this placeholder.
 ; This ensures categorization follows the TextMate grammar scopes (storage type, built-in type, etc.)
@@ -205,21 +206,48 @@
 ; Highlight any name in a property assignment as a property (heuristic for missing TM keywords)
 (property_assignment name: (_) @keyword.property)
 
+; --- Attributes ---
+; Attributes like [EventSubscriber(...)], [Test], [IntegrationEvent(...)], etc.
+(attribute name: (identifier) @attribute)
+
 ; --- Punctuation & Operators ---
 (operator) @operator
 (semicolon) @punctuation.delimiter
 (comma) @punctuation.delimiter
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
 
-; --- Names & Calls ---
-; Function calls
-(call_suffix) @function.call
-(member_call_suffix member: (_) @function.call)
-(scope_call_suffix member: (_) @function.call)
-
-; Definitions
+; --- Definitions ---
+; Procedure, trigger, and event definitions
 (procedure_declaration name: (_) @function.method)
 (trigger_declaration name: (_) @function.method)
 (event_declaration name: (_) @function.method)
 
+; --- Function Calls ---
+; Direct function calls: FunctionName(args...)
+; Match identifier followed by call_suffix in postfix_expression
+(postfix_expression
+  (primary_expression (name (identifier) @function.call))
+  (call_suffix))
+(postfix_expression
+  (primary_expression (name (quoted_identifier) @function.call))
+  (call_suffix))
+
+; Method calls on objects: object.Method(args...)
+(member_call_suffix member: (name (identifier) @function.call))
+(member_call_suffix member: (name (quoted_identifier) @function.call))
+
+; Scoped calls: Type::Method(args...)
+(scope_call_suffix member: (name (identifier) @function.call))
+(scope_call_suffix member: (name (quoted_identifier) @function.call))
+
+; --- Type References ---
+; Type names in variable declarations, parameters, and return types
+(regular_variable_declaration type: (type_reference (name (identifier) @type)))
+(regular_variable_declaration type: (type_reference (name (quoted_identifier) @type)))
+(label_declaration type: (_) @type)
+(parameter type: (type_reference (name (identifier) @type)))
+(parameter type: (type_reference (name (quoted_identifier) @type)))
+
+; --- Variables ---
+; Generic identifier fallback (should be last to not override more specific captures)
 (identifier) @variable
