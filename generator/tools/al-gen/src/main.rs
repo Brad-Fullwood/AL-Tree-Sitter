@@ -85,11 +85,12 @@ fn main() -> Result<()> {
     let do_tests = args.iter().any(|a| a == "--test" || a == "--tests");
 
     if do_tests {
-        if Path::new(REPO_TEST_CONFIG).exists() {
+        let repo_test_config_path = Path::new(root_offset).join(REPO_TEST_CONFIG);
+        if repo_test_config_path.exists() {
             println!("\n🧪 Testing against real repositories...");
             run_repo_tests(&lib_path, &scope_name, root_offset)?;
         } else {
-            println!("\nℹ️  {} not found; skipping repo tests.", REPO_TEST_CONFIG);
+            println!("\nℹ️  {} not found; skipping repo tests.", repo_test_config_path.display());
         }
     } else {
         println!("\nℹ️  Skipping repo tests. Run with `--test` to enable.");
