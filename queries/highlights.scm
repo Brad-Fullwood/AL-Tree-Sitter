@@ -346,11 +346,11 @@
 
 ; Category captures dynamically generated from TextMate grammar scopes
 (operator_word) @operator
-(object_keyword) @keyword
+(object_keyword) @applicationobject
 (type_keyword) @type.builtin
 (metadata_keyword) @keyword
 (property_keyword) @operator
-(keyword) @keyword
+(keyword) @type.builtin
 
 ; --- Punctuation & Operators (from TextMate punctuation.al scope) ---
 (operator) @operator
