@@ -114,9 +114,18 @@ AL-Tree-Sitter/
 - `var`, `local`, `protected`, `internal`
 - Fields, keys, actions, views
 
+## Acknowledgments
+
+Special thanks to [@SShadowS](https://github.com/SShadowS) for their [tree-sitter-al](https://github.com/SShadowS/tree-sitter-al) grammar which I initially used. I needed to create this alternative version because the original `parser.c` was too large for WASM compilation in Zed extensions.
+
+**Key differences from the original:**
+- **Smaller parser.c** - Optimized for WASM bundle size
+- **Dynamically generated** - Everything (grammar, parser, scanner, queries) is automatically generated from Microsoft's VS Code AL extension TextMate grammar. This is the core design principle - the grammar stays in sync with Microsoft's official extension without manual maintenance.
+
 ## Related Projects
 
 - [AL Extension for Zed](https://github.com/Brad-Fullwood/al.language.zed) - Zed editor extension using this grammar
+- [tree-sitter-al by SShadowS](https://github.com/SShadowS/tree-sitter-al) - The original tree-sitter grammar that inspired this project
 - [AL Language Extension for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-dynamics-smb.al) - Microsoft's official extension
 
 ## License
