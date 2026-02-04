@@ -351,6 +351,8 @@
 (metadata_keyword) @keyword
 (property_keyword) @operator
 (keyword) @keyword
+; CRITICAL: control_keyword for keywords inside nested blocks (page triggers, etc.)
+(control_keyword) @keyword
 
 ; --- Punctuation & Operators (from TextMate punctuation.al scope) ---
 (operator) @operator
