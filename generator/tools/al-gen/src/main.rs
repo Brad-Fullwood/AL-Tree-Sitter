@@ -158,6 +158,7 @@ fn textmate_to_treesitter_capture(scope: &str) -> String {
                     "type" | "class" | "struct" | "enum" | "interface" => "@type".to_string(),
                     "tag" => "@tag".to_string(),
                     "section" => "@title".to_string(),
+                    "applicationobject" => "@keyword".to_string(), // AL object declarations (codeunit, table, etc.)
                     _ => format!("@{}", parts[2])
                 }
             } else if parts.len() > 1 && parts[1] == "name" {
