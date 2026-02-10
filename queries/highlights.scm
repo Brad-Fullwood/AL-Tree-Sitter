@@ -23,27 +23,64 @@
 
 ; --- Keywords ---
 ; All keyword highlighting is dynamically generated from TextMate grammar scopes
+; --- Control Flow Keywords ---
+; Zed themes color @keyword.control differently from @keyword
+(kw_asserterror) @keyword.control
+(kw_begin) @keyword.control
+(kw_break) @keyword.control
+(kw_case) @keyword.control
+(kw_continue) @keyword.control
+(kw_do) @keyword.control
+(kw_downto) @keyword.control
+(kw_else) @keyword.control
+(kw_end) @keyword.control
+(kw_exit) @keyword.control
+(kw_for) @keyword.control
+(kw_foreach) @keyword.control
+(kw_if) @keyword.control
+(kw_in) @keyword.control
+(kw_of) @keyword.control
+(kw_repeat) @keyword.control
+(kw_then) @keyword.control
+(kw_to) @keyword.control
+(kw_until) @keyword.control
+(kw_while) @keyword.control
+(kw_with) @keyword.control
+
+; --- Function Definition Keywords ---
+(kw_event) @keyword.function
+(kw_function) @keyword.function
+(kw_procedure) @keyword.function
+(kw_trigger) @keyword.function
+
+; --- Modifier/Storage Keywords ---
+(kw_indataset) @keyword.modifier
+(kw_internal) @keyword.modifier
+(kw_local) @keyword.modifier
+(kw_protected) @keyword.modifier
+(kw_runonclient) @keyword.modifier
+(kw_suppressdispose) @keyword.modifier
+(kw_temporary) @keyword.modifier
+(kw_var) @keyword.modifier
+(kw_withevents) @keyword.modifier
+
+; --- Remaining Keywords ---
 (kw_action) @keyword
 (kw_actionref) @keyword
 (kw_array) @keyword
-(kw_asserterror) @keyword
 (kw_auditcategory) @keyword
 (kw_automation) @keyword
-(kw_begin) @keyword
 (kw_biginteger) @keyword
 (kw_bigtext) @keyword
 (kw_blob) @keyword
 (kw_boolean) @keyword
-(kw_break) @keyword
 (kw_byte) @keyword
-(kw_case) @keyword
 (kw_char) @keyword
 (kw_clienttype) @keyword
 (kw_code) @keyword
 (kw_codeunit) @keyword
 (kw_completiontriggererrorlevel) @keyword
 (kw_connectiontype) @keyword
-(kw_continue) @keyword
 (kw_controladdin) @keyword
 (kw_cookie) @keyword
 (kw_customaction) @keyword
@@ -58,23 +95,17 @@
 (kw_defaultlayout) @keyword
 (kw_dialog) @keyword
 (kw_dictionary) @keyword
-(kw_do) @keyword
 (kw_dotnet) @keyword
 (kw_dotnetassembly) @keyword
 (kw_dotnettypedeclaration) @keyword
-(kw_downto) @keyword
 (kw_duration) @keyword
-(kw_else) @keyword
-(kw_end) @keyword
 (kw_entitlement) @keyword
 (kw_enum) @keyword
 (kw_enumextension) @keyword
 (kw_errorinfo) @keyword
 (kw_errortype) @keyword
-(kw_event) @keyword
 (kw_executioncontext) @keyword
 (kw_executionmode) @keyword
-(kw_exit) @keyword
 (kw_fieldclass) @keyword
 (kw_fieldref) @keyword
 (kw_fieldtype) @keyword
@@ -82,9 +113,6 @@
 (kw_fileupload) @keyword
 (kw_fileuploadaction) @keyword
 (kw_filterpagebuilder) @keyword
-(kw_for) @keyword
-(kw_foreach) @keyword
-(kw_function) @keyword
 (kw_guid) @keyword
 (kw_httpclient) @keyword
 (kw_httpcontent) @keyword
@@ -92,13 +120,9 @@
 (kw_httprequestmessage) @keyword
 (kw_httprequesttype) @keyword
 (kw_httpresponsemessage) @keyword
-(kw_if) @keyword
-(kw_in) @keyword
-(kw_indataset) @keyword
 (kw_instream) @keyword
 (kw_integer) @keyword
 (kw_interface) @keyword
-(kw_internal) @keyword
 (kw_isolationlevel) @keyword
 (kw_joker) @keyword
 (kw_jsonarray) @keyword
@@ -107,7 +131,6 @@
 (kw_jsonvalue) @keyword
 (kw_keyref) @keyword
 (kw_list) @keyword
-(kw_local) @keyword
 (kw_media) @keyword
 (kw_mediaset) @keyword
 (kw_moduledependencyinfo) @keyword
@@ -116,7 +139,6 @@
 (kw_notification) @keyword
 (kw_notificationscope) @keyword
 (kw_objecttype) @keyword
-(kw_of) @keyword
 (kw_option) @keyword
 (kw_outstream) @keyword
 (kw_page) @keyword
@@ -127,32 +149,26 @@
 (kw_pagestyle) @keyword
 (kw_permissionset) @keyword
 (kw_permissionsetextension) @keyword
-(kw_procedure) @keyword
 (kw_profile) @keyword
 (kw_profileextension) @keyword
 (kw_program) @keyword
-(kw_protected) @keyword
 (kw_query) @keyword
 (kw_record) @keyword
 (kw_recordid) @keyword
 (kw_recordref) @keyword
-(kw_repeat) @keyword
 (kw_report) @keyword
 (kw_reportextension) @keyword
 (kw_reportformat) @keyword
-(kw_runonclient) @keyword
 (kw_secrettext) @keyword
 (kw_securityfilter) @keyword
 (kw_securityfiltering) @keyword
 (kw_securityoperationresult) @keyword
 (kw_sessionsettings) @keyword
-(kw_suppressdispose) @keyword
 (kw_systemaction) @keyword
 (kw_table) @keyword
 (kw_tableconnectiontype) @keyword
 (kw_tableextension) @keyword
 (kw_tablefilter) @keyword
-(kw_temporary) @keyword
 (kw_testaction) @keyword
 (kw_testfield) @keyword
 (kw_testfilterfield) @keyword
@@ -165,15 +181,10 @@
 (kw_textbuilder) @keyword
 (kw_textconst) @keyword
 (kw_textencoding) @keyword
-(kw_then) @keyword
 (kw_time) @keyword
-(kw_to) @keyword
 (kw_transactionmodel) @keyword
 (kw_transactiontype) @keyword
-(kw_trigger) @keyword
-(kw_until) @keyword
 (kw_value) @keyword
-(kw_var) @keyword
 (kw_variant) @keyword
 (kw_verbosity) @keyword
 (kw_version) @keyword
@@ -181,9 +192,6 @@
 (kw_views) @keyword
 (kw_webserviceactioncontext) @keyword
 (kw_webserviceactionresultcode) @keyword
-(kw_while) @keyword
-(kw_with) @keyword
-(kw_withevents) @keyword
 (kw_xmlattribute) @keyword
 (kw_xmlattributecollection) @keyword
 (kw_xmlcdata) @keyword
@@ -201,14 +209,16 @@
 (kw_xmlreadoptions) @keyword
 (kw_xmltext) @keyword
 (kw_xmlwriteoptions) @keyword
-(op_and) @operator
-(op_as) @operator
-(op_div) @operator
-(op_is) @operator
-(op_mod) @operator
-(op_not) @operator
-(op_or) @operator
-(op_xor) @operator
+
+; --- Keyword Operators ---
+(op_and) @keyword.operator
+(op_as) @keyword.operator
+(op_div) @keyword.operator
+(op_is) @keyword.operator
+(op_mod) @keyword.operator
+(op_not) @keyword.operator
+(op_or) @keyword.operator
+(op_xor) @keyword.operator
 
 ; Type keywords (override control keyword captures)
 (kw_action) @type.builtin
@@ -345,14 +355,14 @@
 
 
 ; Category captures dynamically generated from TextMate grammar scopes
-(operator_word) @operator
+(operator_word) @keyword.operator
 (object_keyword) @keyword
 (type_keyword) @type.builtin
 (metadata_keyword) @keyword
-(property_keyword) @operator
+(property_keyword) @keyword
 (keyword) @keyword
 ; CRITICAL: control_keyword for keywords inside nested blocks (page triggers, etc.)
-(control_keyword) @keyword
+(control_keyword) @keyword.control
 
 ; --- Punctuation & Operators (from TextMate punctuation.al scope) ---
 (operator) @operator

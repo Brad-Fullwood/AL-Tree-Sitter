@@ -12,7 +12,7 @@
 use anyhow::{Context, Result, anyhow};
 use regex::Regex;
 use serde::Deserialize;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -66,6 +66,11 @@ fn main() -> Result<()> {
     
     generate_highlights(&keywords, &highlights_path)?;
     println!("✅ Generated {}", highlights_path);
+
+    println!("\n🎭 Generating Zed themes from VS Code BC themes...");
+    let zed_extension_themes_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../Zed AL Extension/themes");
+    generate_themes(&extension_path, &zed_extension_themes_dir)?;
 
     println!("\n🌳 Running tree-sitter generate...");
     run_tree_sitter_generate(root_offset)?;
@@ -906,27 +911,62 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     // Only control keywords and operator words have individual grammar tokens (kw_* and op_*).
     // Other categories use the category tokens in the template (object_keyword, type_keyword, etc.)
 
-    // Control keywords get kw_* tokens
-    // Use the dynamically extracted capture from TextMate scopes
-    let control_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("keyword.control"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@keyword");
+    // Classify control keywords into sub-categories for richer highlighting.
+    // The TextMate grammar uses a single "keyword.control.al" scope for everything,
+    // but Zed themes can differentiate @keyword.control, @keyword.function, @keyword.modifier.
+    use std::collections::HashSet;
 
+    let control_flow: HashSet<&str> = [
+        "if", "then", "else", "begin", "end", "for", "foreach", "to", "downto",
+        "do", "while", "repeat", "until", "case", "of", "with", "in",
+        "exit", "break", "continue", "asserterror",
+    ].into_iter().collect();
+
+    let function_def: HashSet<&str> = [
+        "procedure", "trigger", "event", "function",
+    ].into_iter().collect();
+
+    let modifiers: HashSet<&str> = [
+        "var", "local", "protected", "internal", "temporary",
+        "runonclient", "withevents", "suppressdispose", "indataset",
+    ].into_iter().collect();
+
+    specific_tokens.push_str("; --- Control Flow Keywords ---\n");
+    specific_tokens.push_str("; Zed themes color @keyword.control differently from @keyword\n");
     for kw in &keywords.control {
-        specific_tokens.push_str(&format!("(kw_{}) {}\n", kw, control_capture));
+        if control_flow.contains(kw.as_str()) {
+            specific_tokens.push_str(&format!("(kw_{}) @keyword.control\n", kw));
+        }
     }
 
-    // Operator words get op_* tokens
-    let operator_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("keyword.operator"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@operator");
+    specific_tokens.push_str("\n; --- Function Definition Keywords ---\n");
+    for kw in &keywords.control {
+        if function_def.contains(kw.as_str()) {
+            specific_tokens.push_str(&format!("(kw_{}) @keyword.function\n", kw));
+        }
+    }
 
+    specific_tokens.push_str("\n; --- Modifier/Storage Keywords ---\n");
+    for kw in &keywords.control {
+        if modifiers.contains(kw.as_str()) {
+            specific_tokens.push_str(&format!("(kw_{}) @keyword.modifier\n", kw));
+        }
+    }
+
+    specific_tokens.push_str("\n; --- Remaining Keywords ---\n");
+    for kw in &keywords.control {
+        if !control_flow.contains(kw.as_str())
+            && !function_def.contains(kw.as_str())
+            && !modifiers.contains(kw.as_str())
+        {
+            specific_tokens.push_str(&format!("(kw_{}) @keyword\n", kw));
+        }
+    }
+
+    // Operator words get op_* tokens with @keyword.operator
+    specific_tokens.push_str("\n; --- Keyword Operators ---\n");
     for kw in &keywords.operator_words {
-        specific_tokens.push_str(&format!("(op_{}) {}\n", kw, operator_capture));
+        specific_tokens.push_str(&format!("(op_{}) @keyword.operator\n", kw));
     }
 
     // Type keywords need their own rules with @type.builtin
@@ -962,6 +1002,13 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
         .find(|(scope, _)| scope.contains("property"))
         .map(|(_, cap)| cap.as_str())
         .unwrap_or("@keyword");
+
+    // Operator symbols (not keyword operators - those are hardcoded as @keyword.operator)
+    let operator_capture = keywords.scope_captures
+        .iter()
+        .find(|(scope, _)| scope.contains("keyword.operator"))
+        .map(|(_, cap)| cap.as_str())
+        .unwrap_or("@operator");
 
     // Quoted identifiers ("...") - extracted from identifier.quoted.double.al scope
     // In AL, these are identifiers (table names, etc.), NOT string literals
@@ -1563,4 +1610,575 @@ fn extract_json_object_from_output(s: &str) -> Option<&str> {
         offset += line.len() + 1; // + '\n'
     }
     None
+}
+
+// ---------------------------------------------------------------------------
+// Theme generation: VS Code BC themes -> Zed theme format
+// ---------------------------------------------------------------------------
+
+/// Strip JavaScript-style comments and trailing commas from JSONC.
+/// The BC theme files use VS Code's JSONC format with `// ...` comments
+/// and trailing commas, which serde_json cannot parse.
+fn strip_jsonc(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut in_string = false;
+    let mut chars = input.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if in_string {
+            out.push(ch);
+            // Handle escape sequences inside strings
+            if ch == '\\' {
+                if let Some(&next) = chars.peek() {
+                    out.push(next);
+                    chars.next();
+                }
+            } else if ch == '"' {
+                in_string = false;
+            }
+            continue;
+        }
+
+        if ch == '"' {
+            in_string = true;
+            out.push(ch);
+            continue;
+        }
+
+        if ch == '/' {
+            if chars.peek() == Some(&'/') {
+                // Single-line comment: skip until end of line
+                for c in chars.by_ref() {
+                    if c == '\n' {
+                        out.push('\n');
+                        break;
+                    }
+                }
+                continue;
+            }
+            if chars.peek() == Some(&'*') {
+                // Block comment: skip until */
+                chars.next(); // consume '*'
+                let mut prev = ' ';
+                for c in chars.by_ref() {
+                    if prev == '*' && c == '/' {
+                        break;
+                    }
+                    if c == '\n' {
+                        out.push('\n');
+                    }
+                    prev = c;
+                }
+                continue;
+            }
+        }
+
+        out.push(ch);
+    }
+
+    // Strip trailing commas before } or ]
+    let trailing_comma_re = Regex::new(r",(\s*[}\]])").unwrap();
+    trailing_comma_re.replace_all(&out, "$1").to_string()
+}
+
+/// Convert a single VS Code BC theme file to a Zed theme variant.
+fn convert_vscode_theme_to_zed(
+    vscode_theme: &serde_json::Value,
+) -> Result<serde_json::Value> {
+    let name = vscode_theme
+        .get("name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("BC Theme");
+
+    let theme_type = vscode_theme
+        .get("type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("dark");
+
+    let appearance = if theme_type == "light" { "light" } else { "dark" };
+
+    let colors = vscode_theme
+        .get("colors")
+        .and_then(|v| v.as_object())
+        .cloned()
+        .unwrap_or_default();
+
+    let token_colors = vscode_theme
+        .get("tokenColors")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    // Build the style object with UI colors
+    let mut style = serde_json::Map::new();
+    map_ui_colors(&colors, &mut style, appearance);
+
+    // Build syntax tokens from tokenColors
+    let syntax = map_token_colors(&token_colors);
+    style.insert(
+        "syntax".to_string(),
+        serde_json::Value::Object(syntax),
+    );
+
+    Ok(serde_json::json!({
+        "name": name,
+        "appearance": appearance,
+        "style": serde_json::Value::Object(style)
+    }))
+}
+
+/// Map VS Code `colors` object to Zed `style` UI color properties.
+fn map_ui_colors(
+    colors: &serde_json::Map<String, serde_json::Value>,
+    style: &mut serde_json::Map<String, serde_json::Value>,
+    appearance: &str,
+) {
+    // Direct mappings from VS Code color keys to Zed style keys
+    let mappings: &[(&str, &[&str])] = &[
+        ("editor.background", &["background", "editor.background", "toolbar.background"]),
+        ("editor.foreground", &["editor.foreground", "text"]),
+        ("activityBar.background", &["tab_bar.background"]),
+        ("sideBar.background", &["panel.background"]),
+        ("sideBarSectionHeader.background", &["surface.background"]),
+        ("statusBar.background", &["status_bar.background"]),
+        ("editorSuggestWidget.background", &["elevated_surface.background"]),
+        ("editorIndentGuide.background1", &["editor.wrap_guide"]),
+        ("editorIndentGuide.activeBackground1", &["editor.active_wrap_guide"]),
+        ("editor.selectionBackground", &["editor.highlight.occurrence"]),
+        ("editor.selectionHighlightBackground", &[
+            "editor.document_highlight.read_background",
+            "editor.document_highlight.write_background",
+        ]),
+        ("list.activeSelectionBackground", &["element.selected", "ghost_element.selected"]),
+        ("list.hoverBackground", &["element.hover", "ghost_element.hover"]),
+        ("input.placeholderForeground", &["text.placeholder"]),
+        ("sideBarSectionHeader.border", &["border"]),
+        ("list.focusAndSelectionOutline", &["border.focused"]),
+        ("button.background", &["element.active"]),
+        ("tab.activeBackground", &["tab.active_background"]),
+        ("tab.inactiveBackground", &["tab.inactive_background"]),
+    ];
+
+    for (vscode_key, zed_keys) in mappings {
+        if let Some(value) = colors.get(*vscode_key) {
+            for zed_key in *zed_keys {
+                style.insert(zed_key.to_string(), value.clone());
+            }
+        }
+    }
+
+    // Editor line number from editorLineNumber or derive from foreground
+    if let Some(v) = colors.get("editorLineNumber.foreground") {
+        style.insert("editor.line_number".to_string(), v.clone());
+    } else if let Some(fg) = colors.get("editor.foreground").and_then(|v| v.as_str()) {
+        // Derive a dimmed line number color
+        style.insert(
+            "editor.line_number".to_string(),
+            serde_json::Value::String(dim_color(fg, 0.5)),
+        );
+    }
+
+    // Active line number (use foreground)
+    if let Some(v) = colors.get("editor.foreground") {
+        style.insert("editor.active_line_number".to_string(), v.clone());
+    }
+
+    // Editor active line background - derive from editor background
+    if let Some(bg) = colors.get("editor.background").and_then(|v| v.as_str()) {
+        let active_line_bg = if appearance == "dark" {
+            lighten_color(bg, 0.05)
+        } else {
+            darken_color(bg, 0.03)
+        };
+        style.insert(
+            "editor.active_line.background".to_string(),
+            serde_json::Value::String(active_line_bg),
+        );
+    }
+
+    // Editor gutter background (same as editor background)
+    if let Some(v) = colors.get("editor.background") {
+        style.insert("editor.gutter.background".to_string(), v.clone());
+    }
+
+    // Title bar - derive from editor background
+    if let Some(bg) = colors.get("editor.background").and_then(|v| v.as_str()) {
+        let title_bg = if appearance == "dark" {
+            darken_color(bg, 0.05)
+        } else {
+            darken_color(bg, 0.03)
+        };
+        style.insert(
+            "title_bar.background".to_string(),
+            serde_json::Value::String(title_bg),
+        );
+    }
+
+    // Tab bar background - if not set from activityBar, derive from editor background
+    if !style.contains_key("tab_bar.background") {
+        if let Some(bg) = colors.get("editor.background").and_then(|v| v.as_str()) {
+            let tab_bar_bg = if appearance == "dark" {
+                darken_color(bg, 0.03)
+            } else {
+                darken_color(bg, 0.02)
+            };
+            style.insert(
+                "tab_bar.background".to_string(),
+                serde_json::Value::String(tab_bar_bg),
+            );
+        }
+    }
+
+    // Terminal background (same as editor background)
+    if let Some(v) = colors.get("editor.background") {
+        style.insert("terminal.background".to_string(), v.clone());
+    }
+
+    // Terminal ANSI colors
+    let ansi_mappings: &[(&str, &str)] = &[
+        ("terminal.ansiBlack", "terminal.ansi.black"),
+        ("terminal.ansiRed", "terminal.ansi.red"),
+        ("terminal.ansiGreen", "terminal.ansi.green"),
+        ("terminal.ansiYellow", "terminal.ansi.yellow"),
+        ("terminal.ansiBlue", "terminal.ansi.blue"),
+        ("terminal.ansiMagenta", "terminal.ansi.magenta"),
+        ("terminal.ansiCyan", "terminal.ansi.cyan"),
+        ("terminal.ansiWhite", "terminal.ansi.white"),
+        ("terminal.ansiBrightBlack", "terminal.ansi.bright_black"),
+        ("terminal.ansiBrightRed", "terminal.ansi.bright_red"),
+        ("terminal.ansiBrightGreen", "terminal.ansi.bright_green"),
+        ("terminal.ansiBrightYellow", "terminal.ansi.bright_yellow"),
+        ("terminal.ansiBrightBlue", "terminal.ansi.bright_blue"),
+        ("terminal.ansiBrightMagenta", "terminal.ansi.bright_magenta"),
+        ("terminal.ansiBrightCyan", "terminal.ansi.bright_cyan"),
+        ("terminal.ansiBrightWhite", "terminal.ansi.bright_white"),
+    ];
+
+    for (vscode_key, zed_key) in ansi_mappings {
+        if let Some(v) = colors.get(*vscode_key) {
+            style.insert(zed_key.to_string(), v.clone());
+        }
+    }
+
+    // Error/warning colors
+    if let Some(v) = colors.get("editorError.foreground") {
+        style.insert("error".to_string(), v.clone());
+    }
+    if let Some(v) = colors.get("editorWarning.foreground") {
+        style.insert("warning".to_string(), v.clone());
+    }
+
+    // Scrollbar
+    if let Some(bg) = colors.get("editor.background").and_then(|v| v.as_str()) {
+        style.insert(
+            "scrollbar.track.background".to_string(),
+            serde_json::Value::String(bg.to_string()),
+        );
+        let thumb = if appearance == "dark" {
+            lighten_color(bg, 0.15)
+        } else {
+            darken_color(bg, 0.12)
+        };
+        style.insert(
+            "scrollbar.thumb.background".to_string(),
+            serde_json::Value::String(format!("{}80", thumb)),
+        );
+    }
+
+    // Border variant (slightly dimmer than border)
+    if let Some(border) = style.get("border").cloned() {
+        style.insert("border.variant".to_string(), border);
+    }
+
+    // Players (cursor colors) - use the brand teal color
+    let brand_color = colors
+        .get("button.background")
+        .or_else(|| colors.get("statusBar.background"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("#00747F");
+
+    let player_selection = format!("{}40", brand_color);
+    style.insert(
+        "players".to_string(),
+        serde_json::json!([
+            {
+                "cursor": format!("{}ff", brand_color),
+                "background": format!("{}ff", brand_color),
+                "selection": player_selection
+            }
+        ]),
+    );
+}
+
+/// Map VS Code `tokenColors` array to Zed `syntax` object.
+fn map_token_colors(
+    token_colors: &[serde_json::Value],
+) -> serde_json::Map<String, serde_json::Value> {
+    // Build a scope -> (color, font_style) map from VS Code tokenColors.
+    // VS Code uses most-specific-scope-wins, so we process in order and let
+    // more specific scopes override less specific ones.
+    let mut scope_map: BTreeMap<String, (Option<String>, Option<String>)> = BTreeMap::new();
+
+    for entry in token_colors {
+        let settings = match entry.get("settings").and_then(|v| v.as_object()) {
+            Some(s) => s,
+            None => continue,
+        };
+
+        let foreground = settings
+            .get("foreground")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+
+        let font_style = settings
+            .get("fontStyle")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
+
+        // Scope can be a string or an array of strings
+        let scopes: Vec<String> = match entry.get("scope") {
+            Some(serde_json::Value::String(s)) => vec![s.clone()],
+            Some(serde_json::Value::Array(arr)) => arr
+                .iter()
+                .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                .collect(),
+            _ => continue,
+        };
+
+        for scope in scopes {
+            scope_map.insert(scope, (foreground.clone(), font_style.clone()));
+        }
+    }
+
+    // Map from VS Code scope names to Zed syntax token names
+    let scope_to_zed: &[(&[&str], &str)] = &[
+        (&["comment"], "comment"),
+        (&["comment.documentation"], "comment.doc"),
+        (&["keyword"], "keyword"),
+        (&["string"], "string"),
+        (&["constant.numeric"], "number"),
+        (&["constant.language"], "boolean"),
+        (&["constant.regexp"], "string.regex"),
+        (&["entity.name.function"], "function"),
+        (&["entity.name.type", "entity.name.class", "entity.name.enum",
+          "entity.name.interface", "entity.name.namespace"], "type"),
+        (&["variable"], "variable"),
+        (&["entity.other.attribute-name"], "attribute"),
+        (&["entity.name.tag"], "tag"),
+        (&["support.type.property-name.json"], "property"),
+        (&["markup.bold"], "emphasis.strong"),
+        (&["markup.italic", "emphasis"], "emphasis"),
+        (&["markup.heading"], "title"),
+        (&["markup.underline"], "link_text"),
+        (&["invalid"], "error"),
+        (&["meta.embedded"], "embedded"),
+    ];
+
+    let mut syntax = serde_json::Map::new();
+
+    for (vscode_scopes, zed_token) in scope_to_zed {
+        // Find the first matching scope that has a foreground color
+        for vscode_scope in *vscode_scopes {
+            if let Some((foreground, font_style)) = scope_map.get(*vscode_scope) {
+                let mut token_style = serde_json::Map::new();
+
+                if let Some(color) = foreground {
+                    token_style.insert(
+                        "color".to_string(),
+                        serde_json::Value::String(color.clone()),
+                    );
+                }
+
+                if let Some(style) = font_style {
+                    token_style.insert(
+                        "font_style".to_string(),
+                        serde_json::Value::String(style.clone()),
+                    );
+                } else {
+                    token_style
+                        .insert("font_style".to_string(), serde_json::Value::Null);
+                }
+
+                token_style
+                    .insert("font_weight".to_string(), serde_json::Value::Null);
+
+                if !token_style.is_empty() {
+                    syntax.insert(
+                        zed_token.to_string(),
+                        serde_json::Value::Object(token_style),
+                    );
+                    break; // Use the first match
+                }
+            }
+        }
+    }
+
+    // Add operator token (use keyword color if no specific operator scope)
+    if !syntax.contains_key("operator") {
+        if let Some((Some(color), _)) = scope_map.get("keyword") {
+            syntax.insert(
+                "operator".to_string(),
+                serde_json::json!({
+                    "color": color,
+                    "font_style": null,
+                    "font_weight": null
+                }),
+            );
+        }
+    }
+
+    // Add punctuation token (use foreground color)
+    if !syntax.contains_key("punctuation") {
+        if let Some((Some(color), _)) = scope_map.get("meta.embedded") {
+            syntax.insert(
+                "punctuation".to_string(),
+                serde_json::json!({
+                    "color": color,
+                    "font_style": null,
+                    "font_weight": null
+                }),
+            );
+        }
+    }
+
+    // Add constant token (use constant.language color)
+    if let Some((Some(color), _)) = scope_map.get("constant.language") {
+        syntax.insert(
+            "constant".to_string(),
+            serde_json::json!({
+                "color": color,
+                "font_style": null,
+                "font_weight": null
+            }),
+        );
+    }
+
+    syntax
+}
+
+/// Generate Zed themes from VS Code BC theme files.
+fn generate_themes(extension_path: &Path, output_dir: &Path) -> Result<()> {
+    let themes_dir = extension_path.join("themes");
+    if !themes_dir.is_dir() {
+        println!("   No themes directory found in VS Code extension, skipping.");
+        return Ok(());
+    }
+
+    let dark_path = themes_dir.join("BC_dark.json");
+    let light_path = themes_dir.join("BC_light.json");
+
+    let mut zed_themes: Vec<serde_json::Value> = Vec::new();
+
+    // Process dark theme
+    if dark_path.exists() {
+        println!("   Converting BC_dark.json...");
+        let raw = fs::read_to_string(&dark_path)
+            .with_context(|| format!("Failed to read {}", dark_path.display()))?;
+        let cleaned = strip_jsonc(&raw);
+        let vscode_theme: serde_json::Value = serde_json::from_str(&cleaned)
+            .with_context(|| format!("Failed to parse {}", dark_path.display()))?;
+        let zed_variant = convert_vscode_theme_to_zed(&vscode_theme)?;
+        zed_themes.push(zed_variant);
+    } else {
+        println!("   BC_dark.json not found, skipping dark variant.");
+    }
+
+    // Process light theme
+    if light_path.exists() {
+        println!("   Converting BC_light.json...");
+        let raw = fs::read_to_string(&light_path)
+            .with_context(|| format!("Failed to read {}", light_path.display()))?;
+        let cleaned = strip_jsonc(&raw);
+        let vscode_theme: serde_json::Value = serde_json::from_str(&cleaned)
+            .with_context(|| format!("Failed to parse {}", light_path.display()))?;
+        let zed_variant = convert_vscode_theme_to_zed(&vscode_theme)?;
+        zed_themes.push(zed_variant);
+    } else {
+        println!("   BC_light.json not found, skipping light variant.");
+    }
+
+    if zed_themes.is_empty() {
+        println!("   No BC theme files found, skipping theme generation.");
+        return Ok(());
+    }
+
+    let zed_theme_file = serde_json::json!({
+        "name": "Business Central",
+        "author": "Microsoft (converted)",
+        "themes": zed_themes
+    });
+
+    // Write output
+    fs::create_dir_all(output_dir)
+        .with_context(|| format!("Failed to create themes directory: {}", output_dir.display()))?;
+
+    let output_path = output_dir.join("bc-themes.json");
+    let formatted = serde_json::to_string_pretty(&zed_theme_file)?;
+    fs::write(&output_path, &formatted)
+        .with_context(|| format!("Failed to write {}", output_path.display()))?;
+
+    println!(
+        "   Generated {} theme variant(s) -> {}",
+        zed_themes.len(),
+        output_path.display()
+    );
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Color manipulation helpers
+// ---------------------------------------------------------------------------
+
+/// Parse a hex color string (#RGB, #RRGGBB, or #RRGGBBAA) into (r, g, b) components.
+fn parse_hex_color(hex: &str) -> Option<(u8, u8, u8)> {
+    let hex = hex.trim_start_matches('#');
+    match hex.len() {
+        3 => {
+            let r = u8::from_str_radix(&hex[0..1].repeat(2), 16).ok()?;
+            let g = u8::from_str_radix(&hex[1..2].repeat(2), 16).ok()?;
+            let b = u8::from_str_radix(&hex[2..3].repeat(2), 16).ok()?;
+            Some((r, g, b))
+        }
+        6 | 8 => {
+            let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+            let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+            let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+            Some((r, g, b))
+        }
+        _ => None,
+    }
+}
+
+/// Lighten a hex color by a factor (0.0 = no change, 1.0 = white).
+fn lighten_color(hex: &str, factor: f64) -> String {
+    let Some((r, g, b)) = parse_hex_color(hex) else {
+        return hex.to_string();
+    };
+    let r = (r as f64 + (255.0 - r as f64) * factor).round() as u8;
+    let g = (g as f64 + (255.0 - g as f64) * factor).round() as u8;
+    let b = (b as f64 + (255.0 - b as f64) * factor).round() as u8;
+    format!("#{:02X}{:02X}{:02X}", r, g, b)
+}
+
+/// Darken a hex color by a factor (0.0 = no change, 1.0 = black).
+fn darken_color(hex: &str, factor: f64) -> String {
+    let Some((r, g, b)) = parse_hex_color(hex) else {
+        return hex.to_string();
+    };
+    let r = (r as f64 * (1.0 - factor)).round() as u8;
+    let g = (g as f64 * (1.0 - factor)).round() as u8;
+    let b = (b as f64 * (1.0 - factor)).round() as u8;
+    format!("#{:02X}{:02X}{:02X}", r, g, b)
+}
+
+/// Dim a hex color by blending towards gray with a given opacity factor.
+fn dim_color(hex: &str, factor: f64) -> String {
+    let Some((r, g, b)) = parse_hex_color(hex) else {
+        return hex.to_string();
+    };
+    let r = (r as f64 * factor).round() as u8;
+    let g = (g as f64 * factor).round() as u8;
+    let b = (b as f64 * factor).round() as u8;
+    format!("#{:02X}{:02X}{:02X}", r, g, b)
 }

@@ -26,12 +26,14 @@
 {{CONTROL_KW_TOKEN_HIGHLIGHTS}}
 
 ; Category captures dynamically generated from TextMate grammar scopes
-(operator_word) {{OPERATOR_CAPTURE}}
+(operator_word) @keyword.operator
 (object_keyword) {{OBJECT_CAPTURE}}
 (type_keyword) {{TYPE_CAPTURE}}
 (metadata_keyword) {{METADATA_CAPTURE}}
 (property_keyword) {{PROPERTY_CAPTURE}}
 (keyword) {{KEYWORD_CAPTURE}}
+; CRITICAL: control_keyword for keywords inside nested blocks (page triggers, etc.)
+(control_keyword) @keyword.control
 
 ; --- Punctuation & Operators (from TextMate punctuation.al scope) ---
 (operator) {{OPERATOR_CAPTURE}}
