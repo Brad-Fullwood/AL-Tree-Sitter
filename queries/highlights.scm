@@ -378,7 +378,11 @@
 
 ; --- Object Declarations ---
 ; Highlight object names (codeunit "Name", table "Name", etc.)
-(object_declaration (quoted_identifier) @title)
+; The name is nested: object_declaration > name: name_or_keyword > name > quoted_identifier
+(object_declaration name: (name_or_keyword (name (quoted_identifier) @title)))
+(object_declaration name: (name_or_keyword (name (identifier) @title)))
+; Highlight the extends/implements target (direct quoted_identifier child via _pre_object_body)
+(object_declaration (quoted_identifier) @type)
 
 ; --- Property Assignments ---
 ; Property names in assignments like: Caption = 'value';
