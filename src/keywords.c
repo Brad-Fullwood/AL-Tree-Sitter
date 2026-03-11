@@ -581,6 +581,7 @@ static const char *const AL_KEYWORDS_TYPES[] = {
   "systemaction",
   "table",
   "tableconnectiontype",
+  "tabledata",
   "tablefilter",
   "testaction",
   "testfield",

@@ -1079,6 +1079,9 @@ module.exports = grammar({
   braced_block: $ => prec.right(seq(
     '{',
     repeat(choice(
+      $.trigger_declaration,
+      $.procedure_declaration,
+      $.property_assignment,
       $.key_declaration,
       $.braced_block,
       $.parenthesized_block,
