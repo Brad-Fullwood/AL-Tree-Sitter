@@ -37,6 +37,8 @@ static inline void *al_memcpy(void *dst, const void *src, size_t n) {
 typedef enum {
   KW_ACTION,
   KW_ACTIONREF,
+  KW_ANALYSISVIEW,
+  KW_ANALYSISVIEWS,
   KW_ARRAY,
   KW_ASSERTERROR,
   KW_AUDITCATEGORY,
@@ -711,6 +713,8 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
   // Fast-path: if no keyword-like tokens are valid in this state, don't scan.
   if (!valid_symbols[KW_ACTION] &&
       !valid_symbols[KW_ACTIONREF] &&
+      !valid_symbols[KW_ANALYSISVIEW] &&
+      !valid_symbols[KW_ANALYSISVIEWS] &&
       !valid_symbols[KW_ARRAY] &&
       !valid_symbols[KW_ASSERTERROR] &&
       !valid_symbols[KW_AUDITCATEGORY] &&

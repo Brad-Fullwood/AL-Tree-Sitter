@@ -7,6 +7,9 @@
 //!   - `src/scanner.c`   (external scanner; includes keywords.c)
 //!   - `grammar.js`      (tree-sitter grammar; uses keyword categories, not strings)
 //!   - `src/parser.c`    (via `tree-sitter generate`)
+//!   - `queries/highlights.scm`  (from keywords + template)
+//!   - `queries/folds.scm`, `queries/locals.scm`, `queries/textobjects.scm`
+//!     (from `src/node-types.json` produced by `tree-sitter generate`)
 //!   - Optional repo test run (via `tree-sitter parse`)
 
 use anyhow::{Context, Result, anyhow};
@@ -56,14 +59,12 @@ fn main() -> Result<()> {
     generate_grammar_js(&keywords, &external_tokens, root_offset)?;
     println!("✅ Generated grammar.js");
 
-    println!("🎨 Generating highlight queries...");
-    
     // Create queries dir in root
     let queries_dir = format!("{}queries", root_offset);
     fs::create_dir_all(&queries_dir)?;
-    
+
+    println!("🎨 Generating highlights query (from keywords)...");
     let highlights_path = format!("{}/highlights.scm", queries_dir);
-    
     generate_highlights(&keywords, &highlights_path)?;
     println!("✅ Generated {}", highlights_path);
 
@@ -74,6 +75,11 @@ fn main() -> Result<()> {
 
     println!("\n🌳 Running tree-sitter generate...");
     run_tree_sitter_generate(root_offset)?;
+
+    // Generate structural queries from node-types.json (produced by tree-sitter generate)
+    println!("\n🔍 Generating structural queries from node-types.json...");
+    let node_types_path = format!("{}src/node-types.json", root_offset);
+    generate_structural_queries(&node_types_path, &queries_dir)?;
 
     // Build a parser library once; used for fast `tree-sitter parse` runs.
     // Build a parser library once; used for fast `tree-sitter parse` runs.
@@ -1087,6 +1093,323 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
         ("FUNCTION_CAPTURE", function_capture),
     ]);
     fs::write(out_path, rendered)?;
+    Ok(())
+}
+
+// =============================================================================
+// Structural query generation from node-types.json
+// =============================================================================
+
+/// Node type entry from tree-sitter's generated node-types.json.
+#[derive(Debug, Deserialize)]
+struct GrammarNodeType {
+    #[serde(rename = "type")]
+    type_name: String,
+    named: bool,
+    #[serde(default)]
+    fields: BTreeMap<String, GrammarFieldInfo>,
+    #[serde(default)]
+    children: Option<GrammarChildrenInfo>,
+}
+
+#[derive(Debug, Deserialize)]
+struct GrammarFieldInfo {
+    #[serde(default)]
+    types: Vec<GrammarTypeRef>,
+}
+
+#[derive(Debug, Deserialize)]
+struct GrammarChildrenInfo {
+    #[serde(default)]
+    types: Vec<GrammarTypeRef>,
+}
+
+#[derive(Debug, Deserialize)]
+struct GrammarTypeRef {
+    #[serde(rename = "type")]
+    type_name: String,
+    named: bool,
+}
+
+/// Generate folds.scm, locals.scm, textobjects.scm from node-types.json.
+fn generate_structural_queries(node_types_path: &str, queries_dir: &str) -> Result<()> {
+    let content = fs::read_to_string(node_types_path)
+        .with_context(|| format!("Failed to read {}", node_types_path))?;
+    let nodes: Vec<GrammarNodeType> = serde_json::from_str(&content)
+        .context("Failed to parse node-types.json")?;
+
+    // Build lookup: type_name → node for field analysis
+    let node_map: BTreeMap<&str, &GrammarNodeType> = nodes.iter()
+        .filter(|n| n.named)
+        .map(|n| (n.type_name.as_str(), n))
+        .collect();
+
+    generate_folds_scm(&nodes, &format!("{}/folds.scm", queries_dir))?;
+    println!("✅ Generated {}/folds.scm", queries_dir);
+
+    generate_locals_scm(&nodes, &node_map, &format!("{}/locals.scm", queries_dir))?;
+    println!("✅ Generated {}/locals.scm", queries_dir);
+
+    generate_textobjects_scm(&nodes, &node_map, &format!("{}/textobjects.scm", queries_dir))?;
+    println!("✅ Generated {}/textobjects.scm", queries_dir);
+
+    Ok(())
+}
+
+/// Generate folds.scm — discover foldable nodes by suffix patterns.
+fn generate_folds_scm(nodes: &[GrammarNodeType], out_path: &str) -> Result<()> {
+    // Single-line or trivial nodes that should NOT be foldable
+    let exclude: BTreeSet<&str> = [
+        // Single-line statements
+        "empty_if_statement", "exit_statement", "expression_statement",
+        // Single-line declarations (fields, vars, enum values, keys, labels, using)
+        "enum_value_declaration", "event_procedure_declaration",
+        "key_declaration", "label_declaration",
+        "namespace_or_using_declaration",
+        "object_variable_declaration", "regular_variable_declaration",
+        "variable_declaration",
+        // Empty/inline blocks
+        "empty_var_section",
+        "parenthesized_block", "bracketed_block",
+    ].into_iter().collect();
+
+    let foldable_suffixes = ["_statement", "_declaration", "_block", "_section"];
+
+    let mut foldable: Vec<&str> = Vec::new();
+
+    for node in nodes {
+        if !node.named { continue; }
+        let name = node.type_name.as_str();
+        if exclude.contains(name) { continue; }
+
+        let matches_suffix = foldable_suffixes.iter().any(|s| name.ends_with(s));
+        let is_extra = name == "case_branch" || name == "argument_list";
+
+        if matches_suffix || is_extra {
+            foldable.push(name);
+        }
+    }
+    foldable.sort();
+
+    let mut out = String::from(
+        "; Code folding regions for AL\n\
+         ; AUTO-GENERATED from node-types.json — do not edit manually\n\n[\n"
+    );
+    for name in &foldable {
+        out.push_str(&format!("  ({})\n", name));
+    }
+    out.push_str("] @fold\n");
+
+    fs::write(out_path, out)?;
+    Ok(())
+}
+
+/// Generate locals.scm — discover scopes, definitions, and references.
+fn generate_locals_scm(
+    nodes: &[GrammarNodeType],
+    node_map: &BTreeMap<&str, &GrammarNodeType>,
+    out_path: &str,
+) -> Result<()> {
+    let mut out = String::new();
+    out.push_str(
+        "; Local scope and variable resolution for AL\n\
+         ; AUTO-GENERATED from node-types.json — do not edit manually\n\n\
+         ; SCOPES\n\n"
+    );
+
+    // Scope nodes: top-level file, declarations that introduce bindings,
+    // blocks, and control-flow statements (they can shadow with `var` in AL).
+    let scope_types: BTreeSet<&str> = [
+        "source_file",
+        "object_declaration", "procedure_declaration",
+        "trigger_declaration", "event_declaration",
+        "begin_end_block",
+    ].into_iter().collect();
+
+    // Also include any *_statement that actually has a body (control flow)
+    let statement_exclude: BTreeSet<&str> = [
+        "empty_if_statement", "exit_statement", "expression_statement",
+    ].into_iter().collect();
+
+    let mut scopes: Vec<&str> = Vec::new();
+    for node in nodes {
+        if !node.named { continue; }
+        let name = node.type_name.as_str();
+        if scope_types.contains(name) {
+            scopes.push(name);
+        } else if name.ends_with("_statement") && !statement_exclude.contains(name) {
+            scopes.push(name);
+        }
+    }
+    scopes.sort();
+
+    for name in &scopes {
+        out.push_str(&format!("({}) @local.scope\n\n", name));
+    }
+
+    // DEFINITIONS — discover from field analysis
+    out.push_str("; DEFINITIONS\n\n");
+
+    // Map node types to definition kinds based on what they represent.
+    // For each, determine the name field access pattern by walking the type refs.
+    let def_rules: &[(&str, &str)] = &[
+        ("object_declaration", "type"),
+        ("procedure_declaration", "method"),
+        ("trigger_declaration", "method"),
+        ("event_declaration", "method"),
+        ("regular_variable_declaration", "var"),
+        ("object_variable_declaration", "field"),
+        ("parameter", "parameter"),
+    ];
+
+    for &(node_type, def_kind) in def_rules {
+        let Some(node) = node_map.get(node_type) else { continue };
+        let Some(name_field) = node.fields.get("name") else { continue };
+
+        // Determine the name field's access pattern by looking at what types it contains.
+        // The grammar uses: name → name_or_keyword → name → identifier/quoted_identifier
+        //               or: name → name → identifier/quoted_identifier
+        //               or: name → wildcard
+        let field_type_names: Vec<&str> = name_field.types.iter()
+            .filter(|t| t.named)
+            .map(|t| t.type_name.as_str())
+            .collect();
+
+        let capture = format!("@local.definition.{}", def_kind);
+
+        if field_type_names.contains(&"name_or_keyword") {
+            // name: (name_or_keyword (name (identifier|quoted_identifier) @capture))
+            // Check if name_or_keyword contains name which contains identifier
+            if let Some(nok) = node_map.get("name_or_keyword") {
+                let nok_has_name = nok.children.as_ref()
+                    .map(|c| c.types.iter().any(|t| t.type_name == "name"))
+                    .unwrap_or(false);
+                if nok_has_name {
+                    if let Some(name_node) = node_map.get("name") {
+                        let has_ident = name_node.children.as_ref()
+                            .map(|c| c.types.iter().any(|t| t.type_name == "identifier"))
+                            .unwrap_or(false);
+                        let has_quoted = name_node.children.as_ref()
+                            .map(|c| c.types.iter().any(|t| t.type_name == "quoted_identifier"))
+                            .unwrap_or(false);
+                        if has_ident {
+                            out.push_str(&format!(
+                                "({}\n  name: (name_or_keyword (name (identifier) {})))\n\n",
+                                node_type, capture
+                            ));
+                        }
+                        if has_quoted {
+                            out.push_str(&format!(
+                                "({}\n  name: (name_or_keyword (name (quoted_identifier) {})))\n\n",
+                                node_type, capture
+                            ));
+                        }
+                    }
+                }
+            }
+        } else if field_type_names.contains(&"name") {
+            // name: (name (identifier|quoted_identifier) @capture)
+            if let Some(name_node) = node_map.get("name") {
+                let has_ident = name_node.children.as_ref()
+                    .map(|c| c.types.iter().any(|t| t.type_name == "identifier"))
+                    .unwrap_or(false);
+                let has_quoted = name_node.children.as_ref()
+                    .map(|c| c.types.iter().any(|t| t.type_name == "quoted_identifier"))
+                    .unwrap_or(false);
+                if has_ident {
+                    out.push_str(&format!(
+                        "({}\n  name: (name (identifier) {}))\n\n",
+                        node_type, capture
+                    ));
+                }
+                if has_quoted {
+                    out.push_str(&format!(
+                        "({}\n  name: (name (quoted_identifier) {}))\n\n",
+                        node_type, capture
+                    ));
+                }
+            }
+        } else {
+            // Wildcard — name field type is something we can't traverse
+            out.push_str(&format!(
+                "({}\n  name: (_) {})\n\n",
+                node_type, capture
+            ));
+        }
+    }
+
+    // REFERENCES
+    out.push_str("; REFERENCES\n\n");
+
+    // Any named node type that IS an identifier is a reference
+    for node in nodes {
+        if !node.named { continue; }
+        if node.type_name == "identifier" || node.type_name == "quoted_identifier" {
+            out.push_str(&format!("({}) @local.reference\n\n", node.type_name));
+        }
+    }
+
+    fs::write(out_path, out)?;
+    Ok(())
+}
+
+/// Generate textobjects.scm — discover function-like and class-like nodes.
+fn generate_textobjects_scm(
+    nodes: &[GrammarNodeType],
+    node_map: &BTreeMap<&str, &GrammarNodeType>,
+    out_path: &str,
+) -> Result<()> {
+    let mut out = String::from(
+        "; Text objects for AL (vim-mode: select function, class, comment)\n\
+         ; AUTO-GENERATED from node-types.json — do not edit manually\n\n"
+    );
+
+    // Functions — nodes that represent callable declarations with a begin_end_block body
+    let function_types = ["procedure_declaration", "trigger_declaration", "event_declaration"];
+
+    out.push_str("; Functions — procedures, triggers, events\n");
+    for &func_type in &function_types {
+        let Some(node) = node_map.get(func_type) else { continue };
+        out.push_str(&format!("({}) @function.around\n\n", func_type));
+
+        // Check if this node has begin_end_block as a child → function.inside
+        let has_body_block = node.children.as_ref()
+            .map(|c| c.types.iter().any(|t| t.type_name == "begin_end_block"))
+            .unwrap_or(false);
+        if has_body_block {
+            out.push_str(&format!(
+                "({}\n  (begin_end_block) @function.inside)\n\n",
+                func_type
+            ));
+        }
+    }
+
+    // Classes — nodes with a 'body' field containing an object_body
+    out.push_str("; Classes — AL objects (codeunit, table, page, report, etc.)\n");
+    for node in nodes {
+        if !node.named { continue; }
+        if let Some(body_field) = node.fields.get("body") {
+            let has_object_body = body_field.types.iter()
+                .any(|t| t.type_name == "object_body");
+            if has_object_body {
+                out.push_str(&format!("({}) @class.around\n\n", node.type_name));
+                out.push_str(&format!(
+                    "({}\n  body: (object_body) @class.inside)\n\n",
+                    node.type_name
+                ));
+            }
+        }
+    }
+
+    // Comments
+    out.push_str("; Comments\n");
+    for node in nodes {
+        if node.named && node.type_name == "comment" {
+            out.push_str("(comment) @comment.around\n");
+        }
+    }
+
+    fs::write(out_path, out)?;
     Ok(())
 }
 

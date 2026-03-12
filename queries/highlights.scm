@@ -67,6 +67,8 @@
 ; --- Remaining Keywords ---
 (kw_action) @keyword
 (kw_actionref) @keyword
+(kw_analysisview) @keyword
+(kw_analysisviews) @keyword
 (kw_array) @keyword
 (kw_auditcategory) @keyword
 (kw_automation) @keyword
@@ -223,6 +225,8 @@
 ; Type keywords (override control keyword captures)
 (kw_action) @type.builtin
 (kw_actionref) @type.builtin
+(kw_analysisview) @type.builtin
+(kw_analysisviews) @type.builtin
 (kw_array) @type.builtin
 (kw_auditcategory) @type.builtin
 (kw_automation) @type.builtin
@@ -359,7 +363,7 @@
 (object_keyword) @keyword
 (type_keyword) @type.builtin
 (metadata_keyword) @keyword
-(property_keyword) @keyword
+(property_keyword) @operator
 (keyword) @keyword
 ; CRITICAL: control_keyword for keywords inside nested blocks (page triggers, etc.)
 (control_keyword) @keyword.control

@@ -19,6 +19,8 @@ module.exports = grammar({
     // (syntaxes/alsyntax.tmlanguage). No keyword strings are hardcoded here.
         $.kw_action,
     $.kw_actionref,
+    $.kw_analysisview,
+    $.kw_analysisviews,
     $.kw_array,
     $.kw_asserterror,
     $.kw_auditcategory,
@@ -518,6 +520,8 @@ module.exports = grammar({
         choice(
       $.kw_action,
       $.kw_actionref,
+      $.kw_analysisview,
+      $.kw_analysisviews,
       $.kw_array,
       $.kw_auditcategory,
       $.kw_automation,
@@ -1079,9 +1083,6 @@ module.exports = grammar({
   braced_block: $ => prec.right(seq(
     '{',
     repeat(choice(
-      $.trigger_declaration,
-      $.procedure_declaration,
-      $.property_assignment,
       $.key_declaration,
       $.braced_block,
       $.parenthesized_block,
