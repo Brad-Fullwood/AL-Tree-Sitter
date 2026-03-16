@@ -1,19 +1,25 @@
 ; AL highlights for Zed/tree-sitter
 ; AUTO-GENERATED - DO NOT EDIT
-; All basic token captures are dynamically extracted from the VS Code AL extension's TextMate grammar
+; Keywords extracted from Microsoft.Dynamics.Nav.CodeAnalysis.dll
 
-; --- Basic Literals (dynamically extracted from TextMate scopes) ---
+; --- Basic Literals ---
 (comment) @comment
 (string) @string
 (verbatim_string) @string
 (integer) @number
 (decimal) @number
 (date_literal) @number
+(time_literal) @number
+(datetime_literal) @number
+
+; --- Preprocessor Directives & Inactive Code ---
+(directive) @keyword.directive
+(inactive_code) @comment
 
 ; --- Generic Identifier Fallback ---
 ; MUST be early so specific patterns below can override it
 (identifier) @variable
-; Quoted identifiers ("...") - from TextMate identifier.quoted.double.al scope
+; Quoted identifiers ("...") — in AL these are identifiers, NOT string literals
 (quoted_identifier) @variable
 
 ; --- Boolean Literals ---
@@ -22,7 +28,7 @@
  (#match? @constant.builtin "^(true|false)$"))
 
 ; --- Keywords ---
-; All keyword highlighting is dynamically generated from TextMate grammar scopes
+; All keyword highlighting is dynamically generated from CodeAnalysis.dll categories
 ; --- Control Flow Keywords ---
 ; Zed themes color @keyword.control differently from @keyword
 (kw_asserterror) @keyword.control
@@ -224,12 +230,8 @@
 
 ; Type keywords (override control keyword captures)
 (kw_action) @type.builtin
-(kw_actionref) @type.builtin
-(kw_analysisview) @type.builtin
-(kw_analysisviews) @type.builtin
 (kw_array) @type.builtin
 (kw_auditcategory) @type.builtin
-(kw_automation) @type.builtin
 (kw_biginteger) @type.builtin
 (kw_bigtext) @type.builtin
 (kw_blob) @type.builtin
@@ -239,11 +241,8 @@
 (kw_clienttype) @type.builtin
 (kw_code) @type.builtin
 (kw_codeunit) @type.builtin
-(kw_completiontriggererrorlevel) @type.builtin
-(kw_connectiontype) @type.builtin
+(kw_controladdin) @type.builtin
 (kw_cookie) @type.builtin
-(kw_customaction) @type.builtin
-(kw_database) @type.builtin
 (kw_dataclassification) @type.builtin
 (kw_datascope) @type.builtin
 (kw_datatransfer) @type.builtin
@@ -255,10 +254,10 @@
 (kw_dialog) @type.builtin
 (kw_dictionary) @type.builtin
 (kw_dotnet) @type.builtin
-(kw_dotnetassembly) @type.builtin
-(kw_dotnettypedeclaration) @type.builtin
 (kw_duration) @type.builtin
+(kw_entitlement) @type.builtin
 (kw_enum) @type.builtin
+(kw_enumextension) @type.builtin
 (kw_errorinfo) @type.builtin
 (kw_errortype) @type.builtin
 (kw_executioncontext) @type.builtin
@@ -268,7 +267,6 @@
 (kw_fieldtype) @type.builtin
 (kw_file) @type.builtin
 (kw_fileupload) @type.builtin
-(kw_fileuploadaction) @type.builtin
 (kw_filterpagebuilder) @type.builtin
 (kw_guid) @type.builtin
 (kw_httpclient) @type.builtin
@@ -281,7 +279,6 @@
 (kw_integer) @type.builtin
 (kw_interface) @type.builtin
 (kw_isolationlevel) @type.builtin
-(kw_joker) @type.builtin
 (kw_jsonarray) @type.builtin
 (kw_jsonobject) @type.builtin
 (kw_jsontoken) @type.builtin
@@ -292,7 +289,6 @@
 (kw_mediaset) @type.builtin
 (kw_moduledependencyinfo) @type.builtin
 (kw_moduleinfo) @type.builtin
-(kw_none) @type.builtin
 (kw_notification) @type.builtin
 (kw_notificationscope) @type.builtin
 (kw_objecttype) @type.builtin
@@ -300,22 +296,28 @@
 (kw_outstream) @type.builtin
 (kw_page) @type.builtin
 (kw_pagebackgroundtaskerrorlevel) @type.builtin
-(kw_pageresult) @type.builtin
+(kw_pagecustomization) @type.builtin
+(kw_pageextension) @type.builtin
 (kw_pagestyle) @type.builtin
+(kw_permissionset) @type.builtin
+(kw_permissionsetextension) @type.builtin
+(kw_profile) @type.builtin
+(kw_profileextension) @type.builtin
 (kw_query) @type.builtin
 (kw_record) @type.builtin
 (kw_recordid) @type.builtin
 (kw_recordref) @type.builtin
 (kw_report) @type.builtin
+(kw_reportextension) @type.builtin
 (kw_reportformat) @type.builtin
 (kw_secrettext) @type.builtin
 (kw_securityfilter) @type.builtin
 (kw_securityfiltering) @type.builtin
 (kw_securityoperationresult) @type.builtin
 (kw_sessionsettings) @type.builtin
-(kw_systemaction) @type.builtin
 (kw_table) @type.builtin
 (kw_tableconnectiontype) @type.builtin
+(kw_tableextension) @type.builtin
 (kw_tablefilter) @type.builtin
 (kw_testaction) @type.builtin
 (kw_testfield) @type.builtin
@@ -335,8 +337,6 @@
 (kw_variant) @type.builtin
 (kw_verbosity) @type.builtin
 (kw_version) @type.builtin
-(kw_view) @type.builtin
-(kw_views) @type.builtin
 (kw_webserviceactioncontext) @type.builtin
 (kw_webserviceactionresultcode) @type.builtin
 (kw_xmlattribute) @type.builtin
@@ -358,26 +358,25 @@
 (kw_xmlwriteoptions) @type.builtin
 
 
-; Category captures dynamically generated from TextMate grammar scopes
+; Category captures for keyword types
 (operator_word) @keyword.operator
 (object_keyword) @keyword
 (type_keyword) @type.builtin
 (metadata_keyword) @keyword
-(property_keyword) @operator
+(property_keyword) @keyword
 (keyword) @keyword
 ; CRITICAL: control_keyword for keywords inside nested blocks (page triggers, etc.)
 (control_keyword) @keyword.control
 
-; --- Punctuation & Operators (from TextMate punctuation.al scope) ---
+; --- Punctuation & Operators ---
 (operator) @operator
-(semicolon) @punctuation
-(comma) @punctuation
+(semicolon) @punctuation.delimiter
+(comma) @punctuation.delimiter
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
 
 ; =============================================================================
-; STRUCTURAL PATTERNS (AST-based - cannot be derived from TextMate)
-; These patterns understand syntax structure, which TextMate regex cannot.
-; The CAPTURES use dynamically extracted scopes where applicable.
+; STRUCTURAL PATTERNS (AST-based)
+; These patterns understand syntax structure for richer highlighting.
 ; =============================================================================
 
 ; --- Object Declarations ---
@@ -407,10 +406,10 @@
 
 ; --- Definitions ---
 ; Procedure, trigger, and event definition names
-(procedure_declaration name: (name (identifier) @function))
-(procedure_declaration name: (name (quoted_identifier) @function))
-(trigger_declaration name: (_) @function)
-(event_declaration name: (_) @function)
+(procedure_declaration name: (name (identifier) @function.definition))
+(procedure_declaration name: (name (quoted_identifier) @function.definition))
+(trigger_declaration name: (_) @function.definition)
+(event_declaration name: (_) @function.definition)
 
 ; --- Variable Declarations ---
 ; Variable names in declarations
