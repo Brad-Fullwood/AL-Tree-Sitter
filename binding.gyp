@@ -7,7 +7,6 @@
         "src"
       ],
       "sources": [
-        "bindings/node/binding.cc",
         "src/parser.c"
       ],
       "conditions": [
