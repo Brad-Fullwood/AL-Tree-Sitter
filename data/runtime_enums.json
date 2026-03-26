@@ -1,0 +1,10 @@
+[
+  {"name": "WebServiceActionResultCode", "values": ["None", "Get", "Created", "Updated", "Deleted"]},
+  {"name": "SecurityFilter", "values": ["Validated", "Filtered", "Ignored", "Disallowed"]},
+  {"name": "DataScope", "values": ["Module", "Company", "User", "CompanyAndUser"]},
+  {"name": "ErrorBehavior", "values": ["ThrowError", "Collect"]},
+  {"name": "TestPermissions", "values": ["Disabled", "Restrictive", "NonRestrictive", "InheritFromTestCodounit"]},
+  {"name": "TransactionModel", "values": ["AutoCommit", "AutoRollback"]},
+  {"name": "CommitBehavior", "values": ["Ignore", "Error"]},
+  {"name": "InherentPermissionsScope", "values": ["Permissions", "Entitlements", "Both"]}
+]
