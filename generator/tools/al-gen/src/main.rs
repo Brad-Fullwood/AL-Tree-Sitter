@@ -73,6 +73,11 @@ fn main() -> Result<()> {
         .join("../../Zed AL Extension/themes");
     generate_themes(&extension_path, &zed_extension_themes_dir)?;
 
+    println!("\n📦 Writing JSON data files...");
+    let data_dir = format!("{}data", root_offset);
+    write_data_files(&keywords, &data_dir)?;
+    println!("✅ Written to {}/", data_dir);
+
     println!("\n🌳 Running tree-sitter generate...");
     run_tree_sitter_generate(root_offset)?;
 
@@ -671,6 +676,239 @@ fn keywords_all(k: &Keywords) -> BTreeSet<String> {
     all.extend(k.metadata.iter().cloned());
     all.extend(k.properties.iter().cloned());
     all
+}
+
+// =============================================================================
+// JSON data file generation
+// =============================================================================
+
+/// Write keywords.json, object_types.json, page_controls.json, and
+/// token_classification.json into `data_dir`.
+fn write_data_files(keywords: &Keywords, data_dir: &str) -> Result<()> {
+    fs::create_dir_all(data_dir)?;
+
+    write_keywords_json(keywords, data_dir)?;
+    println!("   keywords.json");
+
+    write_object_types_json(keywords, data_dir)?;
+    println!("   object_types.json");
+
+    write_page_controls_json(keywords, data_dir)?;
+    println!("   page_controls.json");
+
+    write_token_classification_json(keywords, data_dir)?;
+    println!("   token_classification.json");
+
+    Ok(())
+}
+
+/// keywords.json — all keyword categories with their tree-sitter node kinds.
+fn write_keywords_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
+    fn to_entries(set: &BTreeSet<String>, prefix: &str) -> Vec<serde_json::Value> {
+        set.iter()
+            .map(|kw| {
+                serde_json::json!({
+                    "keyword": kw,
+                    "node_kind": format!("{}_{}", prefix, kw)
+                })
+            })
+            .collect()
+    }
+
+    // operator_words use "op_" prefix; everything else uses "kw_"
+    let obj = serde_json::json!({
+        "control":   to_entries(&keywords.control, "kw"),
+        "operator":  to_entries(&keywords.operator_words, "op"),
+        "object":    to_entries(&keywords.objects, "kw"),
+        "type":      to_entries(&keywords.types, "kw"),
+        "metadata":  to_entries(&keywords.metadata, "kw"),
+        "property":  to_entries(&keywords.properties, "kw"),
+    });
+
+    let path = format!("{}/keywords.json", data_dir);
+    fs::write(path, serde_json::to_string_pretty(&obj)?)?;
+    Ok(())
+}
+
+/// object_types.json — one entry per AL object type with LSP and extension metadata.
+fn write_object_types_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
+    // Extension keyword → list of extension object keywords
+    // (structural metadata about the AL language, not token strings)
+    let extensions_map: &[(&str, &[&str])] = &[
+        ("table",         &["tableextension"]),
+        ("page",          &["pageextension", "pagecustomization"]),
+        ("report",        &["reportextension"]),
+        ("enum",          &["enumextension"]),
+        ("permissionset", &["permissionsetextension"]),
+        ("profile",       &["profileextension"]),
+    ];
+
+    // LSP SymbolKind per object type
+    let lsp_kind_map: &[(&str, &str)] = &[
+        ("enum",         "Enum"),
+        ("interface",    "Interface"),
+        ("profile",      "File"),
+        ("controladdin", "Module"),
+    ];
+    let default_lsp_kind = "Class";
+
+    fn title_case(s: &str) -> String {
+        let mut c = s.chars();
+        match c.next() {
+            None => String::new(),
+            Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+        }
+    }
+
+    let ext_lookup: std::collections::HashMap<&str, Vec<String>> = extensions_map
+        .iter()
+        .map(|(k, v)| (*k, v.iter().map(|s| s.to_string()).collect()))
+        .collect();
+
+    let lsp_lookup: std::collections::HashMap<&str, &str> = lsp_kind_map
+        .iter()
+        .map(|(k, v)| (*k, *v))
+        .collect();
+
+    let entries: Vec<serde_json::Value> = keywords
+        .objects
+        .iter()
+        .map(|kw| {
+            let extensions: Vec<String> = ext_lookup
+                .get(kw.as_str())
+                .cloned()
+                .unwrap_or_default();
+            let lsp_symbol_kind = lsp_lookup
+                .get(kw.as_str())
+                .copied()
+                .unwrap_or(default_lsp_kind);
+            serde_json::json!({
+                "keyword":         kw,
+                "display_name":    title_case(kw),
+                "node_kind":       format!("kw_{}", kw),
+                "extensions":      extensions,
+                "lsp_symbol_kind": lsp_symbol_kind
+            })
+        })
+        .collect();
+
+    let obj = serde_json::json!({ "object_types": entries });
+    let path = format!("{}/object_types.json", data_dir);
+    fs::write(path, serde_json::to_string_pretty(&obj)?)?;
+    Ok(())
+}
+
+/// page_controls.json — structural page/report constructs and modification keywords.
+///
+/// These are known AL structural constructs. They may appear in the `properties`
+/// or `metadata` categories extracted from the TextMate grammar, or they may not
+/// be distinctly categorised. We emit whatever the grammar yields, but always
+/// guarantee the full known set is present (these are structural constructs, not
+/// tokens subject to version-to-version keyword churn).
+fn write_page_controls_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
+    // The canonical list of AL page/report structural keywords.
+    // Order is preserved; duplicates are filtered out via BTreeSet later.
+    let known: &[&str] = &[
+        "area", "group", "repeater", "field", "part", "action", "separator",
+        "cuegroup", "grid", "fixed", "usercontrol", "label",
+        "dataitem", "column", "filter",
+        "addfirst", "addlast", "addafter", "addbefore", "modify",
+        "moveafter", "movebefore", "actionref",
+    ];
+
+    // Collect any additional entries from metadata/properties that look like
+    // page-control keywords (i.e. they appear in the known list).
+    let known_set: std::collections::HashSet<&str> = known.iter().copied().collect();
+
+    // Build the deduplicated ordered list (preserve canonical order first, then
+    // any extras from the grammar that happen to be in known_set).
+    let mut seen = std::collections::HashSet::new();
+    let mut entries: Vec<serde_json::Value> = Vec::new();
+
+    for &kw in known {
+        if seen.insert(kw) {
+            entries.push(serde_json::json!({
+                "keyword":   kw,
+                "node_kind": format!("kw_{}", kw)
+            }));
+        }
+    }
+
+    // Also surface any grammar-extracted entries that are in the known set
+    // but weren't already covered (shouldn't happen, but be defensive).
+    for kw in keywords
+        .metadata
+        .iter()
+        .chain(keywords.properties.iter())
+    {
+        if known_set.contains(kw.as_str()) && seen.insert(kw.as_str()) {
+            entries.push(serde_json::json!({
+                "keyword":   kw,
+                "node_kind": format!("kw_{}", kw)
+            }));
+        }
+    }
+
+    let obj = serde_json::json!({ "page_controls": entries });
+    let path = format!("{}/page_controls.json", data_dir);
+    fs::write(path, serde_json::to_string_pretty(&obj)?)?;
+    Ok(())
+}
+
+/// token_classification.json — node-kind lists grouped by semantic token class.
+fn write_token_classification_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
+    // object extension keywords: those that end in "extension" or "customization"
+    // are in `objects` but represent extension declarations, not base objects.
+    let extension_suffixes = ["extension", "customization"];
+
+    let keyword_object: Vec<String> = keywords
+        .objects
+        .iter()
+        .filter(|kw| !extension_suffixes.iter().any(|sfx| kw.ends_with(sfx)))
+        .map(|kw| format!("kw_{}", kw))
+        .collect();
+
+    let keyword_object_extension: Vec<String> = keywords
+        .objects
+        .iter()
+        .filter(|kw| extension_suffixes.iter().any(|sfx| kw.ends_with(sfx)))
+        .map(|kw| format!("kw_{}", kw))
+        .collect();
+
+    // Control keywords that are NOT object or type keywords.
+    // (objects and types are also inserted into `control` by extract_keywords)
+    let object_set: std::collections::HashSet<&str> =
+        keywords.objects.iter().map(|s| s.as_str()).collect();
+    let type_set: std::collections::HashSet<&str> =
+        keywords.types.iter().map(|s| s.as_str()).collect();
+
+    let keyword_control: Vec<String> = keywords
+        .control
+        .iter()
+        .filter(|kw| !object_set.contains(kw.as_str()) && !type_set.contains(kw.as_str()))
+        .map(|kw| format!("kw_{}", kw))
+        .collect();
+
+    let builtin_type: Vec<String> = keywords
+        .types
+        .iter()
+        .map(|kw| format!("kw_{}", kw))
+        .collect();
+
+    // builtin_function is empty here; populated by al-extract in a later task.
+    let builtin_function: Vec<String> = Vec::new();
+
+    let obj = serde_json::json!({
+        "keyword_control":           keyword_control,
+        "keyword_object":            keyword_object,
+        "keyword_object_extension":  keyword_object_extension,
+        "builtin_type":              builtin_type,
+        "builtin_function":          builtin_function
+    });
+
+    let path = format!("{}/token_classification.json", data_dir);
+    fs::write(path, serde_json::to_string_pretty(&obj)?)?;
+    Ok(())
 }
 
 fn generate_keywords_c(keywords: &Keywords, out_dir: &str) -> Result<()> {
