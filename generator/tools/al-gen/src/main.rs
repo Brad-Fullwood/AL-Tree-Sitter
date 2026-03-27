@@ -752,7 +752,11 @@ fn write_object_types_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
     ];
     let default_lsp_kind = "Class";
 
-    fn title_case(s: &str) -> String {
+    /// Title-case a keyword. For compound words (tableextension, xmlport),
+    /// the display name will be imperfect (Tableextension, Xmlport).
+    /// TODO: preserve original casing from TextMate grammar during extraction
+    /// instead of lowercasing everything, so display names are naturally correct.
+    fn display_name(s: &str) -> String {
         let mut c = s.chars();
         match c.next() {
             None => String::new(),
@@ -784,7 +788,7 @@ fn write_object_types_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
                 .unwrap_or(default_lsp_kind);
             serde_json::json!({
                 "keyword":         kw,
-                "display_name":    title_case(kw),
+                "display_name":    display_name(kw),
                 "node_kind":       format!("kw_{}", kw),
                 "extensions":      extensions,
                 "lsp_symbol_kind": lsp_symbol_kind

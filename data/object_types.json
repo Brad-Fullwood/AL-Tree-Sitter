@@ -4,28 +4,28 @@
       "display_name": "Codeunit",
       "extensions": [],
       "keyword": "codeunit",
-      "lsp_symbol_kind": "Module",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_codeunit"
     },
     {
       "display_name": "Controladdin",
       "extensions": [],
       "keyword": "controladdin",
-      "lsp_symbol_kind": "Class",
+      "lsp_symbol_kind": "Module",
       "node_kind": "kw_controladdin"
     },
     {
       "display_name": "Dotnet",
       "extensions": [],
       "keyword": "dotnet",
-      "lsp_symbol_kind": "Namespace",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_dotnet"
     },
     {
       "display_name": "Entitlement",
       "extensions": [],
       "keyword": "entitlement",
-      "lsp_symbol_kind": "Namespace",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_entitlement"
     },
     {
@@ -41,7 +41,7 @@
       "display_name": "Enumextension",
       "extensions": [],
       "keyword": "enumextension",
-      "lsp_symbol_kind": "Enum",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_enumextension"
     },
     {
@@ -81,14 +81,14 @@
         "permissionsetextension"
       ],
       "keyword": "permissionset",
-      "lsp_symbol_kind": "Namespace",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_permissionset"
     },
     {
       "display_name": "Permissionsetextension",
       "extensions": [],
       "keyword": "permissionsetextension",
-      "lsp_symbol_kind": "Namespace",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_permissionsetextension"
     },
     {
@@ -97,21 +97,21 @@
         "profileextension"
       ],
       "keyword": "profile",
-      "lsp_symbol_kind": "Namespace",
+      "lsp_symbol_kind": "File",
       "node_kind": "kw_profile"
     },
     {
       "display_name": "Profileextension",
       "extensions": [],
       "keyword": "profileextension",
-      "lsp_symbol_kind": "Namespace",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_profileextension"
     },
     {
       "display_name": "Query",
       "extensions": [],
       "keyword": "query",
-      "lsp_symbol_kind": "Interface",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_query"
     },
     {
@@ -120,14 +120,14 @@
         "reportextension"
       ],
       "keyword": "report",
-      "lsp_symbol_kind": "File",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_report"
     },
     {
       "display_name": "Reportextension",
       "extensions": [],
       "keyword": "reportextension",
-      "lsp_symbol_kind": "File",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_reportextension"
     },
     {
@@ -136,14 +136,14 @@
         "tableextension"
       ],
       "keyword": "table",
-      "lsp_symbol_kind": "Struct",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_table"
     },
     {
       "display_name": "Tableextension",
       "extensions": [],
       "keyword": "tableextension",
-      "lsp_symbol_kind": "Struct",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_tableextension"
     },
     {
@@ -157,7 +157,7 @@
       "display_name": "Xmlport",
       "extensions": [],
       "keyword": "xmlport",
-      "lsp_symbol_kind": "Interface",
+      "lsp_symbol_kind": "Class",
       "node_kind": "kw_xmlport"
     }
   ]
