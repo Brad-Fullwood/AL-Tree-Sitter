@@ -142,15 +142,18 @@ module.exports = grammar({
 
   // Covers the common braced sections inside objects:
   // layout/actions/fields/keys/fieldgroups/requestpage/rendering/etc.
+  // Uses object_body (not braced_block) so nested content is structurally parsed:
+  // trigger_declaration, property_assignment, procedure_declaration, etc.
   object_section: $ => prec(-1, seq(
     field('keyword', choice($.metadata_keyword, $.keyword)),
     // Some sections have header args before the body (e.g. modify/addafter/...).
     // For page-specific: part(Name; "Page") and actionref(Name; Action) have semicolon patterns.
     repeat($._section_header_piece),
-    field('body', $.braced_block),
+    field('body', $.object_body),
   )),
 
   // Enum/enumextension values: value(<id>; <name>) { ... }
+  // Uses object_body so properties (Caption, Locked, etc.) are structurally parsed.
   enum_value_declaration: $ => prec.right(seq(
     field('keyword', $.object_keyword),
     '(',
@@ -158,7 +161,7 @@ module.exports = grammar({
     $.semicolon,
     field('name', $.name),
     ')',
-    optional($.braced_block),
+    optional($.object_body),
     optional($.semicolon),
   )),
 

@@ -634,7 +634,7 @@
       "required": true,
       "types": [
         {
-          "type": "braced_block",
+          "type": "object_body",
           "named": true
         },
         {
@@ -1774,7 +1774,7 @@
         "required": true,
         "types": [
           {
-            "type": "braced_block",
+            "type": "object_body",
             "named": true
           }
         ]
