@@ -364,7 +364,7 @@
 (type_keyword) @type.builtin
 (metadata_keyword) @keyword
 (property_keyword) @operator
-(keyword) @keyword
+(keyword) @type.builtin
 ; CRITICAL: control_keyword for keywords inside nested blocks (page triggers, etc.)
 (control_keyword) @keyword.control
 
