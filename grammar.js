@@ -675,11 +675,11 @@ module.exports = grammar({
     $.parenthesized_block,  // e.g. Codeunit "Foo"
   )),
 
-  // Option type with inline member values: Option Member1,Member2,Member3
-  // Uses dynamic placeholder for unambiguous matching.
+  // Option type with optional inline member values: Option Member1,Member2,Member3
+  // Also matches bare `Option` (no members) — used as a generic type in older AL code.
   option_type: $ => seq(
     $.kw_option,
-    repeat1(prec(30, choice(
+    repeat(prec(30, choice(
        $.identifier,
        $.quoted_identifier,
        $.comma,

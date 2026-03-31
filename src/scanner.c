@@ -626,9 +626,11 @@ void *tree_sitter_al_external_scanner_create() {
   if (!scanner) return NULL;
 #ifdef __wasm__
   // getenv not available in WASM - use defaults
-  scanner->default_unknown_true = true;
+  // Default false: `#if not CLEANxx` blocks become visible, avoiding brace imbalance
+  // when preprocessor directives straddle structural braces in BCApps code.
+  scanner->default_unknown_true = false;
 #else
-  scanner->default_unknown_true = parse_bool_env(getenv("AL_TS_UNKNOWN_TRUE"), true);
+  scanner->default_unknown_true = parse_bool_env(getenv("AL_TS_UNKNOWN_TRUE"), false);
 #endif
   scanner_load_defines_from_env(scanner);
   return scanner;

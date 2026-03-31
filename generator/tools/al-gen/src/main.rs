@@ -1080,7 +1080,7 @@ fn generate_grammar_js(keywords: &Keywords, external_tokens: &[ExternalTokenSpec
     let externals = gen_grammar_externals_fragment(external_tokens);
     let objects = gen_choice_fragment(&keywords.objects, &[]);
     let types_excluding_option = gen_choice_fragment(&keywords.types, &["option"]);
-    
+
     // Build initial placeholder map
     let mut placeholders = vec![
         ("EXTERNALS_LIST".to_string(), externals),
