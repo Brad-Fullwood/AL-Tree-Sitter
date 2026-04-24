@@ -2,95 +2,118 @@
   "page_controls": [
     {
       "keyword": "area",
-      "node_kind": "kw_area"
+      "node_kind": "kw_area",
+      "lsp_symbol_kind": "Struct"
     },
     {
       "keyword": "group",
-      "node_kind": "kw_group"
+      "node_kind": "kw_group",
+      "lsp_symbol_kind": "Struct"
     },
     {
       "keyword": "repeater",
-      "node_kind": "kw_repeater"
+      "node_kind": "kw_repeater",
+      "lsp_symbol_kind": "Struct"
     },
     {
       "keyword": "field",
-      "node_kind": "kw_field"
+      "node_kind": "kw_field",
+      "lsp_symbol_kind": "Field"
     },
     {
       "keyword": "part",
-      "node_kind": "kw_part"
+      "node_kind": "kw_part",
+      "lsp_symbol_kind": "Class"
     },
     {
       "keyword": "action",
-      "node_kind": "kw_action"
+      "node_kind": "kw_action",
+      "lsp_symbol_kind": "Event"
     },
     {
       "keyword": "separator",
-      "node_kind": "kw_separator"
+      "node_kind": "kw_separator",
+      "lsp_symbol_kind": "Event"
     },
     {
       "keyword": "cuegroup",
-      "node_kind": "kw_cuegroup"
+      "node_kind": "kw_cuegroup",
+      "lsp_symbol_kind": "Struct"
     },
     {
       "keyword": "grid",
-      "node_kind": "kw_grid"
+      "node_kind": "kw_grid",
+      "lsp_symbol_kind": "Struct"
     },
     {
       "keyword": "fixed",
-      "node_kind": "kw_fixed"
+      "node_kind": "kw_fixed",
+      "lsp_symbol_kind": "Struct"
     },
     {
       "keyword": "usercontrol",
-      "node_kind": "kw_usercontrol"
+      "node_kind": "kw_usercontrol",
+      "lsp_symbol_kind": "Class"
     },
     {
       "keyword": "label",
-      "node_kind": "kw_label"
+      "node_kind": "kw_label",
+      "lsp_symbol_kind": "Constant"
     },
     {
       "keyword": "dataitem",
-      "node_kind": "kw_dataitem"
+      "node_kind": "kw_dataitem",
+      "lsp_symbol_kind": "Struct"
     },
     {
       "keyword": "column",
-      "node_kind": "kw_column"
+      "node_kind": "kw_column",
+      "lsp_symbol_kind": "Field"
     },
     {
       "keyword": "filter",
-      "node_kind": "kw_filter"
+      "node_kind": "kw_filter",
+      "lsp_symbol_kind": "Field"
     },
     {
       "keyword": "addfirst",
-      "node_kind": "kw_addfirst"
+      "node_kind": "kw_addfirst",
+      "lsp_symbol_kind": "Namespace"
     },
     {
       "keyword": "addlast",
-      "node_kind": "kw_addlast"
+      "node_kind": "kw_addlast",
+      "lsp_symbol_kind": "Namespace"
     },
     {
       "keyword": "addafter",
-      "node_kind": "kw_addafter"
+      "node_kind": "kw_addafter",
+      "lsp_symbol_kind": "Namespace"
     },
     {
       "keyword": "addbefore",
-      "node_kind": "kw_addbefore"
+      "node_kind": "kw_addbefore",
+      "lsp_symbol_kind": "Namespace"
     },
     {
       "keyword": "modify",
-      "node_kind": "kw_modify"
+      "node_kind": "kw_modify",
+      "lsp_symbol_kind": "Namespace"
     },
     {
       "keyword": "moveafter",
-      "node_kind": "kw_moveafter"
+      "node_kind": "kw_moveafter",
+      "lsp_symbol_kind": "Namespace"
     },
     {
       "keyword": "movebefore",
-      "node_kind": "kw_movebefore"
+      "node_kind": "kw_movebefore",
+      "lsp_symbol_kind": "Namespace"
     },
     {
       "keyword": "actionref",
-      "node_kind": "kw_actionref"
+      "node_kind": "kw_actionref",
+      "lsp_symbol_kind": "Event"
     }
   ]
 }
