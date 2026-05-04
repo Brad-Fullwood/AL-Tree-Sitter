@@ -5,5 +5,6 @@
   {"name": "CurrReport", "type": "Report", "context": ["report_trigger"], "description": "The current report object."},
   {"name": "CurrFieldNo", "type": "Integer", "context": ["table_trigger"], "description": "The field number that triggered the event."},
   {"name": "OldRec", "type": "Record", "context": ["table_trigger"], "description": "The record before the current transaction."},
-  {"name": "RequestOptionsPage", "type": "Page", "context": ["report_trigger"], "description": "The request options page for the report."}
+  {"name": "RequestOptionsPage", "type": "Page", "context": ["report_trigger"], "description": "The request options page for the report."},
+  {"name": "CurrDataItem", "type": "Record", "context": ["report_trigger"], "description": "The current dataitem record inside a report dataitem trigger."}
 ]

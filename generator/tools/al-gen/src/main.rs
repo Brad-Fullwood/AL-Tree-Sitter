@@ -1202,10 +1202,17 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     }
 
     specific_tokens.push_str("\n; --- Remaining Keywords ---\n");
+    // T053: skip keywords that will also be emitted as @type.builtin below.
+    // tree-sitter's last-match-wins rule means dual-captured kw_* nodes are
+    // ALWAYS rendered as @type.builtin — the @keyword line is dead code.
+    // Skip the duplicate emission so the file stays minimal and the intent
+    // (this kw_* is a type, not a keyword) is unambiguous.
+    let types_set: HashSet<&String> = keywords.types.iter().collect();
     for kw in &keywords.control {
         if !control_flow.contains(kw.as_str())
             && !function_def.contains(kw.as_str())
             && !modifiers.contains(kw.as_str())
+            && !types_set.contains(kw)
         {
             specific_tokens.push_str(&format!("(kw_{}) @keyword\n", kw));
         }
@@ -1469,9 +1476,19 @@ fn generate_locals_scm(
     ].into_iter().collect();
 
     // Also include any *_statement that actually has a body (control flow)
+    // T053: `asserterror_statement` is a statement modifier in AL — it
+    // wraps a single statement and does NOT introduce a new variable
+    // scope. Excluding it here prevents tree-sitter helpers (Helix,
+    // Neovim's locals query consumer) from spuriously starting a new
+    // scope at every `asserterror`.
     let statement_exclude: BTreeSet<&str> = [
-        "empty_if_statement", "exit_statement", "expression_statement",
-    ].into_iter().collect();
+        "empty_if_statement",
+        "exit_statement",
+        "expression_statement",
+        "asserterror_statement",
+    ]
+    .into_iter()
+    .collect();
 
     let mut scopes: Vec<&str> = Vec::new();
     for node in nodes {

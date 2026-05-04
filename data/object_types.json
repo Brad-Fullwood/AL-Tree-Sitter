@@ -10,7 +10,7 @@
       "permission_value": "X"
     },
     {
-      "display_name": "Controladdin",
+      "display_name": "ControlAddIn",
       "extensions": [],
       "keyword": "controladdin",
       "lsp_symbol_kind": "Module",
@@ -19,7 +19,7 @@
       "permission_value": null
     },
     {
-      "display_name": "Dotnet",
+      "display_name": "DotNet",
       "extensions": [],
       "keyword": "dotnet",
       "lsp_symbol_kind": "Class",
@@ -48,7 +48,7 @@
       "permission_value": null
     },
     {
-      "display_name": "Enumextension",
+      "display_name": "EnumExtension",
       "extensions": [],
       "keyword": "enumextension",
       "lsp_symbol_kind": "Class",
@@ -78,7 +78,7 @@
       "permission_value": "X"
     },
     {
-      "display_name": "Pagecustomization",
+      "display_name": "PageCustomization",
       "extensions": [],
       "keyword": "pagecustomization",
       "lsp_symbol_kind": "Class",
@@ -87,7 +87,7 @@
       "permission_value": null
     },
     {
-      "display_name": "Pageextension",
+      "display_name": "PageExtension",
       "extensions": [],
       "keyword": "pageextension",
       "lsp_symbol_kind": "Class",
@@ -96,7 +96,7 @@
       "permission_value": null
     },
     {
-      "display_name": "Permissionset",
+      "display_name": "PermissionSet",
       "extensions": [
         "permissionsetextension"
       ],
@@ -107,7 +107,7 @@
       "permission_value": null
     },
     {
-      "display_name": "Permissionsetextension",
+      "display_name": "PermissionSetExtension",
       "extensions": [],
       "keyword": "permissionsetextension",
       "lsp_symbol_kind": "Class",
@@ -127,7 +127,7 @@
       "permission_value": null
     },
     {
-      "display_name": "Profileextension",
+      "display_name": "ProfileExtension",
       "extensions": [],
       "keyword": "profileextension",
       "lsp_symbol_kind": "Class",
@@ -156,7 +156,7 @@
       "permission_value": "X"
     },
     {
-      "display_name": "Reportextension",
+      "display_name": "ReportExtension",
       "extensions": [],
       "keyword": "reportextension",
       "lsp_symbol_kind": "Class",
@@ -176,7 +176,7 @@
       "permission_value": "RIMD"
     },
     {
-      "display_name": "Tableextension",
+      "display_name": "TableExtension",
       "extensions": [],
       "keyword": "tableextension",
       "lsp_symbol_kind": "Class",
@@ -194,7 +194,7 @@
       "permission_value": null
     },
     {
-      "display_name": "Xmlport",
+      "display_name": "XmlPort",
       "extensions": [],
       "keyword": "xmlport",
       "lsp_symbol_kind": "Class",
