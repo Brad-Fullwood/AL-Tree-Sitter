@@ -686,10 +686,7 @@ fn keywords_all(k: &Keywords) -> BTreeSet<String> {
     all
 }
 
-// =============================================================================
 // JSON data file generation
-// =============================================================================
-
 /// Write keywords.json, object_types.json, page_controls.json, and
 /// token_classification.json into `data_dir`.
 fn write_data_files(keywords: &Keywords, data_dir: &str) -> Result<()> {
@@ -1404,10 +1401,7 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     Ok(())
 }
 
-// =============================================================================
 // Structural query generation from node-types.json
-// =============================================================================
-
 /// Node type entry from tree-sitter's generated node-types.json.
 #[derive(Debug, Deserialize)]
 struct GrammarNodeType {
