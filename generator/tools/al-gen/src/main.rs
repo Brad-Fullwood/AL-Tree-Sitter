@@ -47,10 +47,10 @@ fn main() -> Result<()> {
 
     println!("\n🔧 Generating C scanner files...");
     let external_tokens = build_external_tokens(&keywords);
-    
+
     let src_dir = format!("{}src", root_offset);
     fs::create_dir_all(&src_dir)?;
-    
+
     generate_keywords_c(&keywords, &src_dir)?;
     generate_scanner_c(&keywords, &external_tokens, &src_dir)?;
     println!("✅ Generated src/keywords.c and src/scanner.c");
@@ -69,8 +69,8 @@ fn main() -> Result<()> {
     println!("✅ Generated {}", highlights_path);
 
     println!("\n🎭 Generating Zed themes from VS Code BC themes...");
-    let zed_extension_themes_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../Zed AL Extension/themes");
+    let zed_extension_themes_dir =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../Zed AL Extension/themes");
     generate_themes(&extension_path, &zed_extension_themes_dir)?;
 
     println!("\n📦 Writing JSON data files...");
@@ -86,7 +86,6 @@ fn main() -> Result<()> {
     let node_types_path = format!("{}src/node-types.json", root_offset);
     generate_structural_queries(&node_types_path, &queries_dir)?;
 
-    // Build a parser library once; used for fast `tree-sitter parse` runs.
     // Build a parser library once; used for fast `tree-sitter parse` runs.
     println!("\n🔨 Building parser library...");
     let lib_path = run_tree_sitter_build(root_offset)?;
@@ -106,7 +105,10 @@ fn main() -> Result<()> {
             println!("\n🧪 Testing against real repositories...");
             run_repo_tests(&lib_path, &scope_name, root_offset)?;
         } else {
-            println!("\nℹ️  {} not found; skipping repo tests.", repo_test_config_path.display());
+            println!(
+                "\nℹ️  {} not found; skipping repo tests.",
+                repo_test_config_path.display()
+            );
         }
     } else {
         println!("\nℹ️  Skipping repo tests. Run with `--test` to enable.");
@@ -160,7 +162,7 @@ fn textmate_to_treesitter_capture(scope: &str) -> String {
                 match parts[2] {
                     "builtintypes" | "type" => "@type.builtin".to_string(),
                     "applicationobject" | "storage" => "@keyword".to_string(), // object declarations
-                    _ => "@keyword".to_string()
+                    _ => "@keyword".to_string(),
                 }
             } else {
                 "@keyword".to_string()
@@ -175,7 +177,7 @@ fn textmate_to_treesitter_capture(scope: &str) -> String {
                     "tag" => "@tag".to_string(),
                     "section" => "@title".to_string(),
                     "applicationobject" => "@keyword".to_string(), // AL object declarations (codeunit, table, etc.)
-                    _ => format!("@{}", parts[2])
+                    _ => format!("@{}", parts[2]),
                 }
             } else if parts.len() > 1 && parts[1] == "name" {
                 "@function".to_string() // Default for entity.name
@@ -190,7 +192,7 @@ fn textmate_to_treesitter_capture(scope: &str) -> String {
                     "numeric" => "@number".to_string(),
                     "character" => "@character".to_string(),
                     "language" => "@constant.builtin".to_string(),
-                    _ => "@constant".to_string()
+                    _ => "@constant".to_string(),
                 }
             } else {
                 "@constant".to_string()
@@ -209,7 +211,7 @@ fn textmate_to_treesitter_capture(scope: &str) -> String {
                 match parts[1] {
                     "parameter" => "@variable.parameter".to_string(),
                     "language" => "@variable.builtin".to_string(),
-                    _ => "@variable".to_string()
+                    _ => "@variable".to_string(),
                 }
             } else {
                 "@variable".to_string()
@@ -231,7 +233,7 @@ fn textmate_to_treesitter_capture(scope: &str) -> String {
                     "class" | "type" => "@type.builtin".to_string(),
                     "variable" => "@variable.builtin".to_string(),
                     "constant" => "@constant.builtin".to_string(),
-                    _ => "@keyword".to_string()
+                    _ => "@keyword".to_string(),
                 }
             } else {
                 "@keyword".to_string()
@@ -242,8 +244,10 @@ fn textmate_to_treesitter_capture(scope: &str) -> String {
             if parts.len() > 1 {
                 match parts[1] {
                     "bracket" => "@punctuation.bracket".to_string(),
-                    "delimiter" | "separator" | "terminator" => "@punctuation.delimiter".to_string(),
-                    _ => "@punctuation".to_string()
+                    "delimiter" | "separator" | "terminator" => {
+                        "@punctuation.delimiter".to_string()
+                    }
+                    _ => "@punctuation".to_string(),
                 }
             } else {
                 "@punctuation".to_string()
@@ -263,7 +267,7 @@ fn textmate_to_treesitter_capture(scope: &str) -> String {
                     "underline" => "@text.underline".to_string(),
                     "raw" | "inline" => "@text.literal".to_string(),
                     "link" => "@text.uri".to_string(),
-                    _ => "@text".to_string()
+                    _ => "@text".to_string(),
                 }
             } else {
                 "@text".to_string()
@@ -526,16 +530,17 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
     let name_re = Regex::new(r#"(?s)<key>name</key>\s*<string>([^<]+)</string>"#)?;
 
     // We also search for individual matches for safety
-    let single_kw_re = Regex::new(r#"(?i)<key>match</key>\s*<string>\\b\(\?i:([a-zA-Z0-9_]+)\)\\b</string>"#)?;
+    let single_kw_re =
+        Regex::new(r#"(?i)<key>match</key>\s*<string>\\b\(\?i:([a-zA-Z0-9_]+)\)\\b</string>"#)?;
 
     for mat in kw_list_re.find_iter(&xml) {
         let kw_list_str = &xml[mat.start()..mat.end()];
-        
+
         // Find the nearest scope name by searching backwards and forwards around this match
         let start_search = mat.start().saturating_sub(1000);
         let end_search = (mat.end() + 1000).min(xml.len());
         let search_window = &xml[start_search..end_search];
-        
+
         let mut scope_name = "keyword.control"; // fallback
         // Find nearest name in window (closest to the match)
         let mut best_dist = usize::MAX;
@@ -561,7 +566,8 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
 
                 // Store the TextMate scope -> tree-sitter capture mapping
                 let capture = textmate_to_treesitter_capture(scope_name);
-                out.scope_captures.insert(scope_name.to_string(), capture.to_string());
+                out.scope_captures
+                    .insert(scope_name.to_string(), capture.to_string());
 
                 if scope_name.contains("keyword.control") {
                     out.control.insert(kw);
@@ -575,9 +581,10 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
                     out.control.insert(kw);
                 } else if scope_name.contains("metadata") {
                     out.metadata.insert(kw);
-                } else if scope_name.contains("property") ||
-                           scope_name.contains("variable.other") ||
-                           scope_name.contains("support.variable") {
+                } else if scope_name.contains("property")
+                    || scope_name.contains("variable.other")
+                    || scope_name.contains("support.variable")
+                {
                     out.properties.insert(kw);
                 }
             }
@@ -588,7 +595,7 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
     for caps in single_kw_re.captures_iter(&xml) {
         let kw = caps[1].trim().to_lowercase();
         if is_identifier_like(&kw) {
-             out.control.insert(kw);
+            out.control.insert(kw);
         }
     }
 
@@ -597,9 +604,10 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
     for name_caps in name_re.captures_iter(&xml) {
         let scope_name = name_caps.get(1).unwrap().as_str();
         // Skip punctuation and very generic scopes we don't need to map
-        if !scope_name.starts_with("punctuation.whitespace") &&
-           !scope_name.starts_with("source.") &&
-           !out.scope_captures.contains_key(scope_name) {
+        if !scope_name.starts_with("punctuation.whitespace")
+            && !scope_name.starts_with("source.")
+            && !out.scope_captures.contains_key(scope_name)
+        {
             let capture = textmate_to_treesitter_capture(scope_name);
             out.scope_captures.insert(scope_name.to_string(), capture);
         }
@@ -735,19 +743,19 @@ fn write_object_types_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
     // Extension keyword → list of extension object keywords
     // (structural metadata about the AL language, not token strings)
     let extensions_map: &[(&str, &[&str])] = &[
-        ("table",         &["tableextension"]),
-        ("page",          &["pageextension", "pagecustomization"]),
-        ("report",        &["reportextension"]),
-        ("enum",          &["enumextension"]),
+        ("table", &["tableextension"]),
+        ("page", &["pageextension", "pagecustomization"]),
+        ("report", &["reportextension"]),
+        ("enum", &["enumextension"]),
         ("permissionset", &["permissionsetextension"]),
-        ("profile",       &["profileextension"]),
+        ("profile", &["profileextension"]),
     ];
 
     // LSP SymbolKind per object type
     let lsp_kind_map: &[(&str, &str)] = &[
-        ("enum",         "Enum"),
-        ("interface",    "Interface"),
-        ("profile",      "File"),
+        ("enum", "Enum"),
+        ("interface", "Interface"),
+        ("profile", "File"),
         ("controladdin", "Module"),
     ];
     let default_lsp_kind = "Class";
@@ -769,19 +777,14 @@ fn write_object_types_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
         .map(|(k, v)| (*k, v.iter().map(|s| s.to_string()).collect()))
         .collect();
 
-    let lsp_lookup: std::collections::HashMap<&str, &str> = lsp_kind_map
-        .iter()
-        .map(|(k, v)| (*k, *v))
-        .collect();
+    let lsp_lookup: std::collections::HashMap<&str, &str> =
+        lsp_kind_map.iter().map(|(k, v)| (*k, *v)).collect();
 
     let entries: Vec<serde_json::Value> = keywords
         .objects
         .iter()
         .map(|kw| {
-            let extensions: Vec<String> = ext_lookup
-                .get(kw.as_str())
-                .cloned()
-                .unwrap_or_default();
+            let extensions: Vec<String> = ext_lookup.get(kw.as_str()).cloned().unwrap_or_default();
             let lsp_symbol_kind = lsp_lookup
                 .get(kw.as_str())
                 .copied()
@@ -813,11 +816,29 @@ fn write_page_controls_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
     // The canonical list of AL page/report structural keywords.
     // Order is preserved; duplicates are filtered out via BTreeSet later.
     let known: &[&str] = &[
-        "area", "group", "repeater", "field", "part", "action", "separator",
-        "cuegroup", "grid", "fixed", "usercontrol", "label",
-        "dataitem", "column", "filter",
-        "addfirst", "addlast", "addafter", "addbefore", "modify",
-        "moveafter", "movebefore", "actionref",
+        "area",
+        "group",
+        "repeater",
+        "field",
+        "part",
+        "action",
+        "separator",
+        "cuegroup",
+        "grid",
+        "fixed",
+        "usercontrol",
+        "label",
+        "dataitem",
+        "column",
+        "filter",
+        "addfirst",
+        "addlast",
+        "addafter",
+        "addbefore",
+        "modify",
+        "moveafter",
+        "movebefore",
+        "actionref",
     ];
 
     // Collect any additional entries from metadata/properties that look like
@@ -840,11 +861,7 @@ fn write_page_controls_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
 
     // Also surface any grammar-extracted entries that are in the known set
     // but weren't already covered (shouldn't happen, but be defensive).
-    for kw in keywords
-        .metadata
-        .iter()
-        .chain(keywords.properties.iter())
-    {
+    for kw in keywords.metadata.iter().chain(keywords.properties.iter()) {
         if known_set.contains(kw.as_str()) && seen.insert(kw.as_str()) {
             entries.push(serde_json::json!({
                 "keyword":   kw,
@@ -916,7 +933,6 @@ fn write_token_classification_json(keywords: &Keywords, data_dir: &str) -> Resul
 }
 
 fn generate_keywords_c(keywords: &Keywords, out_dir: &str) -> Result<()> {
-
     let all = keywords_all(keywords);
 
     let mut out = String::new();
@@ -1048,7 +1064,11 @@ fn c_escape(s: &str) -> String {
     s.replace('\\', "\\\\").replace('\"', "\\\"")
 }
 
-fn generate_scanner_c(_keywords: &Keywords, external_tokens: &[ExternalTokenSpec], out_dir: &str) -> Result<()> {
+fn generate_scanner_c(
+    _keywords: &Keywords,
+    external_tokens: &[ExternalTokenSpec],
+    out_dir: &str,
+) -> Result<()> {
     // out_dir is assumed to be "src" equivalent relative path
     // Templates are in the same directory as this source file
     let template_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tools/al-gen/templates");
@@ -1074,7 +1094,11 @@ fn generate_scanner_c(_keywords: &Keywords, external_tokens: &[ExternalTokenSpec
     Ok(())
 }
 
-fn generate_grammar_js(keywords: &Keywords, external_tokens: &[ExternalTokenSpec], root: &str) -> Result<()> {
+fn generate_grammar_js(
+    keywords: &Keywords,
+    external_tokens: &[ExternalTokenSpec],
+    root: &str,
+) -> Result<()> {
     let template_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tools/al-gen/templates");
     let template = fs::read_to_string(format!("{}/grammar.js.template", template_dir))?;
     let externals = gen_grammar_externals_fragment(external_tokens);
@@ -1093,30 +1117,32 @@ fn generate_grammar_js(keywords: &Keywords, external_tokens: &[ExternalTokenSpec
     for caps in kw_placeholder_re.captures_iter(&template) {
         let kw_name = &caps[1].to_lowercase();
         let placeholder_key = format!("KW:{}", &caps[1]); // e.g. "KW:if"
-        
+
         // Find the actual token name
-        let token = if keywords.control.contains(kw_name) || 
-                       keywords.operator_words.contains(kw_name) ||
-                       keywords.objects.contains(kw_name) ||
-                       keywords.types.contains(kw_name) ||
-                       keywords.metadata.contains(kw_name) ||
-                       keywords.properties.contains(kw_name) {
+        let token = if keywords.control.contains(kw_name)
+            || keywords.operator_words.contains(kw_name)
+            || keywords.objects.contains(kw_name)
+            || keywords.types.contains(kw_name)
+            || keywords.metadata.contains(kw_name)
+            || keywords.properties.contains(kw_name)
+        {
             format!("$.kw_{}", kw_name)
         } else {
             format!("$._kw_{}_missing", kw_name)
         };
-        
+
         placeholders.push((placeholder_key, token));
     }
 
     // Convert to the required format for render_template
-    let render_pairs: Vec<(&str, &str)> = placeholders.iter()
+    let render_pairs: Vec<(&str, &str)> = placeholders
+        .iter()
         .map(|(k, v)| (k.as_str(), v.as_str()))
         .collect();
 
     let rendered = render_template(&template, &render_pairs);
     let out_path = format!("{}grammar.js", root);
-    
+
     let header = "// -------------------------------------------------------------------------\n\
                   // AUTO-GENERATED FILE - DO NOT EDIT MANUALLY\n\
                   // -------------------------------------------------------------------------\n\
@@ -1132,7 +1158,8 @@ fn generate_grammar_js(keywords: &Keywords, external_tokens: &[ExternalTokenSpec
 }
 
 fn gen_choice_fragment(elements: &BTreeSet<String>, exclude: &[&str]) -> String {
-    let filtered: Vec<_> = elements.iter()
+    let filtered: Vec<_> = elements
+        .iter()
         .filter(|e| !exclude.contains(&e.as_str()))
         .collect();
 
@@ -1165,19 +1192,48 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     use std::collections::HashSet;
 
     let control_flow: HashSet<&str> = [
-        "if", "then", "else", "begin", "end", "for", "foreach", "to", "downto",
-        "do", "while", "repeat", "until", "case", "of", "with", "in",
-        "exit", "break", "continue", "asserterror",
-    ].into_iter().collect();
+        "if",
+        "then",
+        "else",
+        "begin",
+        "end",
+        "for",
+        "foreach",
+        "to",
+        "downto",
+        "do",
+        "while",
+        "repeat",
+        "until",
+        "case",
+        "of",
+        "with",
+        "in",
+        "exit",
+        "break",
+        "continue",
+        "asserterror",
+    ]
+    .into_iter()
+    .collect();
 
-    let function_def: HashSet<&str> = [
-        "procedure", "trigger", "event", "function",
-    ].into_iter().collect();
+    let function_def: HashSet<&str> = ["procedure", "trigger", "event", "function"]
+        .into_iter()
+        .collect();
 
     let modifiers: HashSet<&str> = [
-        "var", "local", "protected", "internal", "temporary",
-        "runonclient", "withevents", "suppressdispose", "indataset",
-    ].into_iter().collect();
+        "var",
+        "local",
+        "protected",
+        "internal",
+        "temporary",
+        "runonclient",
+        "withevents",
+        "suppressdispose",
+        "indataset",
+    ]
+    .into_iter()
+    .collect();
 
     specific_tokens.push_str("; --- Control Flow Keywords ---\n");
     specific_tokens.push_str("; Zed themes color @keyword.control differently from @keyword\n");
@@ -1224,123 +1280,126 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
         specific_tokens.push_str(&format!("(op_{}) @keyword.operator\n", kw));
     }
 
-    // Type keywords need their own rules with @type.builtin
-    // These must come AFTER control keywords to override them (tree-sitter last-match-wins)
-    let type_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("builtintypes"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@type.builtin");
+    // Resolve a highlight capture from the extracted TextMate scopes, falling
+    // back to a tree-sitter default when no scope matches.
+    fn find_capture<'a>(
+        caps: &'a std::collections::HashMap<String, String>,
+        pred: impl Fn(&str) -> bool,
+        default: &'a str,
+    ) -> &'a str {
+        caps.iter()
+            .find(|(scope, _)| pred(scope))
+            .map(|(_, cap)| cap.as_str())
+            .unwrap_or(default)
+    }
 
+    let type_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.contains("builtintypes"),
+        "@type.builtin",
+    );
+
+    // Type keyword rules must come AFTER control keywords so tree-sitter's
+    // last-match-wins picks @type.builtin over the control-keyword capture.
     specific_tokens.push_str("\n; Type keywords (override control keyword captures)\n");
     for kw in &keywords.types {
         specific_tokens.push_str(&format!("(kw_{}) {}\n", kw, type_capture));
     }
 
-    // Generate dynamic category captures from TextMate scopes
-    let object_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("applicationobject"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@keyword");
+    let object_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.contains("applicationobject"),
+        "@keyword",
+    );
+    let metadata_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.contains("metadata"),
+        "@keyword",
+    );
+    let property_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.contains("property"),
+        "@keyword",
+    );
+    let operator_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.contains("keyword.operator"),
+        "@operator",
+    );
 
-    // Note: type_capture is already defined above for individual type keywords
+    // In AL, quoted identifiers ("...") are identifiers (table names, etc.),
+    // NOT string literals.
+    let quoted_identifier_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.contains("identifier.quoted"),
+        "@variable",
+    );
 
-    let metadata_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("metadata"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@keyword");
+    let comment_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.starts_with("comment."),
+        "@comment",
+    );
+    let string_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.starts_with("string."),
+        "@string",
+    );
+    let number_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.contains("constant.numeric"),
+        "@number",
+    );
+    let variable_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.starts_with("variable."),
+        "@variable",
+    );
 
-    let property_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("property"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@keyword");
+    // AL's TextMate grammar doesn't define constant.language (semantic tokens
+    // handle true/false), so this usually falls back to @constant.builtin.
+    let constant_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.contains("constant.language"),
+        "@constant.builtin",
+    );
 
-    // Operator symbols (not keyword operators - those are hardcoded as @keyword.operator)
-    let operator_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("keyword.operator"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@operator");
+    let keyword_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s == "keyword.control.al" || (s.starts_with("keyword.") && !s.contains("operator")),
+        "@keyword",
+    );
+    let punctuation_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s == "punctuation.al",
+        "@punctuation.delimiter",
+    );
+    let function_capture = find_capture(
+        &keywords.scope_captures,
+        |s| s.contains("entity.name.function"),
+        "@function.definition",
+    );
 
-    // Quoted identifiers ("...") - extracted from identifier.quoted.double.al scope
-    // In AL, these are identifiers (table names, etc.), NOT string literals
-    let quoted_identifier_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("identifier.quoted"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@variable");
-
-    // Basic literal captures - ALL extracted from TextMate grammar
-    let comment_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.starts_with("comment."))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@comment");
-
-    let string_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.starts_with("string."))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@string");
-
-    let number_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("constant.numeric"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@number");
-
-    let variable_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.starts_with("variable."))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@variable");
-
-    // For boolean constants (true/false), prefer constant.language scope, fallback to @constant.builtin
-    // Note: AL TextMate grammar doesn't define constant.language - that's handled by semantic tokens
-    let constant_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("constant.language"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@constant.builtin");
-
-    let keyword_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.as_str() == "keyword.control.al" || (scope.starts_with("keyword.") && !scope.contains("operator")))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@keyword");
-
-    let punctuation_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.as_str() == "punctuation.al")
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@punctuation.delimiter");
-
-    let function_capture = keywords.scope_captures
-        .iter()
-        .find(|(scope, _)| scope.contains("entity.name.function"))
-        .map(|(_, cap)| cap.as_str())
-        .unwrap_or("@function.definition");
-
-    let rendered = render_template(&template, &[
-        ("CONTROL_KW_TOKEN_HIGHLIGHTS", &specific_tokens),
-        ("OBJECT_CAPTURE", object_capture),
-        ("TYPE_CAPTURE", type_capture),
-        ("METADATA_CAPTURE", metadata_capture),
-        ("PROPERTY_CAPTURE", property_capture),
-        ("QUOTED_IDENTIFIER_CAPTURE", quoted_identifier_capture),
-        ("COMMENT_CAPTURE", comment_capture),
-        ("STRING_CAPTURE", string_capture),
-        ("NUMBER_CAPTURE", number_capture),
-        ("VARIABLE_CAPTURE", variable_capture),
-        ("CONSTANT_CAPTURE", constant_capture),
-        ("OPERATOR_CAPTURE", operator_capture),
-        ("KEYWORD_CAPTURE", keyword_capture),
-        ("PUNCTUATION_CAPTURE", punctuation_capture),
-        ("FUNCTION_CAPTURE", function_capture),
-    ]);
+    let rendered = render_template(
+        &template,
+        &[
+            ("CONTROL_KW_TOKEN_HIGHLIGHTS", &specific_tokens),
+            ("OBJECT_CAPTURE", object_capture),
+            ("TYPE_CAPTURE", type_capture),
+            ("METADATA_CAPTURE", metadata_capture),
+            ("PROPERTY_CAPTURE", property_capture),
+            ("QUOTED_IDENTIFIER_CAPTURE", quoted_identifier_capture),
+            ("COMMENT_CAPTURE", comment_capture),
+            ("STRING_CAPTURE", string_capture),
+            ("NUMBER_CAPTURE", number_capture),
+            ("VARIABLE_CAPTURE", variable_capture),
+            ("CONSTANT_CAPTURE", constant_capture),
+            ("OPERATOR_CAPTURE", operator_capture),
+            ("KEYWORD_CAPTURE", keyword_capture),
+            ("PUNCTUATION_CAPTURE", punctuation_capture),
+            ("FUNCTION_CAPTURE", function_capture),
+        ],
+    );
     fs::write(out_path, rendered)?;
     Ok(())
 }
@@ -1384,11 +1443,12 @@ struct GrammarTypeRef {
 fn generate_structural_queries(node_types_path: &str, queries_dir: &str) -> Result<()> {
     let content = fs::read_to_string(node_types_path)
         .with_context(|| format!("Failed to read {}", node_types_path))?;
-    let nodes: Vec<GrammarNodeType> = serde_json::from_str(&content)
-        .context("Failed to parse node-types.json")?;
+    let nodes: Vec<GrammarNodeType> =
+        serde_json::from_str(&content).context("Failed to parse node-types.json")?;
 
     // Build lookup: type_name → node for field analysis
-    let node_map: BTreeMap<&str, &GrammarNodeType> = nodes.iter()
+    let node_map: BTreeMap<&str, &GrammarNodeType> = nodes
+        .iter()
         .filter(|n| n.named)
         .map(|n| (n.type_name.as_str(), n))
         .collect();
@@ -1399,7 +1459,11 @@ fn generate_structural_queries(node_types_path: &str, queries_dir: &str) -> Resu
     generate_locals_scm(&nodes, &node_map, &format!("{}/locals.scm", queries_dir))?;
     println!("✅ Generated {}/locals.scm", queries_dir);
 
-    generate_textobjects_scm(&nodes, &node_map, &format!("{}/textobjects.scm", queries_dir))?;
+    generate_textobjects_scm(
+        &nodes,
+        &node_map,
+        &format!("{}/textobjects.scm", queries_dir),
+    )?;
     println!("✅ Generated {}/textobjects.scm", queries_dir);
 
     Ok(())
@@ -1410,26 +1474,38 @@ fn generate_folds_scm(nodes: &[GrammarNodeType], out_path: &str) -> Result<()> {
     // Single-line or trivial nodes that should NOT be foldable
     let exclude: BTreeSet<&str> = [
         // Single-line statements
-        "empty_if_statement", "exit_statement", "expression_statement",
+        "empty_if_statement",
+        "exit_statement",
+        "expression_statement",
         // Single-line declarations (fields, vars, enum values, keys, labels, using)
-        "enum_value_declaration", "event_procedure_declaration",
-        "key_declaration", "label_declaration",
+        "enum_value_declaration",
+        "event_procedure_declaration",
+        "key_declaration",
+        "label_declaration",
         "namespace_or_using_declaration",
-        "object_variable_declaration", "regular_variable_declaration",
+        "object_variable_declaration",
+        "regular_variable_declaration",
         "variable_declaration",
         // Empty/inline blocks
         "empty_var_section",
-        "parenthesized_block", "bracketed_block",
-    ].into_iter().collect();
+        "parenthesized_block",
+        "bracketed_block",
+    ]
+    .into_iter()
+    .collect();
 
     let foldable_suffixes = ["_statement", "_declaration", "_block", "_section"];
 
     let mut foldable: Vec<&str> = Vec::new();
 
     for node in nodes {
-        if !node.named { continue; }
+        if !node.named {
+            continue;
+        }
         let name = node.type_name.as_str();
-        if exclude.contains(name) { continue; }
+        if exclude.contains(name) {
+            continue;
+        }
 
         let matches_suffix = foldable_suffixes.iter().any(|s| name.ends_with(s));
         let is_extra = name == "case_branch" || name == "argument_list";
@@ -1442,7 +1518,7 @@ fn generate_folds_scm(nodes: &[GrammarNodeType], out_path: &str) -> Result<()> {
 
     let mut out = String::from(
         "; Code folding regions for AL\n\
-         ; AUTO-GENERATED from node-types.json — do not edit manually\n\n[\n"
+         ; AUTO-GENERATED from node-types.json — do not edit manually\n\n[\n",
     );
     for name in &foldable {
         out.push_str(&format!("  ({})\n", name));
@@ -1463,17 +1539,21 @@ fn generate_locals_scm(
     out.push_str(
         "; Local scope and variable resolution for AL\n\
          ; AUTO-GENERATED from node-types.json — do not edit manually\n\n\
-         ; SCOPES\n\n"
+         ; SCOPES\n\n",
     );
 
     // Scope nodes: top-level file, declarations that introduce bindings,
     // blocks, and control-flow statements (they can shadow with `var` in AL).
     let scope_types: BTreeSet<&str> = [
         "source_file",
-        "object_declaration", "procedure_declaration",
-        "trigger_declaration", "event_declaration",
+        "object_declaration",
+        "procedure_declaration",
+        "trigger_declaration",
+        "event_declaration",
         "begin_end_block",
-    ].into_iter().collect();
+    ]
+    .into_iter()
+    .collect();
 
     // Also include any *_statement that actually has a body (control flow)
     // T053: `asserterror_statement` is a statement modifier in AL — it
@@ -1492,7 +1572,9 @@ fn generate_locals_scm(
 
     let mut scopes: Vec<&str> = Vec::new();
     for node in nodes {
-        if !node.named { continue; }
+        if !node.named {
+            continue;
+        }
         let name = node.type_name.as_str();
         if scope_types.contains(name) {
             scopes.push(name);
@@ -1522,14 +1604,20 @@ fn generate_locals_scm(
     ];
 
     for &(node_type, def_kind) in def_rules {
-        let Some(node) = node_map.get(node_type) else { continue };
-        let Some(name_field) = node.fields.get("name") else { continue };
+        let Some(node) = node_map.get(node_type) else {
+            continue;
+        };
+        let Some(name_field) = node.fields.get("name") else {
+            continue;
+        };
 
         // Determine the name field's access pattern by looking at what types it contains.
         // The grammar uses: name → name_or_keyword → name → identifier/quoted_identifier
         //               or: name → name → identifier/quoted_identifier
         //               or: name → wildcard
-        let field_type_names: Vec<&str> = name_field.types.iter()
+        let field_type_names: Vec<&str> = name_field
+            .types
+            .iter()
             .filter(|t| t.named)
             .map(|t| t.type_name.as_str())
             .collect();
@@ -1540,15 +1628,21 @@ fn generate_locals_scm(
             // name: (name_or_keyword (name (identifier|quoted_identifier) @capture))
             // Check if name_or_keyword contains name which contains identifier
             if let Some(nok) = node_map.get("name_or_keyword") {
-                let nok_has_name = nok.children.as_ref()
+                let nok_has_name = nok
+                    .children
+                    .as_ref()
                     .map(|c| c.types.iter().any(|t| t.type_name == "name"))
                     .unwrap_or(false);
                 if nok_has_name {
                     if let Some(name_node) = node_map.get("name") {
-                        let has_ident = name_node.children.as_ref()
+                        let has_ident = name_node
+                            .children
+                            .as_ref()
                             .map(|c| c.types.iter().any(|t| t.type_name == "identifier"))
                             .unwrap_or(false);
-                        let has_quoted = name_node.children.as_ref()
+                        let has_quoted = name_node
+                            .children
+                            .as_ref()
                             .map(|c| c.types.iter().any(|t| t.type_name == "quoted_identifier"))
                             .unwrap_or(false);
                         if has_ident {
@@ -1569,10 +1663,14 @@ fn generate_locals_scm(
         } else if field_type_names.contains(&"name") {
             // name: (name (identifier|quoted_identifier) @capture)
             if let Some(name_node) = node_map.get("name") {
-                let has_ident = name_node.children.as_ref()
+                let has_ident = name_node
+                    .children
+                    .as_ref()
                     .map(|c| c.types.iter().any(|t| t.type_name == "identifier"))
                     .unwrap_or(false);
-                let has_quoted = name_node.children.as_ref()
+                let has_quoted = name_node
+                    .children
+                    .as_ref()
                     .map(|c| c.types.iter().any(|t| t.type_name == "quoted_identifier"))
                     .unwrap_or(false);
                 if has_ident {
@@ -1590,10 +1688,7 @@ fn generate_locals_scm(
             }
         } else {
             // Wildcard — name field type is something we can't traverse
-            out.push_str(&format!(
-                "({}\n  name: (_) {})\n\n",
-                node_type, capture
-            ));
+            out.push_str(&format!("({}\n  name: (_) {})\n\n", node_type, capture));
         }
     }
 
@@ -1602,7 +1697,9 @@ fn generate_locals_scm(
 
     // Any named node type that IS an identifier is a reference
     for node in nodes {
-        if !node.named { continue; }
+        if !node.named {
+            continue;
+        }
         if node.type_name == "identifier" || node.type_name == "quoted_identifier" {
             out.push_str(&format!("({}) @local.reference\n\n", node.type_name));
         }
@@ -1620,19 +1717,27 @@ fn generate_textobjects_scm(
 ) -> Result<()> {
     let mut out = String::from(
         "; Text objects for AL (vim-mode: select function, class, comment)\n\
-         ; AUTO-GENERATED from node-types.json — do not edit manually\n\n"
+         ; AUTO-GENERATED from node-types.json — do not edit manually\n\n",
     );
 
     // Functions — nodes that represent callable declarations with a begin_end_block body
-    let function_types = ["procedure_declaration", "trigger_declaration", "event_declaration"];
+    let function_types = [
+        "procedure_declaration",
+        "trigger_declaration",
+        "event_declaration",
+    ];
 
     out.push_str("; Functions — procedures, triggers, events\n");
     for &func_type in &function_types {
-        let Some(node) = node_map.get(func_type) else { continue };
+        let Some(node) = node_map.get(func_type) else {
+            continue;
+        };
         out.push_str(&format!("({}) @function.around\n\n", func_type));
 
         // Check if this node has begin_end_block as a child → function.inside
-        let has_body_block = node.children.as_ref()
+        let has_body_block = node
+            .children
+            .as_ref()
             .map(|c| c.types.iter().any(|t| t.type_name == "begin_end_block"))
             .unwrap_or(false);
         if has_body_block {
@@ -1646,9 +1751,13 @@ fn generate_textobjects_scm(
     // Classes — nodes with a 'body' field containing an object_body
     out.push_str("; Classes — AL objects (codeunit, table, page, report, etc.)\n");
     for node in nodes {
-        if !node.named { continue; }
+        if !node.named {
+            continue;
+        }
         if let Some(body_field) = node.fields.get("body") {
-            let has_object_body = body_field.types.iter()
+            let has_object_body = body_field
+                .types
+                .iter()
                 .any(|t| t.type_name == "object_body");
             if has_object_body {
                 out.push_str(&format!("({}) @class.around\n\n", node.type_name));
@@ -1705,7 +1814,7 @@ fn run_tree_sitter_build(root: &str) -> Result<PathBuf> {
     println!("   Build root absolute: {}", root_abs.display());
 
     let out_path = root_abs.join("target/tree-sitter-al.so");
-    
+
     // Ensure target dir exists relative to root
     if let Some(parent) = out_path.parent() {
         fs::create_dir_all(parent)?;
@@ -1751,7 +1860,7 @@ fn default_branch() -> String {
 fn run_repo_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()> {
     // REPO_TEST_CONFIG is relative to generator execution or root?
     // It's in tests/test_repos.toml. Ideally we read it from root.
-    
+
     let config_path = Path::new(root).join(REPO_TEST_CONFIG);
     let cfg_text = fs::read_to_string(&config_path)
         .with_context(|| format!("Failed to read {}", config_path.display()))?;
@@ -1760,13 +1869,16 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()>
 
     let enabled: Vec<_> = cfg.repo.into_iter().filter(|r| r.enabled).collect();
     if enabled.is_empty() {
-        println!("ℹ️  No enabled repos in {} ; skipping.", config_path.display());
+        println!(
+            "ℹ️  No enabled repos in {} ; skipping.",
+            config_path.display()
+        );
         return Ok(());
     }
 
     let work_dir = Path::new(root).join(REPO_TEST_WORKDIR);
     fs::create_dir_all(&work_dir)?;
-    
+
     let target_dir = Path::new(root).join("target");
     fs::create_dir_all(&target_dir)?;
 
@@ -1850,8 +1962,12 @@ fn run_fixture_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<
             write_paths_file(&paths_file, &invalid)?;
             let paths_file_abs = fs::canonicalize(&paths_file)?;
 
-            let summaries =
-                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, &paths_file_abs, root)?;
+            let summaries = parse_paths_with_tree_sitter_detailed(
+                parser_lib,
+                scope_name,
+                &paths_file_abs,
+                root,
+            )?;
 
             let mut unexpected_ok = Vec::new();
             for s in summaries {
@@ -1889,8 +2005,12 @@ fn run_fixture_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<
             write_paths_file(&paths_file, &valid)?;
             let paths_file_abs = fs::canonicalize(&paths_file)?;
 
-            let summaries =
-                parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, &paths_file_abs, root)?;
+            let summaries = parse_paths_with_tree_sitter_detailed(
+                parser_lib,
+                scope_name,
+                &paths_file_abs,
+                root,
+            )?;
 
             let mut unexpected_failed = Vec::new();
             for s in summaries {
@@ -2072,9 +2192,10 @@ fn parse_paths_with_tree_sitter(
     parser_lib: &Path,
     scope_name: &str,
     paths_file: &Path,
-    root: &str
+    root: &str,
 ) -> Result<(usize, usize, Vec<String>)> {
-    let summaries = parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, paths_file, root)?;
+    let summaries =
+        parse_paths_with_tree_sitter_detailed(parser_lib, scope_name, paths_file, root)?;
     let mut ok = 0usize;
     let mut failed = 0usize;
     let mut samples = Vec::new();
@@ -2101,7 +2222,7 @@ fn parse_paths_with_tree_sitter_detailed(
     parser_lib: &Path,
     scope_name: &str,
     paths_file: &Path,
-    root: &str
+    root: &str,
 ) -> Result<Vec<FileParseSummary>> {
     let output = Command::new("tree-sitter")
         .current_dir(root)
@@ -2264,9 +2385,7 @@ fn strip_jsonc(input: &str) -> String {
 }
 
 /// Convert a single VS Code BC theme file to a Zed theme variant.
-fn convert_vscode_theme_to_zed(
-    vscode_theme: &serde_json::Value,
-) -> Result<serde_json::Value> {
+fn convert_vscode_theme_to_zed(vscode_theme: &serde_json::Value) -> Result<serde_json::Value> {
     let name = vscode_theme
         .get("name")
         .and_then(|v| v.as_str())
@@ -2277,7 +2396,11 @@ fn convert_vscode_theme_to_zed(
         .and_then(|v| v.as_str())
         .unwrap_or("dark");
 
-    let appearance = if theme_type == "light" { "light" } else { "dark" };
+    let appearance = if theme_type == "light" {
+        "light"
+    } else {
+        "dark"
+    };
 
     let colors = vscode_theme
         .get("colors")
@@ -2297,10 +2420,7 @@ fn convert_vscode_theme_to_zed(
 
     // Build syntax tokens from tokenColors
     let syntax = map_token_colors(&token_colors);
-    style.insert(
-        "syntax".to_string(),
-        serde_json::Value::Object(syntax),
-    );
+    style.insert("syntax".to_string(), serde_json::Value::Object(syntax));
 
     Ok(serde_json::json!({
         "name": name,
@@ -2317,22 +2437,43 @@ fn map_ui_colors(
 ) {
     // Direct mappings from VS Code color keys to Zed style keys
     let mappings: &[(&str, &[&str])] = &[
-        ("editor.background", &["background", "editor.background", "toolbar.background"]),
+        (
+            "editor.background",
+            &["background", "editor.background", "toolbar.background"],
+        ),
         ("editor.foreground", &["editor.foreground", "text"]),
         ("activityBar.background", &["tab_bar.background"]),
         ("sideBar.background", &["panel.background"]),
         ("sideBarSectionHeader.background", &["surface.background"]),
         ("statusBar.background", &["status_bar.background"]),
-        ("editorSuggestWidget.background", &["elevated_surface.background"]),
+        (
+            "editorSuggestWidget.background",
+            &["elevated_surface.background"],
+        ),
         ("editorIndentGuide.background1", &["editor.wrap_guide"]),
-        ("editorIndentGuide.activeBackground1", &["editor.active_wrap_guide"]),
-        ("editor.selectionBackground", &["editor.highlight.occurrence"]),
-        ("editor.selectionHighlightBackground", &[
-            "editor.document_highlight.read_background",
-            "editor.document_highlight.write_background",
-        ]),
-        ("list.activeSelectionBackground", &["element.selected", "ghost_element.selected"]),
-        ("list.hoverBackground", &["element.hover", "ghost_element.hover"]),
+        (
+            "editorIndentGuide.activeBackground1",
+            &["editor.active_wrap_guide"],
+        ),
+        (
+            "editor.selectionBackground",
+            &["editor.highlight.occurrence"],
+        ),
+        (
+            "editor.selectionHighlightBackground",
+            &[
+                "editor.document_highlight.read_background",
+                "editor.document_highlight.write_background",
+            ],
+        ),
+        (
+            "list.activeSelectionBackground",
+            &["element.selected", "ghost_element.selected"],
+        ),
+        (
+            "list.hoverBackground",
+            &["element.hover", "ghost_element.hover"],
+        ),
         ("input.placeholderForeground", &["text.placeholder"]),
         ("sideBarSectionHeader.border", &["border"]),
         ("list.focusAndSelectionOutline", &["border.focused"]),
@@ -2542,8 +2683,16 @@ fn map_token_colors(
         (&["constant.language"], "boolean"),
         (&["constant.regexp"], "string.regex"),
         (&["entity.name.function"], "function"),
-        (&["entity.name.type", "entity.name.class", "entity.name.enum",
-          "entity.name.interface", "entity.name.namespace"], "type"),
+        (
+            &[
+                "entity.name.type",
+                "entity.name.class",
+                "entity.name.enum",
+                "entity.name.interface",
+                "entity.name.namespace",
+            ],
+            "type",
+        ),
         (&["variable"], "variable"),
         (&["entity.other.attribute-name"], "attribute"),
         (&["entity.name.tag"], "tag"),
@@ -2577,12 +2726,10 @@ fn map_token_colors(
                         serde_json::Value::String(style.clone()),
                     );
                 } else {
-                    token_style
-                        .insert("font_style".to_string(), serde_json::Value::Null);
+                    token_style.insert("font_style".to_string(), serde_json::Value::Null);
                 }
 
-                token_style
-                    .insert("font_weight".to_string(), serde_json::Value::Null);
+                token_style.insert("font_weight".to_string(), serde_json::Value::Null);
 
                 if !token_style.is_empty() {
                     syntax.insert(
@@ -2691,8 +2838,12 @@ fn generate_themes(extension_path: &Path, output_dir: &Path) -> Result<()> {
     });
 
     // Write output
-    fs::create_dir_all(output_dir)
-        .with_context(|| format!("Failed to create themes directory: {}", output_dir.display()))?;
+    fs::create_dir_all(output_dir).with_context(|| {
+        format!(
+            "Failed to create themes directory: {}",
+            output_dir.display()
+        )
+    })?;
 
     let output_path = output_dir.join("bc-themes.json");
     let formatted = serde_json::to_string_pretty(&zed_theme_file)?;
