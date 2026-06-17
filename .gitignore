@@ -6,8 +6,8 @@
 
 # Core generated files
 # grammar.js
-grammar.json
-node-types.json
+/grammar.json
+/node-types.json
 
 # Entire folders that are generation targets
 # src/
