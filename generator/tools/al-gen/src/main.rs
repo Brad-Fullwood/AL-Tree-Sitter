@@ -20,12 +20,30 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+mod zed_language;
+
 const REPO_TEST_CONFIG: &str = "tests/test_repos.toml";
 const REPO_TEST_WORKDIR: &str = "tests/.repos";
 const FIXTURES_INVALID_DIR: &str = "tests/fixtures/invalid";
 const FIXTURES_VALID_DIR: &str = "tests/fixtures/valid";
 
 fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    let generator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let tree_sitter_root = generator_dir
+        .parent()
+        .context("generator manifest dir has no parent")?
+        .to_path_buf();
+    let extension_root = tree_sitter_root
+        .parent()
+        .context("tree-sitter-al directory has no parent")?
+        .to_path_buf();
+
+    if args.iter().any(|a| a == "--zed-language-only") {
+        zed_language::generate(&extension_root, &tree_sitter_root.join("queries"))?;
+        return Ok(());
+    }
+
     println!("╔══════════════════════════════════════════════════════════════╗");
     println!("║  AL Tree-Sitter Generator - Dynamic from Extension          ║");
     println!("╚══════════════════════════════════════════════════════════════╝\n");
@@ -69,9 +87,7 @@ fn main() -> Result<()> {
     println!("✅ Generated {}", highlights_path);
 
     println!("\n🎭 Generating Zed themes from VS Code BC themes...");
-    let zed_extension_themes_dir =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../Zed AL Extension/themes");
-    generate_themes(&extension_path, &zed_extension_themes_dir)?;
+    generate_themes(&extension_path, &extension_root.join("themes"))?;
 
     println!("\n📦 Writing JSON data files...");
     let data_dir = format!("{}data", root_offset);
@@ -86,6 +102,9 @@ fn main() -> Result<()> {
     let node_types_path = format!("{}src/node-types.json", root_offset);
     generate_structural_queries(&node_types_path, &queries_dir)?;
 
+    println!("\n🧩 Generating Zed language package files...");
+    zed_language::generate(&extension_root, &tree_sitter_root.join("queries"))?;
+
     // Build a parser library once; used for fast `tree-sitter parse` runs.
     println!("\n🔨 Building parser library...");
     let lib_path = run_tree_sitter_build(root_offset)?;
@@ -96,7 +115,6 @@ fn main() -> Result<()> {
 
     // Optional: real-world validation against Microsoft repos.
     // Opt-in only: `cargo run --release -- --test`
-    let args: Vec<String> = std::env::args().collect();
     let do_tests = args.iter().any(|a| a == "--test" || a == "--tests");
 
     if do_tests {
