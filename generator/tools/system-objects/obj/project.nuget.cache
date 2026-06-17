@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "OQhyhoVR2aI=",
+  "success": true,
+  "projectFilePath": "/home/braf/Dev/Software/Zed/Zed AL Extension/tree-sitter-al/generator/tools/system-objects/system-objects.csproj",
+  "expectedPackageFiles": [
+    "/home/braf/.nuget/packages/microsoft.netcore.app.ref/8.0.27/microsoft.netcore.app.ref.8.0.27.nupkg.sha512",
+    "/home/braf/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.27/microsoft.aspnetcore.app.ref.8.0.27.nupkg.sha512",
+    "/home/braf/.nuget/packages/microsoft.netcore.app.host.linux-x64/8.0.27/microsoft.netcore.app.host.linux-x64.8.0.27.nupkg.sha512"
+  ],
+  "logs": []
+}
