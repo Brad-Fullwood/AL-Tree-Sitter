@@ -29,6 +29,8 @@ prebuilds/
 
 # Rust build
 target/
+# Library crate: lockfile is not committed (cargo ignores it on publish anyway).
+/Cargo.lock
 
 # Tree-sitter bindings
 build/
