@@ -2869,6 +2869,14 @@
         },
         {
           "type": "SYMBOL",
+          "name": "break_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "continue_statement"
+        },
+        {
+          "type": "SYMBOL",
           "name": "expression_statement"
         }
       ]
@@ -3434,6 +3442,14 @@
           }
         ]
       }
+    },
+    "break_statement": {
+      "type": "SYMBOL",
+      "name": "kw_break"
+    },
+    "continue_statement": {
+      "type": "SYMBOL",
+      "name": "kw_continue"
     },
     "asserterror_statement": {
       "type": "PREC_RIGHT",
