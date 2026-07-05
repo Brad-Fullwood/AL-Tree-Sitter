@@ -51,8 +51,8 @@ third_party/
 .snapshots/
 **/.snapshots/
 
-# We do not ship tree-sitter corpus tests in this repo.
-test/
+# Tree-sitter corpus tests (run with `tree-sitter test`)
+!test/
 
 # ============================================================
 # DEVELOPMENT
