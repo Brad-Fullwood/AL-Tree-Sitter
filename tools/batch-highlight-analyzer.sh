@@ -1,117 +1,67 @@
-#!/bin/bash
-#
-# Batch Highlight Analyzer
-# Analyzes multiple AL files and generates aggregate statistics
-#
-# Usage:
-#   ./batch-highlight-analyzer.sh <directory> [output_dir]
-#
-# Examples:
-#   ./batch-highlight-analyzer.sh "/home/bradf/Dev/AL/Hawco - Tasklet"
-#   ./batch-highlight-analyzer.sh "/home/bradf/Dev/AL/Hawco - Tasklet" ./analysis
-#
+#!/usr/bin/env bash
+set -euo pipefail
 
-set -e
+if [[ $# -lt 1 || $# -gt 2 ]]; then
+    echo "usage: $0 <directory> [output-file]" >&2
+    exit 2
+fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ANALYZER="$SCRIPT_DIR/highlight-analyzer.py"
+readonly input_dir=$1
+readonly script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+readonly analyzer="$script_dir/highlight-analyzer.py"
+readonly output_file=${2:-"$script_dir/../analysis/batch-report.txt"}
 
-if [ -z "$1" ]; then
-    echo "Usage: $0 <directory> [output_dir]"
+if [[ ! -d $input_dir ]]; then
+    echo "input directory does not exist: $input_dir" >&2
     exit 1
 fi
 
-INPUT_DIR="$1"
-OUTPUT_DIR="${2:-$SCRIPT_DIR/../analysis}"
+mapfile -d '' files < <(find "$input_dir" -type f -name '*.al' -print0 | sort -z)
+if (( ${#files[@]} == 0 )); then
+    echo "no AL files found under $input_dir" >&2
+    exit 1
+fi
 
-mkdir -p "$OUTPUT_DIR"
+mkdir -p "$(dirname "$output_file")"
+results=$(mktemp)
+trap 'rm -f "$results"' EXIT
 
-echo "=== Batch Highlight Analysis ==="
-echo "Input: $INPUT_DIR"
-echo "Output: $OUTPUT_DIR"
-echo ""
-
-# Find all AL files
-AL_FILES=$(find "$INPUT_DIR" -name "*.al" -type f 2>/dev/null)
-FILE_COUNT=$(echo "$AL_FILES" | grep -c "." || echo 0)
-
-echo "Found $FILE_COUNT AL files"
-echo ""
-
-# Analyze each file
-TOTAL_CAPTURES=0
-declare -A CAPTURE_COUNTS
-
-echo "Analyzing files..."
-for file in $AL_FILES; do
-    echo -n "."
-
-    # Get summary in JSON format
-    OUTPUT=$(python "$ANALYZER" "$file" --json --summary 2>/dev/null || echo '{"summary":{}}')
-
-    # Extract capture counts using Python
-    python3 -c "
-import json
-import sys
-try:
-    data = json.loads('''$OUTPUT''')
-    for capture, info in data.get('summary', {}).items():
-        print(f'{capture}:{info[\"count\"]}')
-except:
-    pass
-" | while read line; do
-        capture=$(echo "$line" | cut -d: -f1)
-        count=$(echo "$line" | cut -d: -f2)
-        if [ -n "$capture" ] && [ -n "$count" ]; then
-            current=${CAPTURE_COUNTS[$capture]:-0}
-            CAPTURE_COUNTS[$capture]=$((current + count))
-        fi
-    done
+for file in "${files[@]}"; do
+    python3 "$analyzer" "$file" --json --summary >> "$results"
 done
 
-echo ""
-echo ""
-
-# Generate aggregate report
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-REPORT_FILE="$OUTPUT_DIR/batch-report-$TIMESTAMP.txt"
-
-{
-    echo "=== Batch Highlight Analysis Report ==="
-    echo "Generated: $(date)"
-    echo "Input Directory: $INPUT_DIR"
-    echo "Files Analyzed: $FILE_COUNT"
-    echo ""
-    echo "=== Aggregate Capture Statistics ==="
-
-    # Run analysis on all files combined
-    COMBINED_OUTPUT=""
-    for file in $AL_FILES; do
-        python "$ANALYZER" "$file" --json --summary 2>/dev/null
-    done | python3 -c "
+python3 - "$results" "$input_dir" "${#files[@]}" > "$output_file" <<'PY'
 import json
 import sys
 from collections import defaultdict
+from pathlib import Path
 
-totals = defaultdict(lambda: {'count': 0, 'examples': set()})
+results_path, input_dir, file_count = sys.argv[1:]
+raw = Path(results_path).read_text(encoding="utf-8")
+decoder = json.JSONDecoder()
+offset = 0
+totals = defaultdict(lambda: {"count": 0, "examples": set()})
 
-for line in sys.stdin:
-    try:
-        data = json.loads(line)
-        for capture, info in data.get('summary', {}).items():
-            totals[capture]['count'] += info['count']
-            totals[capture]['examples'].update(info.get('examples', [])[:5])
-    except:
-        continue
+while offset < len(raw):
+    while offset < len(raw) and raw[offset].isspace():
+        offset += 1
+    if offset == len(raw):
+        break
+    result, offset = decoder.raw_decode(raw, offset)
+    for capture, info in result["summary"].items():
+        totals[capture]["count"] += info["count"]
+        totals[capture]["examples"].update(info.get("examples", []))
 
-print('Capture Type | Count | Example Values')
-print('-' * 60)
-for capture in sorted(totals.keys()):
+print("Batch highlight analysis")
+print(f"Input: {input_dir}")
+print(f"Files: {file_count}")
+print()
+print("Capture | Count | Examples")
+print("-" * 72)
+for capture in sorted(totals):
     info = totals[capture]
-    examples = list(info['examples'])[:5]
-    print(f'{capture:25} | {info[\"count\"]:6} | {examples}')
-"
-} > "$REPORT_FILE"
+    examples = sorted(info["examples"])[:5]
+    print(f"{capture:28} | {info['count']:7} | {examples}")
+PY
 
-echo "Report saved to: $REPORT_FILE"
-cat "$REPORT_FILE"
+echo "wrote $output_file"

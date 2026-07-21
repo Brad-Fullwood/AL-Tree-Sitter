@@ -1,12 +1,9 @@
-// AL Tree-Sitter Grammar - Keyword-driven & tolerant
-// Edit this file then run: cargo run
+// Generated from this template by al-gen.
 
 module.exports = grammar({
   name: 'al',
 
   externals: $ => [
-    // Keyword categories come from the Cursor/VSCode AL extension's TextMate grammar
-    // (syntaxes/alsyntax.tmlanguage). No keyword strings are hardcoded here.
     {{ EXTERNALS_LIST }}
   ],
 
@@ -18,34 +15,23 @@ module.exports = grammar({
   ],
 
   conflicts: $ => [
-    [$.variable_declaration, $.property_assignment],
-    [$.object_variable_declaration, $.property_assignment],
-    [$.variable_declaration, $.procedure_declaration],
-    [$.variable_declaration, $.trigger_declaration],
-    [$.empty_if_statement, $.if_statement],
-    [$.of_clause, $.name_or_keyword],
-    [$.object_section, $.variable_declaration],
-    [$.object_section, $.object_variable_declaration],
     [$.name, $._pre_object_body],
     [$.name_or_keyword, $._pre_object_body],
-    [$.event_declaration, $.semicolon],
-    [$.object_section, $.name_or_keyword], // Resolve conflict from increasing object_section precedence
     [$.statement_list, $.case_branch],
     [$.statement_list, $.case_statement],
-    [$.name_or_keyword, $._atom], // Resolve conflict for key_declaration parsing
-    [$.name, $._atom], // Resolve name vs atom conflict in key_declaration
-    [$.option_member, $.name_or_keyword], // Resolve conflict for option_type parsing
-    [$.key_declaration, $._atom], // Resolve conflict for key_declaration vs atoms in braced blocks
-    [$.type_reference, $.option_member], // Resolve conflict for option members vs type_reference tokens
-    [$.option_member, $.name], // Resolve conflict for identifier in option_type
-    [$.option_type], // Resolve ambiguity in option_type repeat patterns
+    [$.name_or_keyword, $._atom],
+    [$.name, $._atom],
+    [$.option_member, $.name_or_keyword],
+    [$.key_declaration, $._atom],
+    [$.type_reference, $.option_member],
+    [$.option_member, $.name],
+    [$.option_type],
   ],
 
   word: $ => $.identifier,
 
   rules: {
-  // Top-level: in real AL, this is mostly namespace/using + object declarations.
-  // We keep a small amount of tolerance for stray tokens/directives.
+  // _atom provides error recovery for unsupported top-level constructs.
   source_file: $ => repeat(choice(
     $.namespace_or_using_declaration,
     $.object_declaration,
@@ -58,16 +44,13 @@ module.exports = grammar({
     repeat1(seq('.', $.name)),
   ),
 
-  // NOTE: `namespace` and `using` are currently classified as metadata keywords by the TextMate grammar.
-  // We don't hardcode keyword strings; we parse by shape at top-level.
+  // The TextMate grammar classifies namespace and using as metadata keywords.
   namespace_or_using_declaration: $ => prec(1, seq(
     field('keyword', $.metadata_keyword),
     field('name', choice($.qualified_name, $.name)),
     $.semicolon,
   )),
 
-  // Object declarations are the most common top-level AL construct.
-  // We use placeholders that the generator fills based on TM scopes.
   object_declaration: $ => prec(2, seq(
     field('kind', choice(
       {{OBJECT_DECLARE_KIND}},
@@ -75,31 +58,27 @@ module.exports = grammar({
     )),
     field('id', optional($.integer)),
     field('name', optional($.name_or_keyword)),
-    // Conditional compilation in AL often repeats/varies the object header (e.g. #if/#else enum ...).
-    // We stay tolerant and consume header-related tokens until the opening '{'.
+    // Conditional compilation can split an object header across branches.
     repeat($._pre_object_body),
     field('body', $.object_body),
   )),
 
-  // e.g. pageextension 50100 MyExt extends "Customer Card" { ... }
   object_modifier: $ => seq(
     field('modifier', $.metadata_keyword),
     field('target', $.name),
   ),
 
-  // e.g. codeunit 605 "Name" implements "Interface Name" { ... }
   implements_clause: $ => prec(2, seq(
-    $.metadata_keyword, // 'implements'
+    $.metadata_keyword,
     $.name,
   )),
 
   _pre_object_body: $ => choice(
     $.object_modifier,
     $.implements_clause,
-    // Header can include things like attribute lists
     $.parenthesized_block,
     $.bracketed_block,
-    // Anything else *except* a bare metadata_keyword (to avoid conflicts with object_modifier)
+    // A bare metadata keyword conflicts with object_modifier and is excluded.
     $.string,
     $.verbatim_string,
     $.quoted_identifier,
@@ -129,7 +108,6 @@ module.exports = grammar({
     $.property_assignment,
     $.object_var_section,
     $.empty_var_section,
-    // Be permissive: allow declarations to continue after a var section.
     $.variable_declaration,
     $.event_declaration,
     $.procedure_declaration,
@@ -137,23 +115,16 @@ module.exports = grammar({
     $.braced_block,
     $.parenthesized_block,
     $.bracketed_block,
-    $.semicolon, // Allow orphan semicolons
+    $.semicolon,
   ),
 
-  // Covers the common braced sections inside objects:
-  // layout/actions/fields/keys/fieldgroups/requestpage/rendering/etc.
-  // Uses object_body (not braced_block) so nested content is structurally parsed:
-  // trigger_declaration, property_assignment, procedure_declaration, etc.
+  // Reusing object_body keeps nested declarations structurally parsed.
   object_section: $ => prec(-1, seq(
     field('keyword', choice($.metadata_keyword, $.keyword)),
-    // Some sections have header args before the body (e.g. modify/addafter/...).
-    // For page-specific: part(Name; "Page") and actionref(Name; Action) have semicolon patterns.
     repeat($._section_header_piece),
     field('body', $.object_body),
   )),
 
-  // Enum/enumextension values: value(<id>; <name>) { ... }
-  // Uses object_body so properties (Caption, Locked, etc.) are structurally parsed.
   enum_value_declaration: $ => prec.right(seq(
     field('keyword', $.object_keyword),
     '(',
@@ -165,9 +136,8 @@ module.exports = grammar({
     optional($.semicolon),
   )),
 
-  // Key declarations in table keys section: key(Name; field1, field2) { ... }
   key_declaration: $ => prec.right(seq(
-    field('keyword', $.keyword), // 'key'
+    field('keyword', $.keyword),
     '(',
     field('name', $.name_or_keyword),
     $.semicolon,
@@ -190,13 +160,8 @@ module.exports = grammar({
     $.comma,
     $.parenthesized_block,
     $.bracketed_block,
-    // Page-specific: part(Name; "Page") and actionref(Name; Action) patterns
-    // These are handled via the semicolon in _section_header_piece
   ),
 
-  // Properties appear in many object bodies and nested sections:
-  //   Caption = '...';
-  //   ApplicationArea = All;
   property_assignment: $ => prec(1, seq(
     field('name', choice($.name, $.property_keyword, $.metadata_keyword, $.keyword)),
     field('op', '='),
@@ -224,8 +189,6 @@ module.exports = grammar({
     $.semicolon,
   )),
 
-  // --- Members (procedures/triggers/vars) ---
-
   object_var_section: $ => prec.right(3, seq(
     repeat($.member_modifier),
     {{KW:var}},
@@ -243,7 +206,6 @@ module.exports = grammar({
     repeat($.variable_declaration),
   )),
 
-  // Empty var section (just "var" with no declarations)
   empty_var_section: $ => prec(1, seq(
     repeat($.member_modifier),
     {{KW:var}},
@@ -252,43 +214,39 @@ module.exports = grammar({
   variable_declaration: $ => prec(1, choice(
     seq(repeat1($.attribute), $.regular_variable_declaration),
     seq(repeat1($.attribute), $.label_declaration),
-    // Regular variable declarations: name: Type; or name, name2: Type;
     $.regular_variable_declaration,
-    // Label declarations: name: Label '...', Locked = true, Comment = '...';
-    // Must match when type_keyword is followed by a string (the label value).
     $.label_declaration,
   )),
 
   label_declaration: $ => prec(2, seq(
     field('name', $.name_or_keyword),
-    field('sep', $.operator), // ':'
-    field('type', choice($.type_keyword, $.identifier, $.metadata_keyword, $.keyword)),  // 'Label' (can be identifier or keyword)
-    field('value', $.string), // Label value (required to distinguish from regular vars)
-    repeat($.label_property), // Locked = true, Comment = '...', etc.
+    field('sep', $.operator),
+    field('type', choice($.type_keyword, $.identifier, $.metadata_keyword, $.keyword)),
+    field('value', $.string),
+    repeat($.label_property),
     optional($.comma),
     $.semicolon,
   )),
 
   label_property: $ => seq(
     $.comma,
-    field('name', $.identifier), // Locked, Comment, etc.
-    $.operator, // '='
+    field('name', $.identifier),
+    $.operator,
     field('value', choice($.string, $.identifier, $.integer)),
   ),
 
   regular_variable_declaration: $ => prec(1, seq(
     field('name', $.name_or_keyword),
     repeat(seq($.comma, field('name', $.name_or_keyword))),
-    field('sep', $.operator), // typically ':'
+    field('sep', $.operator),
     field('type', $.type_reference),
-    optional(seq(field('assign', $.operator), field('value', $.expression))), // typically '='
+    optional(seq(field('assign', $.operator), field('value', $.expression))),
     $.semicolon,
   )),
 
-  // Type references in AL can be compound (e.g. `Record "Accounting Period" temporary`).
-  // Keep this permissive but structured: a leading type keyword may be followed by names/args/modifiers.
+  // AL type references may include object names, dimensions, and modifiers.
   type_reference: $ => prec.right(1, choice(
-    prec(4, $.option_type), // Using dedicated kw_option
+    prec(4, $.option_type),
     seq(
       choice(
         {{TYPE_REFERENCE_KIND}},
@@ -297,7 +255,6 @@ module.exports = grammar({
       ),
       repeat(choice(
         $.qualified_name,
-        // Boost name_or_keyword to ensure Option values are caught
         prec(2, $.name_or_keyword),
         $.integer,
         $.string,
@@ -309,12 +266,10 @@ module.exports = grammar({
     ),
     $.qualified_name,
     $.name_or_keyword,
-    $.bracketed_block,      // e.g. Array[10] of ...
-    $.parenthesized_block,  // e.g. Codeunit "Foo"
+    $.bracketed_block,
+    $.parenthesized_block,
   )),
 
-  // Option type with optional inline member values: Option Member1,Member2,Member3
-  // Also matches bare `Option` (no members) — used as a generic type in older AL code.
   option_type: $ => seq(
     {{KW:option}},
     repeat(prec(30, choice(
@@ -344,7 +299,6 @@ module.exports = grammar({
     ),
   ),
 
-  // NOTE: `kw_event` is handled separately (event declarations typically have no body).
   member_modifier: $ => choice(
     {{KW:local}},
     {{KW:internal}},
@@ -369,18 +323,17 @@ module.exports = grammar({
     $.semicolon,
   )),
 
-  // Control add-in style event declarations: event Ready();
   event_declaration: $ => prec.left(seq(
     {{KW:event}},
     optional(field('name', $.name_or_keyword)),
     field('parameters', $.parameter_list),
-    optional(seq(field('returns', $.operator), field('return_type', $.type_reference))), // Added return type
+    optional(seq(field('returns', $.operator), field('return_type', $.type_reference))),
     optional($.semicolon),
-    optional(choice( // Added optional body
+    optional(choice(
       seq($.var_section, $.begin_end_block),
       seq($.empty_var_section, $.begin_end_block),
       $.begin_end_block,
-      $.braced_block, // For control add-in events that might have a JS-like body
+      $.braced_block,
     )),
     optional($.semicolon),
   )),
@@ -394,15 +347,13 @@ module.exports = grammar({
       field('name', $.name),
       field('parameters', $.parameter_list),
       optional(choice(
-        // Return variable: procedure Name(params) ReturnVar: ReturnType
         seq(
           field('return_var', $.name_or_keyword),
-          field('returns', $.operator), // ':'
+          field('returns', $.operator),
           field('return_type', $.type_reference),
         ),
-        // Return type only: procedure Name(params): ReturnType
         seq(
-          field('returns', $.operator), // ':'
+          field('returns', $.operator),
           field('return_type', $.type_reference),
         ),
       )),
@@ -411,12 +362,12 @@ module.exports = grammar({
           optional($.semicolon),
           choice(
             seq($.var_section, $.begin_end_block),
-            seq($.empty_var_section, $.begin_end_block), // Allow empty var sections
+            seq($.empty_var_section, $.begin_end_block),
             $.begin_end_block,
           ),
           optional($.semicolon),
         )),
-        // Interface-style signatures can omit the terminator entirely.
+        // Interface procedure signatures may omit the terminator.
         prec(-1, optional($.semicolon)),
       ),
     )),
@@ -429,22 +380,20 @@ module.exports = grammar({
     field('name', choice($.name_or_keyword, $.scoped_name)),
     field('parameters', $.parameter_list),
     optional(choice(
-      // Return variable: trigger Name(params) ReturnVar: ReturnType
       seq(
         field('return_var', $.return_var_name),
-        field('returns', $.operator), // ':'
+        field('returns', $.operator),
         field('return_type', $.type_reference),
       ),
-      // Return type only: trigger Name(params): ReturnType
       seq(
-        field('returns', $.operator), // ':'
+        field('returns', $.operator),
         field('return_type', $.type_reference),
       ),
     )),
     optional($.semicolon),
     choice(
       seq($.var_section, $.begin_end_block),
-      seq($.empty_var_section, $.begin_end_block), // Allow empty var sections
+      seq($.empty_var_section, $.begin_end_block),
       $.begin_end_block,
     ),
     optional($.semicolon),
@@ -467,12 +416,10 @@ module.exports = grammar({
   parameter: $ => seq(
     optional({{KW:var}}),
     field('name', $.name_or_keyword),
-    field('sep', $.operator), // typically ':'
+    field('sep', $.operator),
     field('type', $.type_reference),
     optional(seq(field('assign', $.operator), field('default', $.expression))),
   ),
-
-  // --- Statements / expressions (Pascal-like) ---
 
   statement_list: $ => prec.right(seq(
     choice(
@@ -482,7 +429,7 @@ module.exports = grammar({
     repeat(seq($.semicolon, optional($.statement))),
   )),
 
-  begin_end_block: $ => prec.right(7, seq( // Very high precedence to ensure end is matched before postfix_expression extends
+  begin_end_block: $ => prec.right(7, seq(
     {{KW:begin}},
     optional($.statement_list),
     {{KW:end}},
@@ -491,7 +438,7 @@ module.exports = grammar({
   statement: $ => choice(
     $.begin_end_block,
     $.if_statement,
-    $.empty_if_statement, // Use only when no consequence follows
+    $.empty_if_statement,
     $.case_statement,
     $.for_statement,
     $.foreach_statement,
@@ -500,6 +447,8 @@ module.exports = grammar({
     $.with_statement,
     $.asserterror_statement,
     $.exit_statement,
+    $.break_statement,
+    $.continue_statement,
     $.expression_statement,
   ),
 
@@ -511,7 +460,6 @@ module.exports = grammar({
     optional(seq({{KW:else}}, field('alternative', $.statement))),
   )),
 
-  // Special handling for empty if statements: "if condition then;"
   empty_if_statement: $ => prec.right(-1, seq(
     {{KW:if}},
     field('condition', $.expression),
@@ -534,17 +482,16 @@ module.exports = grammar({
   case_branch: $ => choice(
     seq(
       field('labels', $.case_label_list),
-      field('sep', ':'), // case labels use ':'
-      // Each CASE arm has exactly one statement. Multiple statements require
-      // BEGIN/END. Allowing statement_list here greedily consumed following
-      // `2: ...; 3: ...;` arms as part of the first arm.
+      field('sep', ':'),
+      // An arm contains one statement; multiple statements require BEGIN/END.
+      // A statement_list greedily consumes the labels of following arms.
       field('body', $.statement),
       optional($.semicolon),
     ),
     seq(
       field('labels', $.case_label_list),
       field('sep', ':'),
-      $.semicolon, // Empty branch like "Label:;"
+      $.semicolon,
     ),
   ),
 
@@ -553,7 +500,6 @@ module.exports = grammar({
     repeat(seq($.comma, $.case_label_expression)),
   ),
 
-  // Case labels should not start with unary +/-; keep them simple to avoid ambiguity.
   case_label_expression: $ => prec.left(0, seq(
     optional($.op_not),
     $.postfix_expression,
@@ -563,7 +509,7 @@ module.exports = grammar({
   for_statement: $ => prec.right(seq(
     {{KW:for}},
     field('iterator', $.identifier),
-    field('assign', $.operator), // typically ':='
+    field('assign', $.operator),
     field('from', $.expression),
     field('direction', choice({{KW:to}}, {{KW:downto}})),
     field('to', $.expression),
@@ -606,63 +552,62 @@ module.exports = grammar({
     optional($.argument_list),
   )),
 
+  break_statement: $ => {{KW:break}},
+
+  continue_statement: $ => {{KW:continue}},
+
   asserterror_statement: $ => prec.right(seq(
     {{KW:asserterror}},
     field('body', $.statement),
   )),
 
-  expression_statement: $ => $.expression, // No precedence - let expression parsing handle it naturally
+  expression_statement: $ => $.expression,
 
   expression_list: $ => seq(
     $.expression,
     repeat(seq($.comma, $.expression)),
   ),
 
-  argument_list: $ => prec(4, seq( // Very high precedence to ensure it's matched before parenthesized_expression
+  argument_list: $ => prec(4, seq(
     '(',
     optional($.expression_list),
     ')',
   )),
 
-  // Expression parsing is intentionally broad to keep conflicts low and parser.c small.
-  // We treat symbol runs as a single operator token, and operator-words as a distinct token.
-  expression: $ => prec.left(0, seq( // Lower precedence to allow postfix_expression to complete first
+  expression: $ => prec.left(0, seq(
     $.unary_expression,
     repeat(seq($.binary_operator, $.unary_expression)),
   )),
 
-  unary_expression: $ => prec.right(2, choice( // Lower precedence than postfix_expression to allow suffixes to be applied
+  unary_expression: $ => prec.right(2, choice(
     seq($.unary_operator, $.unary_expression),
     $.postfix_expression,
   )),
 
   unary_operator: $ => prec.right(choice(
-    $.op_not, // `not`
-    token(/[+\-!]/), // Only +, -, ! as unary (not := or other assignment ops)
+    $.op_not,
+    token(/[+\-!]/),
   )),
 
   binary_operator: $ => choice(
     $.operator_word,
     {{KW:in}},
-    $.operator, // Includes :=, =, +, -, etc.
+    $.operator,
   ),
 
-  postfix_expression: $ => prec.right(4, seq( // Use prec.right to ensure suffixes are applied greedily
+  postfix_expression: $ => prec.right(4, seq(
     $.primary_expression,
     repeat(choice(
       $.member_call_suffix,
       $.scope_call_suffix,
-      prec(6, $.call_suffix), // Highest precedence for call_suffix to ensure it's tried first
+      prec(6, $.call_suffix),
       $.member_suffix,
       $.scope_suffix,
       $.index_suffix,
     )),
   )),
 
-  // Support for property access without parentheses (e.g., .Count vs .Count())
-  // This is already handled by member_suffix, but we need to ensure it works in all contexts
-
-  call_suffix: $ => prec(5, field('call', $.argument_list)), // Very high precedence to ensure it's matched before parenthesized_expression
+  call_suffix: $ => prec(5, field('call', $.argument_list)),
 
   member_call_suffix: $ => prec(7, seq(
     '.',
@@ -699,12 +644,11 @@ module.exports = grammar({
     $.decimal,
     $.integer,
     $.bracketed_block,
-    prec(-1, $.parenthesized_expression), // Very low precedence - only match when nothing else matches
+    prec(-1, $.parenthesized_expression),
   ),
 
-  parenthesized_expression: $ => prec(0, seq('(', $.expression, ')')), // Very low precedence - only match when nothing else matches
+  parenthesized_expression: $ => prec(0, seq('(', $.expression, ')')),
 
-  // Attributes: [EventSubscriber(...)], [Test], etc.
   attribute: $ => prec(3, seq(
     '[',
     field('name', $.identifier),
@@ -720,7 +664,7 @@ module.exports = grammar({
   ),
 
   attribute_argument: $ => prec(1, choice(
-    seq(field('name', $.identifier), $.operator, field('value', $.expression)), // name = value
+    seq(field('name', $.identifier), $.operator, field('value', $.expression)),
     $.expression,
   )),
 
@@ -785,7 +729,6 @@ module.exports = grammar({
     $.integer,
     $.identifier,
 
-    // Keyword categories (from external scanner)
     $.control_keyword,
     $.operator_word,
     $.object_keyword,
@@ -799,22 +742,19 @@ module.exports = grammar({
     $.comma,
   ),
 
-  // AL identifiers can include non-ASCII letters in practice (e.g. demo datasets).
-  // Keep keywords ASCII-only via the external scanner, but accept Unicode in identifiers for robustness.
+  // The external scanner keeps keywords ASCII-only; AL identifiers may be Unicode.
   identifier: _ => /[A-Za-z_\u0080-\uFFFF][A-Za-z0-9_\u0080-\uFFFF]*/,
   decimal: _ => token(/[0-9]+\.[0-9]+/),
   integer: _ => /[0-9]+[Ll]?/,
-  // Date/time literals: 20201231D, 121200T, 0DT
   datetime_literal: _ => token(seq(/[0-9]{1,14}/, 'D', 'T')),
   date_literal: _ => token(seq(/[0-9]{1,8}/, 'D')),
   time_literal: _ => token(seq(/[0-9]{1,6}/, optional(seq('.', /[0-9]+/)), 'T')),
 
-  // Strings: AL uses single quotes; escaping is done by doubling ''.
-  // Use `token(...)` to keep lexing robust in free-form contexts.
+  // AL escapes a single quote by doubling it.
   string: _ => token(seq("'", repeat(choice(/[^']/, "''")), "'")),
   verbatim_string: _ => token(seq("@'", repeat(choice(/[^']/, "''")), "'")),
 
-  // Quoted identifiers: "My Field"; escaping is done by doubling "".
+  // AL escapes a quote in a quoted identifier by doubling it.
   quoted_identifier: _ => token(seq('"', repeat(choice(/[^"]/, '""')), '"')),
 
   comment: _ => token(choice(
@@ -827,7 +767,6 @@ module.exports = grammar({
     ),
   )),
 
-  // Catch most operator/symbol runs (including % placeholders in label strings).
   operator: _ => token(/[!$%&*+\-./:<=>?@^|~]+/),
 
   semicolon: _ => ';',

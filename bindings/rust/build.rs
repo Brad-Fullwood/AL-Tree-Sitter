@@ -1,6 +1,4 @@
-//! Compiles the generated tree-sitter parser (`src/parser.c`) and its external
-//! scanner (`src/scanner.c`, which `#include`s `src/keywords.c`) into a static
-//! library linked by the Rust binding.
+//! Builds the generated parser and external scanner.
 
 fn main() {
     let src_dir = std::path::Path::new("src");
@@ -11,14 +9,16 @@ fn main() {
     println!("cargo:rerun-if-changed=src/parser.c");
 
     let scanner = src_dir.join("scanner.c");
-    if scanner.exists() {
-        build.file(&scanner);
-        println!("cargo:rerun-if-changed=src/scanner.c");
-        // scanner.c #includes keywords.c, so changes to it must retrigger.
-        println!("cargo:rerun-if-changed=src/keywords.c");
+    if !scanner.is_file() {
+        panic!(
+            "required generated scanner is missing: {}",
+            scanner.display()
+        );
     }
+    build.file(&scanner);
+    println!("cargo:rerun-if-changed=src/scanner.c");
+    println!("cargo:rerun-if-changed=src/keywords.c");
 
-    // The generated parser.c emits warnings we do not control.
     build.warnings(false).flag_if_supported("-w");
 
     build.compile("tree-sitter-al");

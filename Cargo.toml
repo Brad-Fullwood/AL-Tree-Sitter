@@ -10,10 +10,6 @@ repository = "https://github.com/Brad-Fullwood/AL-Tree-Sitter"
 edition = "2021"
 autoexamples = false
 
-# Canonical tree-sitter Rust binding layout: the generated C parser lives in
-# `src/`, the Rust binding in `bindings/rust/`. `include` keeps the published
-# crate tarball self-contained (no external paths), which is what lets
-# downstream crates such as `al-syntax` be published to crates.io.
 build = "bindings/rust/build.rs"
 include = [
     "bindings/rust/*",

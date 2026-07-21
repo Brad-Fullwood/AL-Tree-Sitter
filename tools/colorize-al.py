@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 """
-AL Syntax Colorizer
-
 Displays AL files with tree-sitter syntax highlighting in the terminal.
-Uses ANSI colors to visualize how the highlighting would appear.
 
 Usage:
     python colorize-al.py <al_file>
 
-This helps visualize what captures are being applied and how the
-syntax highlighting would look in an editor.
 """
 
 import subprocess
@@ -17,66 +12,43 @@ import re
 import sys
 import os
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
-# ANSI color codes matching typical editor theme colors
 COLORS = {
-    # Keywords - blue/teal
     "@keyword": "\033[38;5;39m",           # Bright blue
     "@keyword.control": "\033[38;5;33m",   # Blue
 
-    # Types - cyan/aqua
     "@type": "\033[38;5;44m",              # Cyan
     "@type.builtin": "\033[38;5;44m",      # Cyan
 
-    # Functions - yellow
     "@function": "\033[38;5;220m",         # Yellow
     "@function.call": "\033[38;5;220m",    # Yellow
     "@function.method.call": "\033[38;5;178m",  # Gold
     "@function.definition": "\033[38;5;214m",   # Orange-yellow
 
-    # Variables - light blue
     "@variable": "\033[38;5;153m",         # Light blue
     "@variable.declaration": "\033[38;5;117m",  # Lighter blue
     "@variable.parameter": "\033[38;5;208m",    # Orange
 
-    # Strings - orange/brown
     "@string": "\033[38;5;173m",           # Orange-brown
-
-    # Numbers - green
     "@number": "\033[38;5;149m",           # Light green
-
-    # Comments - gray/green
     "@comment": "\033[38;5;65m",           # Gray-green
-
-    # Operators - white/gray
     "@operator": "\033[38;5;252m",         # Light gray
-
-    # Punctuation - gray
     "@punctuation": "\033[38;5;245m",      # Medium gray
     "@punctuation.bracket": "\033[38;5;245m",
     "@punctuation.delimiter": "\033[38;5;245m",
 
-    # Constants - purple
     "@constant": "\033[38;5;141m",         # Purple
     "@constant.builtin": "\033[38;5;141m", # Purple
 
-    # Properties - light cyan
     "@property": "\033[38;5;116m",         # Light cyan
-
-    # Attributes - green
     "@attribute": "\033[38;5;150m",        # Light green
-
-    # Title (object names) - bright white
     "@title": "\033[1;97m",                # Bold bright white
-
-    # Default
     "default": "\033[0m",
 }
 
 RESET = "\033[0m"
 
-# Find the tree-sitter grammar root
 SCRIPT_DIR = Path(__file__).parent
 GRAMMAR_ROOT = SCRIPT_DIR.parent
 QUERIES_DIR = GRAMMAR_ROOT / "queries"
@@ -91,6 +63,8 @@ def run_tree_sitter_query(file_path: str) -> str:
         text=True,
         cwd=GRAMMAR_ROOT
     )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or "tree-sitter query failed")
     return result.stdout
 
 
@@ -114,7 +88,6 @@ def parse_captures(query_output: str) -> List[Dict]:
 
 def colorize_line(line: str, line_num: int, captures: List[Dict]) -> str:
     """Apply colors to a single line based on captures."""
-    # Get captures for this line
     line_captures = [
         c for c in captures
         if c["start_row"] == line_num and c["end_row"] == line_num
@@ -123,10 +96,8 @@ def colorize_line(line: str, line_num: int, captures: List[Dict]) -> str:
     if not line_captures:
         return line
 
-    # Sort by start column (descending so we can insert from right to left)
     line_captures.sort(key=lambda c: c["start_col"], reverse=True)
 
-    # Remove duplicates (keep highest priority - last in list after sort)
     seen_positions = set()
     unique_captures = []
     for cap in reversed(line_captures):
@@ -136,7 +107,6 @@ def colorize_line(line: str, line_num: int, captures: List[Dict]) -> str:
             unique_captures.append(cap)
     unique_captures.reverse()
 
-    # Apply colors from right to left
     result = line
     for cap in unique_captures:
         color = COLORS.get(cap["capture"], COLORS.get("default", ""))
@@ -181,27 +151,25 @@ def main():
         print(f"Error: File not found: {file_path}")
         sys.exit(1)
 
-    # Read file
     with open(file_path, 'r') as f:
         lines = f.readlines()
 
-    # Get captures
-    query_output = run_tree_sitter_query(file_path)
+    try:
+        query_output = run_tree_sitter_query(file_path)
+    except RuntimeError as error:
+        print(f"Error: {error}", file=sys.stderr)
+        sys.exit(1)
     captures = parse_captures(query_output)
 
-    # Print header
     print(f"\n=== Syntax Highlighted: {file_path} ===\n")
 
-    # Colorize and print each line
     for line_num, line in enumerate(lines):
         line = line.rstrip('\n\r')
         colorized = colorize_line(line, line_num, captures)
         print(f"{line_num + 1:4} | {colorized}")
 
-    # Print legend
     print_legend()
 
-    # Print stats
     capture_types = {}
     for cap in captures:
         capture_types[cap["capture"]] = capture_types.get(cap["capture"], 0) + 1

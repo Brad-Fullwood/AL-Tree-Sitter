@@ -1,8 +1,6 @@
-; AL highlights for Zed/tree-sitter
 ; AUTO-GENERATED - DO NOT EDIT
-; All basic token captures are dynamically extracted from the VS Code AL extension's TextMate grammar
 
-; --- Basic Literals (dynamically extracted from TextMate scopes) ---
+; Literals
 (comment) {{COMMENT_CAPTURE}}
 (string) {{STRING_CAPTURE}}
 (verbatim_string) {{STRING_CAPTURE}}
@@ -10,91 +8,67 @@
 (decimal) {{NUMBER_CAPTURE}}
 (date_literal) {{NUMBER_CAPTURE}}
 
-; --- Generic Identifier Fallback ---
-; MUST be early so specific patterns below can override it
+; Generic captures precede structural overrides because query matches are last-wins.
 (identifier) {{VARIABLE_CAPTURE}}
-; Quoted identifiers ("...") - from TextMate identifier.quoted.double.al scope
 (quoted_identifier) {{QUOTED_IDENTIFIER_CAPTURE}}
 
-; --- Boolean Literals ---
-; true/false should be constants, not variables
 ((identifier) {{CONSTANT_CAPTURE}}
  (#match? {{CONSTANT_CAPTURE}} "^(true|false)$"))
 
-; --- Keywords ---
-; All keyword highlighting is dynamically generated from TextMate grammar scopes
+; Keywords
 {{CONTROL_KW_TOKEN_HIGHLIGHTS}}
 
-; Category captures dynamically generated from TextMate grammar scopes
 (operator_word) @keyword.operator
 (object_keyword) {{OBJECT_CAPTURE}}
 (type_keyword) {{TYPE_CAPTURE}}
 (metadata_keyword) {{METADATA_CAPTURE}}
 (property_keyword) {{PROPERTY_CAPTURE}}
 (keyword) {{KEYWORD_CAPTURE}}
-; CRITICAL: control_keyword for keywords inside nested blocks (page triggers, etc.)
 (control_keyword) @keyword.control
 
-; --- Punctuation & Operators (from TextMate punctuation.al scope) ---
+; Punctuation and operators
 (operator) {{OPERATOR_CAPTURE}}
 (semicolon) {{PUNCTUATION_CAPTURE}}
 (comma) {{PUNCTUATION_CAPTURE}}
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
 
-; =============================================================================
-; STRUCTURAL PATTERNS (AST-based - cannot be derived from TextMate)
-; These patterns understand syntax structure, which TextMate regex cannot.
-; The CAPTURES use dynamically extracted scopes where applicable.
-; =============================================================================
-
-; --- Object Declarations ---
-; Highlight object names (codeunit "Name", table "Name", etc.)
-; The name is nested: object_declaration > name: name_or_keyword > name > quoted_identifier
+; Object declarations
 (object_declaration name: (name_or_keyword (name (quoted_identifier) @title)))
 (object_declaration name: (name_or_keyword (name (identifier) @title)))
-; Highlight the extends/implements target (direct quoted_identifier child via _pre_object_body)
 (object_declaration (quoted_identifier) @type)
 
-; --- Property Assignments ---
-; Property names in assignments like: Caption = 'value';
+; Properties
 (property_assignment name: (_) @property)
 
-; Property values - identifiers like r, RIMD, All, true, false (after name: field)
 (property_assignment
   name: (_)
   (name (identifier) {{CONSTANT_CAPTURE}}))
-; Property values - table/object names in permissions (after name: field)
 (property_assignment
   name: (_)
   (name (quoted_identifier) {{TYPE_CAPTURE}}))
 
-; --- Attributes ---
-; Attribute names like [EventSubscriber(...)], [Test], etc.
+; Attributes
 (attribute name: (identifier) @attribute)
 
-; --- Definitions ---
-; Procedure, trigger, and event definition names
+; Definitions
 (procedure_declaration name: (name (identifier) {{FUNCTION_CAPTURE}}))
 (procedure_declaration name: (name (quoted_identifier) {{FUNCTION_CAPTURE}}))
 (trigger_declaration name: (_) {{FUNCTION_CAPTURE}})
 (event_declaration name: (_) {{FUNCTION_CAPTURE}})
 
-; --- Variable Declarations ---
-; Variable names in declarations
+; Variables
 (regular_variable_declaration name: (name_or_keyword (name (identifier) @variable.declaration)))
 (regular_variable_declaration name: (name_or_keyword (name (quoted_identifier) @variable.declaration)))
 (parameter name: (name_or_keyword (name (identifier) @variable.parameter)))
 (parameter name: (name_or_keyword (name (quoted_identifier) @variable.parameter)))
 
-; --- Type References ---
-; Type names in variable declarations, parameters, and return types
+; Types
 (type_reference (name_or_keyword (name (identifier) {{TYPE_CAPTURE}})))
 (type_reference (name_or_keyword (name (quoted_identifier) {{TYPE_CAPTURE}})))
 (type_reference (qualified_name) {{TYPE_CAPTURE}})
 (label_declaration type: (_) {{TYPE_CAPTURE}})
 
-; --- Function Calls ---
-; Direct function calls: FunctionName(args...)
+; Calls
 (postfix_expression
   (primary_expression (name (identifier) @function.call))
   (call_suffix))
@@ -102,15 +76,12 @@
   (primary_expression (name (quoted_identifier) @function.call))
   (call_suffix))
 
-; Method calls on objects: object.Method(args...)
 (member_call_suffix member: (name (identifier) @function.method.call))
 (member_call_suffix member: (name (quoted_identifier) @function.method.call))
 
-; Scoped calls: Type::Method(args...)
 (scope_call_suffix member: (name (identifier) @function.call))
 (scope_call_suffix member: (name (quoted_identifier) @function.call))
 
-; --- Scope References (non-call) ---
-; Type::Member references (like ObjectType::Codeunit, Enum::Value)
+; Scope references
 (scope_suffix member: (name (identifier) {{TYPE_CAPTURE}}))
 (scope_suffix member: (name (quoted_identifier) {{TYPE_CAPTURE}}))

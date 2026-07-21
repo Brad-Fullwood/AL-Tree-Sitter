@@ -374,6 +374,21 @@
     }
   },
   {
+    "type": "break_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_break",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "call_suffix",
     "named": true,
     "fields": {
@@ -536,6 +551,21 @@
         },
         {
           "type": "semicolon",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "continue_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "kw_continue",
           "named": true
         }
       ]
@@ -2774,7 +2804,15 @@
           "named": true
         },
         {
+          "type": "break_statement",
+          "named": true
+        },
+        {
           "type": "case_statement",
+          "named": true
+        },
+        {
+          "type": "continue_statement",
           "named": true
         },
         {
@@ -3804,6 +3842,10 @@
     "named": true
   },
   {
+    "type": "kw_break",
+    "named": true
+  },
+  {
     "type": "kw_byte",
     "named": true
   },
@@ -3833,6 +3875,10 @@
   },
   {
     "type": "kw_connectiontype",
+    "named": true
+  },
+  {
+    "type": "kw_continue",
     "named": true
   },
   {

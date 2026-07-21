@@ -8,19 +8,19 @@
     "net8.0": []
   },
   "packageFolders": {
-    "/home/braf/.nuget/packages/": {}
+    "/home/bradf/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/braf/Dev/Software/Zed/Zed AL Extension/tree-sitter-al/generator/tools/system-objects/system-objects.csproj",
+      "projectUniqueName": "/home/bradf/Projects/Personal/al.language.zed-worktrees/tree-sitter-al-audit/generator/tools/system-objects/system-objects.csproj",
       "projectName": "system-objects",
-      "projectPath": "/home/braf/Dev/Software/Zed/Zed AL Extension/tree-sitter-al/generator/tools/system-objects/system-objects.csproj",
-      "packagesPath": "/home/braf/.nuget/packages/",
-      "outputPath": "/home/braf/Dev/Software/Zed/Zed AL Extension/tree-sitter-al/generator/tools/system-objects/obj/",
+      "projectPath": "/home/bradf/Projects/Personal/al.language.zed-worktrees/tree-sitter-al-audit/generator/tools/system-objects/system-objects.csproj",
+      "packagesPath": "/home/bradf/.nuget/packages/",
+      "outputPath": "/home/bradf/Projects/Personal/al.language.zed-worktrees/tree-sitter-al-audit/generator/tools/system-objects/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/home/braf/.nuget/NuGet/NuGet.Config"
+        "/home/bradf/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -35,16 +35,11 @@
         }
       },
       "warningProperties": {
+        "allWarningsAsErrors": true,
         "warnAsError": [
           "NU1605"
         ]
-      },
-      "restoreAuditProperties": {
-        "enableAudit": "true",
-        "auditLevel": "low",
-        "auditMode": "direct"
-      },
-      "SdkAnalysisLevel": "10.0.100"
+      }
     },
     "frameworks": {
       "net8.0": {
@@ -63,15 +58,7 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[8.0.27, 8.0.27]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Host.linux-x64",
-            "version": "[8.0.27, 8.0.27]"
-          },
-          {
-            "name": "Microsoft.NETCore.App.Ref",
-            "version": "[8.0.27, 8.0.27]"
+            "version": "[8.0.28, 8.0.28]"
           }
         ],
         "frameworkReferences": {
@@ -79,7 +66,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.108/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.128/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

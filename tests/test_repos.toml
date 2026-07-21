@@ -1,6 +1,3 @@
-# Real-world AL test repositories
-# These are parsed to validate the grammar against production code
-
 [[repo]]
 name = "BCApps"
 url = "https://github.com/microsoft/BCApps"
@@ -14,12 +11,3 @@ url = "https://github.com/microsoft/ALAppExtensions"
 branch = "main"
 enabled = true
 description = "Microsoft Business Central Application Extensions"
-
-# Add your own repositories here:
-# [[repo]]
-# name = "MyProject"
-# url = "https://github.com/yourname/your-al-project"
-# branch = "main"
-# enabled = true
-# description = "My AL project"
-
