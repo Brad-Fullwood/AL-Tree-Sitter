@@ -400,10 +400,6 @@
           {
             "type": "statement",
             "named": true
-          },
-          {
-            "type": "statement_list",
-            "named": true
           }
         ]
       },

@@ -3068,17 +3068,8 @@
               "type": "FIELD",
               "name": "body",
               "content": {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "statement"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "statement_list"
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "statement"
               }
             },
             {

@@ -897,7 +897,10 @@ module.exports = grammar({
     seq(
       field('labels', $.case_label_list),
       field('sep', ':'), // case labels use ':'
-      field('body', choice($.statement, $.statement_list)),
+      // Each CASE arm has exactly one statement. Multiple statements require
+      // BEGIN/END. Allowing statement_list here greedily consumed following
+      // `2: ...; 3: ...;` arms as part of the first arm.
+      field('body', $.statement),
       optional($.semicolon),
     ),
     seq(
