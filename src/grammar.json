@@ -3435,12 +3435,20 @@
       }
     },
     "break_statement": {
-      "type": "SYMBOL",
-      "name": "kw_break"
+      "type": "PREC_DYNAMIC",
+      "value": 1,
+      "content": {
+        "type": "SYMBOL",
+        "name": "kw_break"
+      }
     },
     "continue_statement": {
-      "type": "SYMBOL",
-      "name": "kw_continue"
+      "type": "PREC_DYNAMIC",
+      "value": 1,
+      "content": {
+        "type": "SYMBOL",
+        "name": "kw_continue"
+      }
     },
     "asserterror_statement": {
       "type": "PREC_RIGHT",
@@ -4101,6 +4109,24 @@
         {
           "type": "SYMBOL",
           "name": "quoted_identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "kw_break"
+          },
+          "named": true,
+          "value": "identifier"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "kw_continue"
+          },
+          "named": true,
+          "value": "identifier"
         }
       ]
     },
@@ -4503,6 +4529,22 @@
     [
       "statement_list",
       "case_statement"
+    ],
+    [
+      "break_statement",
+      "expression_statement"
+    ],
+    [
+      "continue_statement",
+      "expression_statement"
+    ],
+    [
+      "break_statement",
+      "name"
+    ],
+    [
+      "continue_statement",
+      "name"
     ],
     [
       "name_or_keyword",

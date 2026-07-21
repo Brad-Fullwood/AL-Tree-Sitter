@@ -4,7 +4,9 @@ codeunit 50120 BreakContinueLoops
     var
         i: Integer;
         Numbers: List of [Integer];
+        Continue: Boolean;
     begin
+        Continue := true;
         for i := 1 to 10 do begin
             if i = 5 then break;
             if i = 2 then continue;

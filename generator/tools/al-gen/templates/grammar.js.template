@@ -1,5 +1,3 @@
-// Generated from this template by al-gen.
-
 module.exports = grammar({
   name: 'al',
 
@@ -19,6 +17,10 @@ module.exports = grammar({
     [$.name_or_keyword, $._pre_object_body],
     [$.statement_list, $.case_branch],
     [$.statement_list, $.case_statement],
+    [$.break_statement, $.expression_statement],
+    [$.continue_statement, $.expression_statement],
+    [$.break_statement, $.name],
+    [$.continue_statement, $.name],
     [$.name_or_keyword, $._atom],
     [$.name, $._atom],
     [$.option_member, $.name_or_keyword],
@@ -552,9 +554,9 @@ module.exports = grammar({
     optional($.argument_list),
   )),
 
-  break_statement: $ => {{KW:break}},
+  break_statement: $ => prec.dynamic(1, {{KW:break}}),
 
-  continue_statement: $ => {{KW:continue}},
+  continue_statement: $ => prec.dynamic(1, {{KW:continue}}),
 
   asserterror_statement: $ => prec.right(seq(
     {{KW:asserterror}},
@@ -705,6 +707,8 @@ module.exports = grammar({
   name: $ => choice(
     $.identifier,
     $.quoted_identifier,
+    alias({{KW:break}}, $.identifier),
+    alias({{KW:continue}}, $.identifier),
   ),
 
   name_or_keyword: $ => choice(

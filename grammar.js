@@ -217,6 +217,10 @@ module.exports = grammar({
     [$.name_or_keyword, $._pre_object_body],
     [$.statement_list, $.case_branch],
     [$.statement_list, $.case_statement],
+    [$.break_statement, $.expression_statement],
+    [$.continue_statement, $.expression_statement],
+    [$.break_statement, $.name],
+    [$.continue_statement, $.name],
     [$.name_or_keyword, $._atom],
     [$.name, $._atom],
     [$.option_member, $.name_or_keyword],
@@ -905,9 +909,9 @@ module.exports = grammar({
     optional($.argument_list),
   )),
 
-  break_statement: $ => $.kw_break,
+  break_statement: $ => prec.dynamic(1, $.kw_break),
 
-  continue_statement: $ => $.kw_continue,
+  continue_statement: $ => prec.dynamic(1, $.kw_continue),
 
   asserterror_statement: $ => prec.right(seq(
     $.kw_asserterror,
@@ -1058,6 +1062,8 @@ module.exports = grammar({
   name: $ => choice(
     $.identifier,
     $.quoted_identifier,
+    alias($.kw_break, $.identifier),
+    alias($.kw_continue, $.identifier),
   ),
 
   name_or_keyword: $ => choice(

@@ -1420,6 +1420,8 @@ fn generate_structural_queries(node_types_path: &str, queries_dir: &str) -> Resu
 fn generate_folds_scm(nodes: &[GrammarNodeType], out_path: &str) -> Result<()> {
     let exclude: BTreeSet<&str> = [
         "empty_if_statement",
+        "break_statement",
+        "continue_statement",
         "exit_statement",
         "expression_statement",
         "enum_value_declaration",
@@ -1495,12 +1497,13 @@ fn generate_locals_scm(
     .into_iter()
     .collect();
 
-    // asserterror wraps one statement and does not introduce a variable scope.
     let statement_exclude: BTreeSet<&str> = [
+        "asserterror_statement",
+        "break_statement",
+        "continue_statement",
         "empty_if_statement",
         "exit_statement",
         "expression_statement",
-        "asserterror_statement",
     ]
     .into_iter()
     .collect();

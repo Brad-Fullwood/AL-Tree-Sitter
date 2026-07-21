@@ -76,6 +76,7 @@
 (op_or) @keyword.operator
 (op_xor) @keyword.operator
 
+; Type keywords (override control keyword captures)
 (kw_action) @type.builtin
 (kw_actionref) @type.builtin
 (kw_analysisview) @type.builtin
@@ -216,7 +217,7 @@
 (type_keyword) @type.builtin
 (metadata_keyword) @keyword
 (property_keyword) @operator
-(keyword) @keyword
+(keyword) @type.builtin
 (control_keyword) @keyword.control
 
 ; Punctuation and operators

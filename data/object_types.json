@@ -188,7 +188,7 @@
       "display_name": "Value",
       "extensions": [],
       "keyword": "value",
-      "lsp_symbol_kind": "Class",
+      "lsp_symbol_kind": "EnumMember",
       "node_kind": "kw_value",
       "permission_type": null,
       "permission_value": null
