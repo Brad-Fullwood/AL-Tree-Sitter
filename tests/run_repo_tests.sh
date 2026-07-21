@@ -6,5 +6,4 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-cargo run --release -- --test
-
+cargo run --release --manifest-path generator/Cargo.toml -- --test

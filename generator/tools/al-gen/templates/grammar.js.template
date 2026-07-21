@@ -483,7 +483,9 @@ module.exports = grammar({
     seq(
       field('labels', $.case_label_list),
       field('sep', ':'),
-      field('body', choice($.statement, $.statement_list)),
+      // An arm contains one statement; multiple statements require BEGIN/END.
+      // A statement_list greedily consumes the labels of following arms.
+      field('body', $.statement),
       optional($.semicolon),
     ),
     seq(

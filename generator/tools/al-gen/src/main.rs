@@ -22,6 +22,28 @@ struct Options {
     zed_language_only: bool,
 }
 
+#[derive(Debug, PartialEq)]
+struct ProjectRoots {
+    tree_sitter: PathBuf,
+    extension: PathBuf,
+}
+
+fn project_roots(manifest_dir: &Path) -> Result<ProjectRoots> {
+    let tree_sitter = manifest_dir
+        .parent()
+        .context("generator manifest dir has no parent")?
+        .to_path_buf();
+    let extension = tree_sitter
+        .parent()
+        .context("tree-sitter-al directory has no parent")?
+        .to_path_buf();
+
+    Ok(ProjectRoots {
+        tree_sitter,
+        extension,
+    })
+}
+
 fn parse_options() -> Result<Options> {
     let mut options = Options::default();
     for argument in std::env::args().skip(1) {
@@ -37,14 +59,9 @@ fn parse_options() -> Result<Options> {
 fn main() -> Result<()> {
     let options = parse_options()?;
     let generator_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let tree_sitter_root = generator_dir
-        .parent()
-        .context("generator manifest dir has no parent")?
-        .to_path_buf();
-    let extension_root = tree_sitter_root
-        .parent()
-        .context("tree-sitter-al directory has no parent")?
-        .to_path_buf();
+    let roots = project_roots(&generator_dir)?;
+    let tree_sitter_root = roots.tree_sitter;
+    let extension_root = roots.extension;
 
     if options.zed_language_only {
         zed_language::generate(&extension_root, &tree_sitter_root.join("queries"))?;
@@ -58,8 +75,6 @@ fn main() -> Result<()> {
     let syntax_file = find_syntax_file(&extension_path)?;
     println!("TextMate grammar: {}", syntax_file.display());
 
-    let root_offset = "../";
-
     println!("Extracting keywords");
     let keywords = extract_keywords(&syntax_file)?;
     let scope_name = extract_scope_name(&syntax_file)?;
@@ -68,51 +83,52 @@ fn main() -> Result<()> {
     println!("Generating scanner sources");
     let external_tokens = build_external_tokens(&keywords);
 
-    let src_dir = format!("{}src", root_offset);
+    let src_dir = tree_sitter_root.join("src");
     fs::create_dir_all(&src_dir)?;
 
-    generate_keywords_c(&keywords, &src_dir)?;
-    generate_scanner_c(&keywords, &external_tokens, &src_dir)?;
+    generate_keywords_c(&keywords, path_str(&src_dir)?)?;
+    generate_scanner_c(&keywords, &external_tokens, path_str(&src_dir)?)?;
     println!("Generated src/keywords.c and src/scanner.c");
 
     println!("Generating grammar.js");
-    generate_grammar_js(&keywords, &external_tokens, root_offset)?;
+    generate_grammar_js(&keywords, &external_tokens, path_str(&tree_sitter_root)?)?;
     println!("Generated grammar.js");
 
-    let queries_dir = format!("{}queries", root_offset);
+    let queries_dir = tree_sitter_root.join("queries");
     fs::create_dir_all(&queries_dir)?;
 
     println!("Generating highlight queries");
-    let highlights_path = format!("{}/highlights.scm", queries_dir);
-    generate_highlights(&keywords, &highlights_path)?;
-    println!("Generated {}", highlights_path);
+    let highlights_path = queries_dir.join("highlights.scm");
+    generate_highlights(&keywords, path_str(&highlights_path)?)?;
+    println!("Generated {}", highlights_path.display());
 
     println!("Generating Zed themes");
     generate_themes(&extension_path, &extension_root.join("themes"))?;
 
     println!("Generating language data");
-    let data_dir = format!("{}data", root_offset);
-    write_data_files(&keywords, &data_dir)?;
-    println!("Generated {}/", data_dir);
+    let data_dir = tree_sitter_root.join("data");
+    write_data_files(&keywords, path_str(&data_dir)?)?;
+    println!("Generated {}/", data_dir.display());
 
     println!("Generating the parser");
-    run_tree_sitter_generate(root_offset)?;
+    let tree_sitter_root_str = path_str(&tree_sitter_root)?;
+    run_tree_sitter_generate(tree_sitter_root_str)?;
 
     println!("Generating structural queries");
-    let node_types_path = format!("{}src/node-types.json", root_offset);
-    generate_structural_queries(&node_types_path, &queries_dir)?;
+    let node_types_path = tree_sitter_root.join("src/node-types.json");
+    generate_structural_queries(path_str(&node_types_path)?, path_str(&queries_dir)?)?;
 
     println!("Generating Zed language files");
     zed_language::generate(&extension_root, &tree_sitter_root.join("queries"))?;
 
     println!("Building the parser library");
-    let lib_path = run_tree_sitter_build(root_offset)?;
+    let lib_path = run_tree_sitter_build(tree_sitter_root_str)?;
     println!("Parser library: {}", lib_path.display());
 
-    run_fixture_tests(&lib_path, &scope_name, root_offset)?;
+    run_fixture_tests(&lib_path, &scope_name, tree_sitter_root_str)?;
 
     if options.repo_tests {
-        let repo_test_config_path = Path::new(root_offset).join(REPO_TEST_CONFIG);
+        let repo_test_config_path = tree_sitter_root.join(REPO_TEST_CONFIG);
         if !repo_test_config_path.is_file() {
             anyhow::bail!(
                 "repository test configuration not found: {}",
@@ -120,7 +136,7 @@ fn main() -> Result<()> {
             );
         }
         println!("Testing configured repositories");
-        run_repo_tests(&lib_path, &scope_name, root_offset)?;
+        run_repo_tests(&lib_path, &scope_name, tree_sitter_root_str)?;
     } else {
         println!("Repository tests skipped; pass --test to run them");
     }
@@ -128,6 +144,11 @@ fn main() -> Result<()> {
     println!("Generation and validation completed");
 
     Ok(())
+}
+
+fn path_str(path: &Path) -> Result<&str> {
+    path.to_str()
+        .with_context(|| format!("path is not valid UTF-8: {}", path.display()))
 }
 
 #[derive(Debug, Default)]
@@ -742,6 +763,14 @@ fn write_object_types_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
         ("value", "Value"),
         ("xmlport", "XmlPort"),
     ];
+    let permission_map: &[(&str, &str, &str)] = &[
+        ("codeunit", "codeunit", "X"),
+        ("page", "page", "X"),
+        ("query", "query", "X"),
+        ("report", "report", "X"),
+        ("table", "tabledata", "RIMD"),
+        ("xmlport", "xmlport", "X"),
+    ];
 
     let ext_lookup: std::collections::HashMap<&str, Vec<String>> = extensions_map
         .iter()
@@ -752,6 +781,10 @@ fn write_object_types_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
         lsp_kind_map.iter().map(|(k, v)| (*k, *v)).collect();
     let display_name_lookup: std::collections::HashMap<&str, &str> =
         display_name_map.iter().map(|(k, v)| (*k, *v)).collect();
+    let permission_lookup: std::collections::HashMap<&str, (&str, &str)> = permission_map
+        .iter()
+        .map(|(keyword, object_type, value)| (*keyword, (*object_type, *value)))
+        .collect();
 
     let entries: Result<Vec<serde_json::Value>> = keywords
         .objects
@@ -766,63 +799,67 @@ fn write_object_types_json(keywords: &Keywords, data_dir: &str) -> Result<()> {
                 .get(kw.as_str())
                 .copied()
                 .with_context(|| format!("No display name configured for object type {kw}"))?;
+            let permission = permission_lookup.get(kw.as_str()).copied();
             Ok(serde_json::json!({
                 "keyword":         kw,
                 "display_name":    display_name,
                 "node_kind":       format!("kw_{}", kw),
                 "extensions":      extensions,
-                "lsp_symbol_kind": lsp_symbol_kind
+                "lsp_symbol_kind": lsp_symbol_kind,
+                "permission_type": permission.map(|(object_type, _)| object_type),
+                "permission_value": permission.map(|(_, value)| value)
             }))
         })
         .collect();
 
     let obj = serde_json::json!({ "object_types": entries? });
     let path = format!("{}/object_types.json", data_dir);
-    fs::write(path, serde_json::to_string_pretty(&obj)?)?;
+    fs::write(path, format!("{}\n", serde_json::to_string_pretty(&obj)?))?;
     Ok(())
 }
 
 /// Writes page and report constructs needed independently of TextMate scopes.
 fn write_page_controls_json(data_dir: &str) -> Result<()> {
-    let known: &[&str] = &[
-        "area",
-        "group",
-        "repeater",
-        "field",
-        "part",
-        "action",
-        "separator",
-        "cuegroup",
-        "grid",
-        "fixed",
-        "usercontrol",
-        "label",
-        "dataitem",
-        "column",
-        "filter",
-        "addfirst",
-        "addlast",
-        "addafter",
-        "addbefore",
-        "modify",
-        "moveafter",
-        "movebefore",
-        "actionref",
+    let controls: &[(&str, &str)] = &[
+        ("area", "Struct"),
+        ("group", "Struct"),
+        ("repeater", "Struct"),
+        ("field", "Field"),
+        ("part", "Class"),
+        ("action", "Event"),
+        ("separator", "Event"),
+        ("cuegroup", "Struct"),
+        ("grid", "Struct"),
+        ("fixed", "Struct"),
+        ("usercontrol", "Class"),
+        ("label", "Constant"),
+        ("dataitem", "Struct"),
+        ("column", "Field"),
+        ("filter", "Field"),
+        ("addfirst", "Namespace"),
+        ("addlast", "Namespace"),
+        ("addafter", "Namespace"),
+        ("addbefore", "Namespace"),
+        ("modify", "Namespace"),
+        ("moveafter", "Namespace"),
+        ("movebefore", "Namespace"),
+        ("actionref", "Event"),
     ];
 
-    let entries: Vec<_> = known
+    let entries: Vec<_> = controls
         .iter()
-        .map(|kw| {
+        .map(|(keyword, lsp_symbol_kind)| {
             serde_json::json!({
-                "keyword":   kw,
-                "node_kind": format!("kw_{}", kw)
+                "keyword": keyword,
+                "node_kind": format!("kw_{}", keyword),
+                "lsp_symbol_kind": lsp_symbol_kind
             })
         })
         .collect();
 
     let obj = serde_json::json!({ "page_controls": entries });
     let path = format!("{}/page_controls.json", data_dir);
-    fs::write(path, serde_json::to_string_pretty(&obj)?)?;
+    fs::write(path, format!("{}\n", serde_json::to_string_pretty(&obj)?))?;
     Ok(())
 }
 
@@ -1074,7 +1111,7 @@ fn generate_grammar_js(
         .collect();
 
     let rendered = render_template(&template, &render_pairs);
-    let out_path = format!("{}grammar.js", root);
+    let out_path = Path::new(root).join("grammar.js");
 
     let header = "// AUTO-GENERATED FILE - DO NOT EDIT MANUALLY\n\
                   // Generated from generator/tools/al-gen/templates/grammar.js.template by al-gen.\n\n";
@@ -1101,6 +1138,14 @@ fn gen_choice_fragment(elements: &BTreeSet<String>, exclude: &[&str]) -> Result<
     }
     out.push_str("    )");
     Ok(out)
+}
+
+fn capture_for_scope<'a>(
+    captures: &'a std::collections::HashMap<String, String>,
+    scope: &str,
+    default: &'a str,
+) -> &'a str {
+    captures.get(scope).map(String::as_str).unwrap_or(default)
 }
 
 fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
@@ -1228,10 +1273,10 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
         |s| s.contains("metadata"),
         "@keyword",
     );
-    let property_capture = find_capture(
+    let property_capture = capture_for_scope(
         &keywords.scope_captures,
-        |s| s.contains("property"),
-        "@keyword",
+        "keyword.operators.property.al",
+        "@operator",
     );
     let operator_capture = find_capture(
         &keywords.scope_captures,
@@ -2703,4 +2748,42 @@ fn dim_color(hex: &str, factor: f64) -> Result<String> {
     let g = (g as f64 * factor).round() as u8;
     let b = (b as f64 * factor).round() as u8;
     Ok(format!("#{:02X}{:02X}{:02X}", r, g, b))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn project_roots_are_derived_from_the_manifest_directory() {
+        let roots =
+            project_roots(Path::new("checkout/extension/tree-sitter-al/generator")).unwrap();
+
+        assert_eq!(
+            roots,
+            ProjectRoots {
+                tree_sitter: PathBuf::from("checkout/extension/tree-sitter-al"),
+                extension: PathBuf::from("checkout/extension"),
+            }
+        );
+    }
+
+    #[test]
+    fn property_capture_uses_the_operator_scope() {
+        let captures = std::collections::HashMap::from([
+            (
+                "keyword.other.property.al".to_string(),
+                "@keyword".to_string(),
+            ),
+            (
+                "keyword.operators.property.al".to_string(),
+                "@operator".to_string(),
+            ),
+        ]);
+
+        assert_eq!(
+            capture_for_scope(&captures, "keyword.operators.property.al", "@operator"),
+            "@operator"
+        );
+    }
 }
