@@ -4482,52 +4482,12 @@
   ],
   "conflicts": [
     [
-      "variable_declaration",
-      "property_assignment"
-    ],
-    [
-      "object_variable_declaration",
-      "property_assignment"
-    ],
-    [
-      "variable_declaration",
-      "procedure_declaration"
-    ],
-    [
-      "variable_declaration",
-      "trigger_declaration"
-    ],
-    [
-      "empty_if_statement",
-      "if_statement"
-    ],
-    [
-      "of_clause",
-      "name_or_keyword"
-    ],
-    [
-      "object_section",
-      "variable_declaration"
-    ],
-    [
-      "object_section",
-      "object_variable_declaration"
-    ],
-    [
       "name",
       "_pre_object_body"
     ],
     [
       "name_or_keyword",
       "_pre_object_body"
-    ],
-    [
-      "event_declaration",
-      "semicolon"
-    ],
-    [
-      "object_section",
-      "name_or_keyword"
     ],
     [
       "statement_list",

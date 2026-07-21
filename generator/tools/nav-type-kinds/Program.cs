@@ -1,31 +1,41 @@
-// Extracts the Microsoft.Dynamics.Nav.CodeAnalysis.NavTypeKind enum (name -> id)
-// from the AL toolchain DLL and prints it as JSON. See README.md.
-//
-// Usage: TCDIR=<toolchain net8.0/any dir> dotnet run -c Release > nav_type_kinds.json
+// Extracts the NavTypeKind enum from CodeAnalysis metadata.
+// Usage: TCDIR=<toolchain dir> dotnet run -c Release > nav_type_kinds.json
 
-using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Text.Json;
 
-var tcdir = Environment.GetEnvironmentVariable("TCDIR")
-    ?? throw new InvalidOperationException("Set TCDIR to the AL toolchain dir containing Microsoft.Dynamics.Nav.CodeAnalysis.dll");
+var toolchainDir = Environment.GetEnvironmentVariable("TCDIR")
+    ?? throw new InvalidOperationException(
+        "Set TCDIR to the AL toolchain directory containing Microsoft.Dynamics.Nav.CodeAnalysis.dll");
+var assemblyPath = Path.Combine(toolchainDir, "Microsoft.Dynamics.Nav.CodeAnalysis.dll");
+if (!File.Exists(assemblyPath))
+    throw new FileNotFoundException("CodeAnalysis assembly not found", assemblyPath);
 
-AppDomain.CurrentDomain.AssemblyResolve += (_, a) =>
+using var assemblyStream = File.OpenRead(assemblyPath);
+using var peReader = new PEReader(assemblyStream);
+var metadata = peReader.GetMetadataReader();
+
+var matchingTypes = metadata.TypeDefinitions
+    .Where(handle => metadata.GetString(metadata.GetTypeDefinition(handle).Name) == "NavTypeKind")
+    .ToList();
+if (matchingTypes.Count != 1)
+    throw new InvalidDataException($"Expected one NavTypeKind type, found {matchingTypes.Count}");
+
+var result = new SortedDictionary<string, int>(StringComparer.Ordinal);
+foreach (var fieldHandle in metadata.GetTypeDefinition(matchingTypes[0]).GetFields())
 {
-    var p = Path.Combine(tcdir, new AssemblyName(a.Name).Name + ".dll");
-    return File.Exists(p) ? Assembly.LoadFrom(p) : null;
-};
-
-var asm = Assembly.LoadFrom(Path.Combine(tcdir, "Microsoft.Dynamics.Nav.CodeAnalysis.dll"));
-var t = asm.GetType("Microsoft.Dynamics.Nav.CodeAnalysis.NavTypeKind")
-    ?? throw new InvalidOperationException("NavTypeKind type not found");
-
-var map = new SortedDictionary<string, int>(StringComparer.Ordinal);
-foreach (var v in Enum.GetValues(t))
-{
-    var name = Enum.GetName(t, v)!;
-    // Skip the internal flag bits (leading underscore); keep real AL type kinds.
+    var field = metadata.GetFieldDefinition(fieldHandle);
+    var name = metadata.GetString(field.Name);
     if (name.StartsWith('_')) continue;
-    map[name] = Convert.ToInt32(v);
-}
 
-Console.WriteLine(JsonSerializer.Serialize(map, new JsonSerializerOptions { WriteIndented = true }));
+    var constantHandle = field.GetDefaultValue();
+    if (constantHandle.IsNil) continue;
+    var constant = metadata.GetConstant(constantHandle);
+    if (constant.TypeCode != ConstantTypeCode.Int32) continue;
+    result.Add(name, metadata.GetBlobReader(constant.Value).ReadInt32());
+}
+if (result.Count == 0)
+    throw new InvalidDataException("NavTypeKind contains no integer enum values");
+
+Console.WriteLine(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));

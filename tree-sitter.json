@@ -12,11 +12,11 @@
   "metadata": {
     "version": "0.1.0",
     "license": "MIT",
-    "description": "AL grammar for tree-sitter (keywords extracted dynamically from the Cursor/VSCode AL extension)"
+    "description": "AL grammar for tree-sitter"
   },
   "bindings": {
     "c": true,
-    "node": true
+    "node": false,
+    "rust": true
   }
 }
-

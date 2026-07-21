@@ -29,9 +29,7 @@ pub const NODE_TYPES: &str = include_str!("../../src/node-types.json");
 /// The syntax-highlighting query for this grammar.
 pub const HIGHLIGHTS_QUERY: &str = include_str!("../../queries/highlights.scm");
 
-/// Generated AL language-data tables (keywords, builtin functions, object
-/// types, …), produced by this repo's generator and embedded here so downstream
-/// Rust crates can consume them without reaching outside their crate directory.
+/// Generated AL language-data tables embedded for downstream consumers.
 pub mod data {
     pub const KEYWORDS: &str = include_str!("../../data/keywords.json");
     pub const BUILTIN_FUNCTIONS: &str = include_str!("../../data/builtin_functions.json");
@@ -48,7 +46,7 @@ pub mod data {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_can_load_grammar() {
+    fn can_load_grammar() {
         let mut parser = tree_sitter::Parser::new();
         parser
             .set_language(&super::LANGUAGE.into())

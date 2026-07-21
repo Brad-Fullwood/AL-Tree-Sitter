@@ -1,12 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "OQhyhoVR2aI=",
+  "dgSpecHash": "IzVel5XMZw6WWULpeiwK9Qk3Gk7G1sEEXOzxDL3Zr6ZFhDM+azdsozk2IK1+s9+ZBDLqPil77VvEVcDfZdRxbQ==",
   "success": true,
-  "projectFilePath": "/home/braf/Dev/Software/Zed/Zed AL Extension/tree-sitter-al/generator/tools/system-objects/system-objects.csproj",
+  "projectFilePath": "/home/bradf/Projects/Personal/al.language.zed-worktrees/tree-sitter-al-audit/generator/tools/system-objects/system-objects.csproj",
   "expectedPackageFiles": [
-    "/home/braf/.nuget/packages/microsoft.netcore.app.ref/8.0.27/microsoft.netcore.app.ref.8.0.27.nupkg.sha512",
-    "/home/braf/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.27/microsoft.aspnetcore.app.ref.8.0.27.nupkg.sha512",
-    "/home/braf/.nuget/packages/microsoft.netcore.app.host.linux-x64/8.0.27/microsoft.netcore.app.host.linux-x64.8.0.27.nupkg.sha512"
+    "/home/bradf/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.28/microsoft.aspnetcore.app.ref.8.0.28.nupkg.sha512"
   ],
   "logs": []
 }
