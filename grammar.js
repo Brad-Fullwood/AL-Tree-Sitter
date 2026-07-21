@@ -800,6 +800,8 @@ module.exports = grammar({
     $.with_statement,
     $.asserterror_statement,
     $.exit_statement,
+    $.break_statement,
+    $.continue_statement,
     $.expression_statement,
   ),
 
@@ -900,6 +902,10 @@ module.exports = grammar({
     $.kw_exit,
     optional($.argument_list),
   )),
+
+  break_statement: $ => $.kw_break,
+
+  continue_statement: $ => $.kw_continue,
 
   asserterror_statement: $ => prec.right(seq(
     $.kw_asserterror,

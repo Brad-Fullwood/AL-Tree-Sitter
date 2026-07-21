@@ -447,6 +447,8 @@ module.exports = grammar({
     $.with_statement,
     $.asserterror_statement,
     $.exit_statement,
+    $.break_statement,
+    $.continue_statement,
     $.expression_statement,
   ),
 
@@ -547,6 +549,10 @@ module.exports = grammar({
     {{KW:exit}},
     optional($.argument_list),
   )),
+
+  break_statement: $ => {{KW:break}},
+
+  continue_statement: $ => {{KW:continue}},
 
   asserterror_statement: $ => prec.right(seq(
     {{KW:asserterror}},

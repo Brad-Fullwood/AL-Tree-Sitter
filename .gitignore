@@ -7,7 +7,6 @@
 /third_party/
 /.snapshots/
 /**/.snapshots/
-/test/
 
 **/bin/
 **/obj/
