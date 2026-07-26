@@ -200,6 +200,8 @@ module.exports = grammar({
     $.type_keyword,
     $.metadata_keyword,
     $.property_keyword,
+    $.movement_directive,
+    $.signed_case_label,
     $.directive,
     $.inactive_code,
 
@@ -207,6 +209,7 @@ module.exports = grammar({
 
   extras: $ => [
     /\s/,
+    '\uFEFF',
     $.comment,
     $.directive,
     $.inactive_code,
@@ -225,6 +228,7 @@ module.exports = grammar({
     [$.name, $._atom],
     [$.option_member, $.name_or_keyword],
     [$.key_declaration, $._atom],
+    [$.member_modifier, $.legacy_local_incomplete_procedure_pair],
     [$.type_reference, $.option_member],
     [$.option_member, $.name],
     [$.option_type],
@@ -334,6 +338,7 @@ module.exports = grammar({
     $.empty_var_section,
     $.variable_declaration,
     $.event_declaration,
+    $.legacy_local_incomplete_procedure_pair,
     $.procedure_declaration,
     $.trigger_declaration,
     $.braced_block,
@@ -343,10 +348,19 @@ module.exports = grammar({
   ),
 
   // Reusing object_body keeps nested declarations structurally parsed.
-  object_section: $ => prec(-1, seq(
-    field('keyword', choice($.metadata_keyword, $.keyword)),
-    repeat($._section_header_piece),
-    field('body', $.object_body),
+  object_section: $ => prec(-1, choice(
+    seq(
+      field('keyword', choice($.metadata_keyword, $.keyword)),
+      repeat($._section_header_piece),
+      field('body', $.object_body),
+    ),
+    // Page/action customization movement directives are section-like but do
+    // not own a braced body, e.g. `moveafter(Address; County)`.
+    seq(
+      field('keyword', $.movement_directive),
+      repeat1($._section_header_piece),
+      optional($.semicolon),
+    ),
   )),
 
   enum_value_declaration: $ => prec.right(seq(
@@ -389,7 +403,9 @@ module.exports = grammar({
   property_assignment: $ => prec(1, seq(
     field('name', choice($.name, $.property_keyword, $.metadata_keyword, $.keyword)),
     field('op', '='),
-    field('value', repeat1(choice(
+    // The platform sources use an explicit empty Permissions property
+    // (`Permissions =;`) to clear inherited permissions.
+    field('value', repeat(choice(
       $.name,
       $.qualified_name,
       $.string,
@@ -442,14 +458,25 @@ module.exports = grammar({
     $.label_declaration,
   )),
 
-  label_declaration: $ => prec(2, seq(
-    field('name', $.name_or_keyword),
-    field('sep', $.operator),
-    field('type', choice($.type_keyword, $.identifier, $.metadata_keyword, $.keyword)),
-    field('value', $.string),
-    repeat($.label_property),
-    optional($.comma),
-    $.semicolon,
+  label_declaration: $ => prec(2, choice(
+    seq(
+      field('name', $.name_or_keyword),
+      field('sep', $.operator),
+      field('type', choice($.type_keyword, $.identifier, $.metadata_keyword, $.keyword)),
+      field('value', $.string),
+      repeat($.label_property),
+      optional($.comma),
+      $.semicolon,
+    ),
+    // Legacy AL label declarations can infer Label from a string assignment.
+    seq(
+      field('name', $.name_or_keyword),
+      field('sep', $.operator),
+      field('value', $.string),
+      repeat($.label_property),
+      optional($.comma),
+      $.semicolon,
+    ),
   )),
 
   label_property: $ => seq(
@@ -632,6 +659,9 @@ module.exports = grammar({
     repeat(prec(30, choice(
        $.identifier,
        $.quoted_identifier,
+       // Option members may coincide with metadata keywords (for example
+       // `Column` in legacy chart option sets).
+       $.metadata_keyword,
        $.comma,
        $.string
     )))
@@ -645,16 +675,18 @@ module.exports = grammar({
     $.name_or_keyword,
   ),
 
-  of_clause: $ => seq(
+  of_clause: $ => prec.right(seq(
     $.kw_of,
     choice(
-      $.type_keyword,
-      $.qualified_name,
-      $.name_or_keyword,
+      $.option_type,
+      seq(
+        choice($.type_keyword, $.qualified_name, $.name_or_keyword),
+        repeat($.bracketed_block),
+      ),
       $.bracketed_block,
       $.parenthesized_block,
     ),
-  ),
+  )),
 
   member_modifier: $ => choice(
     $.kw_local,
@@ -729,6 +761,29 @@ module.exports = grammar({
       ),
     )),
   ),
+
+  // Bounded recovery for one legacy corpus form: a local procedure missing
+  // END immediately before a complete successor procedure. It deliberately
+  // cannot match a non-local procedure or an object/EOF boundary.
+  // Keep this below an ordinary complete procedure whenever both parses are
+  // viable. Dynamic precedence is essential here: without it, a valid
+  // `begin end;` local procedure can consume its own `end;` as a recovery
+  // statement and swallow the following procedure into this pair.
+  legacy_local_incomplete_procedure_pair: $ => prec.dynamic(-1, seq(
+    $.kw_local,
+    choice($.kw_procedure, $.kw_function),
+    field('name', $.name),
+    field('parameters', $.parameter_list),
+    optional(choice(
+      seq(field('return_var', $.name_or_keyword), field('returns', $.operator), field('return_type', $.type_reference)),
+      seq(field('returns', $.operator), field('return_type', $.type_reference)),
+    )),
+    optional($.var_section),
+    $.kw_begin,
+    optional($.statement_list),
+    $.procedure_declaration,
+  )),
+
 
   trigger_declaration: $ => prec.right(2, seq(
     repeat($.attribute),
@@ -814,7 +869,9 @@ module.exports = grammar({
     field('condition', $.expression),
     $.kw_then,
     field('consequence', $.statement),
-    optional(seq($.kw_else, field('alternative', $.statement))),
+    // Legacy AL permits an explicitly empty ELSE arm (`else;`); the
+    // semicolon is consumed by the surrounding statement list.
+    optional(seq($.kw_else, field('alternative', optional($.statement)))),
   )),
 
   empty_if_statement: $ => prec.right(-1, seq(
@@ -857,10 +914,9 @@ module.exports = grammar({
     repeat(seq($.comma, $.case_label_expression)),
   ),
 
-  case_label_expression: $ => prec.left(0, seq(
-    optional($.op_not),
-    $.postfix_expression,
-    repeat(seq($.binary_operator, $.unary_expression)),
+  case_label_expression: $ => prec.left(0, choice(
+    seq($.signed_case_label, repeat(seq($.binary_operator, $.unary_expression))),
+    seq(optional($.op_not), $.postfix_expression, repeat(seq($.binary_operator, $.unary_expression))),
   )),
 
   for_statement: $ => prec.right(seq(
@@ -871,7 +927,7 @@ module.exports = grammar({
     field('direction', choice($.kw_to, $.kw_downto)),
     field('to', $.expression),
     $.kw_do,
-    field('body', $.statement),
+    field('body', optional($.statement)),
   )),
 
   foreach_statement: $ => prec.right(seq(
@@ -880,14 +936,14 @@ module.exports = grammar({
     $.kw_in,
     field('collection', $.expression),
     $.kw_do,
-    field('body', $.statement),
+    field('body', optional($.statement)),
   )),
 
   while_statement: $ => prec.right(seq(
     $.kw_while,
     field('condition', $.expression),
     $.kw_do,
-    field('body', $.statement),
+    field('body', optional($.statement)),
   )),
 
   repeat_statement: $ => prec.right(seq(
@@ -901,7 +957,7 @@ module.exports = grammar({
     $.kw_with,
     field('value', $.expression),
     $.kw_do,
-    field('body', $.statement),
+    field('body', optional($.statement)),
   )),
 
   exit_statement: $ => prec.right(seq(
@@ -915,7 +971,7 @@ module.exports = grammar({
 
   asserterror_statement: $ => prec.right(seq(
     $.kw_asserterror,
-    field('body', $.statement),
+    field('body', optional($.statement)),
   )),
 
   expression_statement: $ => $.expression,
@@ -992,6 +1048,9 @@ module.exports = grammar({
 
   primary_expression: $ => choice(
     $.name,
+    // Legacy AL exposes system objects such as PAGE as keyword-classified
+    // expression receivers (`PAGE.Run(...)`).
+    $.object_keyword,
     $.type_keyword,
     $.string,
     $.verbatim_string,
@@ -1126,7 +1185,12 @@ module.exports = grammar({
     ),
   )),
 
-  operator: _ => token(/[!$%&*+\-./:<=>?@^|~]+/),
+  // Keep legacy punctuation permissive, but split slash out so comment
+  // openers are not swallowed into adjacent operators (`+//`, `://`).
+  operator: _ => choice(
+    token(/[!$%&*+\-.:<=>?@^|~]+/),
+    token(choice('/=', '/')),
+  ),
 
   semicolon: _ => ';',
   comma: _ => ',',

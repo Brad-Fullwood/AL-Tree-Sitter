@@ -21,5 +21,5 @@ fn main() {
 
     build.warnings(false).flag_if_supported("-w");
 
-    build.compile("tree-sitter-al");
+    build.compile("tree-sitter-al-bc");
 }

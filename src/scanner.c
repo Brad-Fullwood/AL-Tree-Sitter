@@ -227,6 +227,8 @@ typedef enum {
   TYPE_KEYWORD,
   METADATA_KEYWORD,
   PROPERTY_KEYWORD,
+  MOVEMENT_DIRECTIVE,
+  SIGNED_CASE_LABEL,
   DIRECTIVE,
   INACTIVE_CODE,
 
@@ -654,7 +656,9 @@ void tree_sitter_al_external_scanner_deserialize(void *payload, const char *buff
 }
 
 static bool scan_word(TSLexer *lexer, char *out, int out_cap) {
-  while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r' || lexer->lookahead == '\n') {
+  // Treat a UTF-8 BOM as leading whitespace. Some legacy sources contain
+  // more than one BOM, and the keyword scanner must skip each one.
+  while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r' || lexer->lookahead == '\n' || lexer->lookahead == 0xFEFF) {
     lexer->advance(lexer, true);
   }
 
@@ -879,6 +883,8 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
       !valid_symbols[TYPE_KEYWORD] &&
       !valid_symbols[METADATA_KEYWORD] &&
       !valid_symbols[PROPERTY_KEYWORD] &&
+      !valid_symbols[MOVEMENT_DIRECTIVE] &&
+      !valid_symbols[SIGNED_CASE_LABEL] &&
       !valid_symbols[DIRECTIVE] &&
       !valid_symbols[INACTIVE_CODE]) {
     return false;
@@ -892,6 +898,25 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
     return true;
   }
 
+
+  if (valid_symbols[SIGNED_CASE_LABEL] && lexer->lookahead == '-') {
+    lexer->advance(lexer, false);
+    bool consumed = false;
+    bool quoted = false;
+    while (lexer->lookahead != 0 && lexer->lookahead != ':' && lexer->lookahead != ',' &&
+           lexer->lookahead != ';' && lexer->lookahead != '<' && lexer->lookahead != '>' &&
+           lexer->lookahead != '=' && lexer->lookahead != '+' && lexer->lookahead != '-') {
+      if (lexer->lookahead == '"') quoted = !quoted;
+      if (!quoted && (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r' || lexer->lookahead == '\n')) break;
+      lexer->advance(lexer, false);
+      consumed = true;
+    }
+    if (consumed) {
+      lexer->mark_end(lexer);
+      lexer->result_symbol = SIGNED_CASE_LABEL;
+      return true;
+    }
+  }
 
   char word[256];
   if (!scan_word(lexer, word, (int)sizeof(word))) {
@@ -924,6 +949,12 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
   }
   if (valid_symbols[TYPE_KEYWORD] && is_al_type_keyword(word)) {
     lexer->result_symbol = TYPE_KEYWORD;
+    return true;
+  }
+  if (valid_symbols[MOVEMENT_DIRECTIVE]
+      && (!strcmp(word, "moveafter") || !strcmp(word, "movebefore")
+          || !strcmp(word, "movefirst") || !strcmp(word, "movelast"))) {
+    lexer->result_symbol = MOVEMENT_DIRECTIVE;
     return true;
   }
   if (valid_symbols[METADATA_KEYWORD] && is_al_metadata_keyword(word)) {

@@ -6,7 +6,7 @@
 //! ```
 //! let mut parser = tree_sitter::Parser::new();
 //! parser
-//!     .set_language(&tree_sitter_al::LANGUAGE.into())
+//!     .set_language(&tree_sitter_al_bc::LANGUAGE.into())
 //!     .expect("Error loading AL parser");
 //! ```
 //!
@@ -51,5 +51,47 @@ mod tests {
         parser
             .set_language(&super::LANGUAGE.into())
             .expect("Error loading AL parser");
+    }
+
+    #[test]
+    fn complete_local_procedure_is_not_claimed_by_legacy_recovery() {
+        let source = r#"
+codeunit 50100 "Procedure Boundary"
+{
+    local procedure Empty()
+    begin
+    end;
+
+    local procedure Successor()
+    begin
+        Message('still a sibling');
+    end;
+}
+"#;
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&super::LANGUAGE.into())
+            .expect("Error loading AL parser");
+        let tree = parser.parse(source, None).expect("parse tree");
+        assert!(!tree.root_node().has_error(), "{:?}", tree.root_node());
+
+        let mut procedures = 0;
+        let mut recoveries = 0;
+        let mut stack = vec![tree.root_node()];
+        while let Some(node) = stack.pop() {
+            match node.kind() {
+                "procedure_declaration" => procedures += 1,
+                "legacy_local_incomplete_procedure_pair" => recoveries += 1,
+                _ => {}
+            }
+            let mut cursor = node.walk();
+            stack.extend(node.children(&mut cursor));
+        }
+
+        assert_eq!(procedures, 2, "both complete procedures must stay siblings");
+        assert_eq!(
+            recoveries, 0,
+            "bounded recovery must not claim valid begin/end syntax"
+        );
     }
 }

@@ -1,4 +1,4 @@
-# tree-sitter-al
+# tree-sitter-al-bc
 
 A [tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammar for the AL
 language used by Microsoft Dynamics 365 Business Central.
@@ -17,7 +17,16 @@ cargo test
 ```
 
 Fixture and repository validation also require the
-[`tree-sitter` CLI](https://tree-sitter.github.io/tree-sitter/cli/installation.html).
+[`tree-sitter` CLI](https://tree-sitter.github.io/tree-sitter/cli/installation.html)
+at the exact version recorded in `.tree-sitter-cli-version`. The exact pin is
+part of the generated-parser contract; older releases lack the prebuilt-library
+JSON-summary interface used by the corpus runner.
+
+```sh
+cargo install tree-sitter-cli \
+  --version "$(cat .tree-sitter-cli-version)" --locked
+```
+
 The generator runs the fixture suite after regeneration:
 
 ```sh
@@ -31,6 +40,18 @@ Pass `--test` to additionally clone and parse the repositories configured in
 ```sh
 cargo run --release -- --test
 ```
+
+To validate the committed generated parser without locating or regenerating
+from Microsoft's AL extension, use the repository runner:
+
+```bash
+tests/run_repo_tests.sh
+```
+
+It builds the committed parser, runs the focused valid/invalid fixtures, and
+parses every pinned external corpus revision. Internally it uses
+`--repo-tests-only`; that mode deliberately performs no generator-owned source
+rewrite.
 
 ## Regenerating the grammar
 

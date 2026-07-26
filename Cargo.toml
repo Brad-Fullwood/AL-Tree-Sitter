@@ -1,5 +1,5 @@
 [package]
-name = "tree-sitter-al"
+name = "tree-sitter-al-bc"
 description = "AL (Microsoft Dynamics 365 Business Central) grammar for the tree-sitter parsing library"
 version = "0.1.0"
 license = "MIT"
@@ -17,9 +17,11 @@ include = [
     "grammar.js",
     "queries/*",
     "src/*",
+    "/tests/fixtures/**",
+    "/tests/test_repos.toml",
     "tree-sitter.json",
-    "LICENSE",
-    "README.md",
+    "/LICENSE",
+    "/README.md",
 ]
 
 [lib]
