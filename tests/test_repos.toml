@@ -1,13 +1,15 @@
 [[repo]]
 name = "BCApps"
 url = "https://github.com/microsoft/BCApps"
-branch = "main"
+revision = "acaac80c3040d87a36ab1504944d03a94f17f3d5"
+expected_files = 35855
 enabled = true
 description = "Microsoft Business Central System Application"
 
 [[repo]]
 name = "ALAppExtensions"
 url = "https://github.com/microsoft/ALAppExtensions"
-branch = "main"
+revision = "1842876af47bc8e52ac483c2f84097773da34b00"
+expected_files = 10534
 enabled = true
 description = "Microsoft Business Central Application Extensions"

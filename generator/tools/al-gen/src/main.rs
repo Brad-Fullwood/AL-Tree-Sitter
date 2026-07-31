@@ -19,6 +19,7 @@ const FIXTURES_VALID_DIR: &str = "tests/fixtures/valid";
 #[derive(Default)]
 struct Options {
     repo_tests: bool,
+    repo_tests_only: bool,
     zed_language_only: bool,
 }
 
@@ -49,9 +50,15 @@ fn parse_options() -> Result<Options> {
     for argument in std::env::args().skip(1) {
         match argument.as_str() {
             "--test" | "--tests" => options.repo_tests = true,
+            "--repo-tests-only" => options.repo_tests_only = true,
             "--zed-language-only" => options.zed_language_only = true,
             _ => anyhow::bail!("Unknown argument: {argument}"),
         }
+    }
+    let exclusive_modes =
+        usize::from(options.repo_tests_only) + usize::from(options.zed_language_only);
+    if exclusive_modes > 1 || (options.repo_tests && exclusive_modes > 0) {
+        anyhow::bail!("--test, --repo-tests-only, and --zed-language-only are mutually exclusive");
     }
     Ok(options)
 }
@@ -62,6 +69,15 @@ fn main() -> Result<()> {
     let roots = project_roots(&generator_dir)?;
     let tree_sitter_root = roots.tree_sitter;
     let extension_root = roots.extension;
+
+    if options.repo_tests_only {
+        let tree_sitter_root_str = path_str(&tree_sitter_root)?;
+        let parser_lib = run_tree_sitter_build(tree_sitter_root_str)?;
+        run_fixture_tests(&parser_lib, "source.al", tree_sitter_root_str)?;
+        run_repo_tests(&parser_lib, "source.al", tree_sitter_root_str)?;
+        println!("Committed-parser fixture and repository validation completed");
+        return Ok(());
+    }
 
     if options.zed_language_only {
         zed_language::generate(&extension_root, &tree_sitter_root.join("queries"))?;
@@ -159,7 +175,10 @@ struct Keywords {
     types: BTreeSet<String>,
     metadata: BTreeSet<String>,
     properties: BTreeSet<String>,
-    scope_captures: std::collections::HashMap<String, String>,
+    // Iteration order feeds generated query selection and diagnostic output.
+    // Keep it stable so two identical full-regeneration runs are byte-for-byte
+    // reproducible even when several TextMate scopes match one fallback rule.
+    scope_captures: BTreeMap<String, String>,
 }
 
 /// Maps a TextMate scope to the closest standard tree-sitter capture.
@@ -320,7 +339,10 @@ fn build_external_tokens(keywords: &Keywords) -> Vec<ExternalTokenSpec> {
     out.push(token_spec("type_keyword", "TYPE_KEYWORD"));
     out.push(token_spec("metadata_keyword", "METADATA_KEYWORD"));
     out.push(token_spec("property_keyword", "PROPERTY_KEYWORD"));
-
+    // These are syntactically distinct: unlike ordinary metadata sections,
+    // page/action movement directives have no braced body.
+    out.push(token_spec("movement_directive", "MOVEMENT_DIRECTIVE"));
+    out.push(token_spec("signed_case_label", "SIGNED_CASE_LABEL"));
     out.push(token_spec("directive", "DIRECTIVE"));
     out.push(token_spec("inactive_code", "INACTIVE_CODE"));
 
@@ -413,6 +435,12 @@ fn gen_scanner_keyword_dispatch_fragment() -> String {
     lexer->result_symbol = TYPE_KEYWORD;
     return true;
   }
+  if (valid_symbols[MOVEMENT_DIRECTIVE]
+      && (!strcmp(word, "moveafter") || !strcmp(word, "movebefore")
+          || !strcmp(word, "movefirst") || !strcmp(word, "movelast"))) {
+    lexer->result_symbol = MOVEMENT_DIRECTIVE;
+    return true;
+  }
   if (valid_symbols[METADATA_KEYWORD] && is_al_metadata_keyword(word)) {
     lexer->result_symbol = METADATA_KEYWORD;
     return true;
@@ -430,6 +458,14 @@ fn gen_scanner_keyword_dispatch_fragment() -> String {
 }
 
 fn find_al_extension() -> Result<PathBuf> {
+    // CI and reproducible release jobs cannot rely on a developer-specific
+    // VS Code/Cursor installation.  A caller that has obtained a pinned AL
+    // extension snapshot supplies its unpacked root explicitly; normal local
+    // development keeps the convenient newest-installed-extension discovery.
+    if let Some(configured) = std::env::var_os("AL_EXTENSION_PATH") {
+        return configured_extension_path(PathBuf::from(configured));
+    }
+
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
         .context("Cannot find home directory")?;
@@ -462,6 +498,16 @@ fn find_al_extension() -> Result<PathBuf> {
     }
 
     anyhow::bail!("AL extension not found")
+}
+
+fn configured_extension_path(path: PathBuf) -> Result<PathBuf> {
+    if !path.is_dir() {
+        anyhow::bail!(
+            "AL_EXTENSION_PATH is not an extension directory: {}",
+            path.display()
+        );
+    }
+    Ok(path)
 }
 
 fn al_extension_version_key(path: &Path) -> Option<Vec<u64>> {
@@ -1141,7 +1187,7 @@ fn gen_choice_fragment(elements: &BTreeSet<String>, exclude: &[&str]) -> Result<
 }
 
 fn capture_for_scope<'a>(
-    captures: &'a std::collections::HashMap<String, String>,
+    captures: &'a BTreeMap<String, String>,
     scope: &str,
     default: &'a str,
 ) -> &'a str {
@@ -1241,7 +1287,7 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     }
 
     fn find_capture<'a>(
-        caps: &'a std::collections::HashMap<String, String>,
+        caps: &'a BTreeMap<String, String>,
         pred: impl Fn(&str) -> bool,
         default: &'a str,
     ) -> &'a str {
@@ -1753,16 +1799,17 @@ struct RepoList {
 struct RepoConfig {
     name: String,
     url: String,
-    #[serde(default = "default_branch")]
-    branch: String,
+    /// Immutable commit used by corpus validation. A moving branch is only
+    /// informational; the runner never pulls it.
+    revision: String,
+    /// Exact corpus size at `revision`. This catches truncated/sparse checkouts
+    /// and collection regressions instead of reporting an inflated pass rate
+    /// over an incomplete corpus.
+    expected_files: usize,
     #[serde(default)]
     enabled: bool,
     #[serde(default)]
     description: Option<String>,
-}
-
-fn default_branch() -> String {
-    "main".to_string()
 }
 
 fn run_repo_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()> {
@@ -1785,6 +1832,7 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()>
 
     let mut total_files = 0usize;
     let mut total_ok = 0usize;
+    let mut total_failed = 0usize;
 
     for repo in enabled {
         println!("\nRepository: {}", repo.name);
@@ -1792,6 +1840,7 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()>
             println!("   {}", desc);
         }
         println!("   URL: {}", repo.url);
+        println!("   Revision: {}", repo.revision);
 
         let repo_dir = work_dir.join(&repo.name);
         clone_or_update_repo(&repo, &repo_dir)?;
@@ -1799,6 +1848,15 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()>
         let repo_dir_abs = fs::canonicalize(&repo_dir)
             .with_context(|| format!("Failed to canonicalize {}", repo_dir.display()))?;
         let files = collect_al_files(&repo_dir_abs)?;
+        if files.len() != repo.expected_files {
+            anyhow::bail!(
+                "{} corpus at {} contains {} AL files; expected exactly {}",
+                repo.name,
+                repo.revision,
+                files.len(),
+                repo.expected_files
+            );
+        }
         total_files += files.len();
 
         if files.is_empty() {
@@ -1814,6 +1872,7 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()>
         let (ok, failed, samples) =
             parse_paths_with_tree_sitter(parser_lib, scope_name, &paths_file_abs, root)?;
         total_ok += ok;
+        total_failed += failed;
 
         let pct = (ok as f64) * 100.0 / (files.len() as f64);
         println!("   Total files:  {}", files.len());
@@ -1834,6 +1893,13 @@ fn run_repo_tests(parser_lib: &Path, scope_name: &str, root: &str) -> Result<()>
         println!("Total AL files tested:     {}", total_files);
         println!("Successfully parsed:       {} ({:.2}%)", total_ok, pct);
         println!("Parse errors:              {}", total_files - total_ok);
+    }
+
+    if total_failed != 0 || total_ok != total_files {
+        anyhow::bail!(
+            "External corpus validation failed: {total_ok}/{total_files} parsed successfully \
+             ({total_failed} parser-reported failures)"
+        );
     }
 
     Ok(())
@@ -1986,13 +2052,16 @@ fn truncate_lines(s: &str, max_lines: usize) -> String {
 
 fn clone_or_update_repo(repo: &RepoConfig, dest: &Path) -> Result<()> {
     if dest.exists() {
-        println!("   Updating checkout");
+        println!("   Fetching pinned revision");
 
         let status = Command::new("git")
             .arg("-C")
             .arg(dest)
             .arg("fetch")
-            .arg("--all")
+            .arg("--depth")
+            .arg("1")
+            .arg("origin")
+            .arg(&repo.revision)
             .status()
             .context("git fetch failed")?;
         if !status.success() {
@@ -2003,22 +2072,31 @@ fn clone_or_update_repo(repo: &RepoConfig, dest: &Path) -> Result<()> {
             .arg("-C")
             .arg(dest)
             .arg("checkout")
-            .arg(&repo.branch)
+            .arg("--detach")
+            .arg(&repo.revision)
             .status()
             .context("git checkout failed")?;
         if !status.success() {
             anyhow::bail!("git checkout failed for {}", repo.name);
         }
 
-        let status = Command::new("git")
+        let resolved = Command::new("git")
             .arg("-C")
             .arg(dest)
-            .arg("pull")
-            .arg("--ff-only")
-            .status()
-            .context("git pull failed")?;
-        if !status.success() {
-            anyhow::bail!("git pull failed for {}", repo.name);
+            .args(["rev-parse", "HEAD"])
+            .output()
+            .context("git rev-parse failed")?;
+        if !resolved.status.success() {
+            anyhow::bail!("git rev-parse failed for {}", repo.name);
+        }
+        let resolved = String::from_utf8_lossy(&resolved.stdout).trim().to_string();
+        if resolved != repo.revision {
+            anyhow::bail!(
+                "{} resolved to {}, expected pinned revision {}",
+                repo.name,
+                resolved,
+                repo.revision
+            );
         }
 
         Ok(())
@@ -2026,10 +2104,7 @@ fn clone_or_update_repo(repo: &RepoConfig, dest: &Path) -> Result<()> {
         println!("   Cloning repository");
         let status = Command::new("git")
             .arg("clone")
-            .arg("--depth")
-            .arg("1")
-            .arg("--branch")
-            .arg(&repo.branch)
+            .arg("--no-checkout")
             .arg(&repo.url)
             .arg(dest)
             .status()
@@ -2037,7 +2112,7 @@ fn clone_or_update_repo(repo: &RepoConfig, dest: &Path) -> Result<()> {
         if !status.success() {
             anyhow::bail!("git clone failed for {}", repo.name);
         }
-        Ok(())
+        clone_or_update_repo(repo, dest)
     }
 }
 
@@ -2773,7 +2848,7 @@ mod tests {
 
     #[test]
     fn property_capture_uses_the_operator_scope() {
-        let captures = std::collections::HashMap::from([
+        let captures = BTreeMap::from([
             (
                 "keyword.other.property.al".to_string(),
                 "@keyword".to_string(),
@@ -2788,5 +2863,36 @@ mod tests {
             capture_for_scope(&captures, "keyword.operators.property.al", "@operator"),
             "@operator"
         );
+    }
+
+    #[test]
+    fn generated_keyword_capture_selection_is_deterministic() {
+        let captures = BTreeMap::from([
+            (
+                "keyword.other.builtintypes.al".to_string(),
+                "@type.builtin".to_string(),
+            ),
+            ("keyword.control.al".to_string(), "@keyword".to_string()),
+        ]);
+
+        let capture = captures
+            .iter()
+            .find(|(scope, _)| {
+                scope.as_str() == "keyword.control.al"
+                    || (scope.starts_with("keyword.") && !scope.contains("operator"))
+            })
+            .map(|(_, capture)| capture.as_str())
+            .unwrap_or("@keyword");
+
+        assert_eq!(capture, "@keyword");
+    }
+
+    #[test]
+    fn configured_extension_path_rejects_a_missing_directory() {
+        let error = configured_extension_path(PathBuf::from("missing-al-extension-fixture"))
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("AL_EXTENSION_PATH is not an extension directory"));
     }
 }

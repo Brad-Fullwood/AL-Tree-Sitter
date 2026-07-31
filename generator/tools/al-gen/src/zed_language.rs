@@ -24,9 +24,7 @@ const TEMPLATE_FILES: &[&str] = &[
     "inline_values.scm",
     "outline.scm",
     "overrides.scm",
-    "runnables.scm",
     "semantic_token_rules.json",
-    "tasks.json",
 ];
 
 pub fn generate(extension_root: &Path, grammar_queries_dir: &Path) -> Result<()> {

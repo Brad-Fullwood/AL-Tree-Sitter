@@ -7,7 +7,8 @@ if [[ $# -lt 1 || $# -gt 2 ]]; then
 fi
 
 readonly input_dir=$1
-readonly script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+readonly script_dir
 readonly analyzer="$script_dir/highlight-analyzer.py"
 readonly output_file=${2:-"$script_dir/../analysis/batch-report.txt"}
 
