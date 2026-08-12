@@ -284,6 +284,62 @@ enum 50101 MyEnum
         }
     }
 
+    /// An unterminated single-line literal must not swallow the following
+    /// lines. CR-only line endings are covered too: excluding just LF would let
+    /// the literal run to the end of a classic-Mac-style file.
+    #[test]
+    fn an_unterminated_literal_is_confined_to_its_line() {
+        for (label, newline) in [("lf", "\n"), ("crlf", "\r\n"), ("cr", "\r")] {
+            for broken in ["Message('oops);", "Rec.\"Oops := 1;"] {
+                let source = [
+                    "codeunit 50100 T",
+                    "{",
+                    "    procedure Broken()",
+                    "    begin",
+                    &format!("        {broken}"),
+                    "    end;",
+                    "",
+                    "    procedure StillParses()",
+                    "    begin",
+                    "        Message('fine');",
+                    "    end;",
+                    "}",
+                    "",
+                ]
+                .join(newline);
+
+                let mut parser = Parser::new();
+                parser
+                    .set_language(&super::LANGUAGE.into())
+                    .expect("Error loading AL parser");
+                let tree = parser.parse(&source, None).expect("parse tree");
+
+                let mut procedures = 0;
+                let mut error_lines = 0;
+                let mut stack = vec![tree.root_node()];
+                while let Some(node) = stack.pop() {
+                    if node.kind() == "procedure_declaration" {
+                        procedures += 1;
+                    }
+                    if node.is_error() {
+                        error_lines += node.end_position().row - node.start_position().row + 1;
+                    }
+                    let mut cursor = node.walk();
+                    stack.extend(node.children(&mut cursor));
+                }
+
+                assert_eq!(
+                    procedures, 2,
+                    "{label}/{broken}: the following procedure must still parse"
+                );
+                assert!(
+                    error_lines <= 2,
+                    "{label}/{broken}: error spans {error_lines} lines"
+                );
+            }
+        }
+    }
+
     /// A `directive` node has to span the whole `#...` line. It used to start
     /// after the directive name, which left region folding and directive
     /// highlighting with a node that omitted `#region`/`#pragma`.
@@ -322,6 +378,55 @@ enum 50101 MyEnum
 
         assert_eq!(starts, vec!["#region Helpers"]);
         assert_eq!(ends, vec!["#endregion"]);
+    }
+
+    /// The region patterns match on directive text, so they need a name
+    /// boundary: `#regional` is not a region and must not open a fold.
+    #[test]
+    fn folds_query_ignores_directives_that_merely_start_with_region() {
+        let source = "codeunit 50100 T\n{\n    #regional Something\n    #endregionExtra\n    #pragma warning disable AA0072\n}\n";
+
+        assert!(captured_texts(super::FOLDS_QUERY, "fold.region.start", source).is_empty());
+        assert!(captured_texts(super::FOLDS_QUERY, "fold.region.end", source).is_empty());
+    }
+
+    /// A global `var` section keeps every declaration that follows it, the way
+    /// a local `var_section` does. It used to close after the first one and
+    /// leave the rest as detached `variable_declaration` siblings.
+    #[test]
+    fn object_var_section_holds_every_global_declaration() {
+        let source = r#"
+codeunit 50100 T
+{
+    var
+        GlobalRec: Record Customer;
+        GlobalInt: Integer;
+        GlobalText: Text[100];
+
+    [Test]
+    procedure P()
+    begin
+    end;
+}
+"#;
+        let tree = parse(source);
+        let section =
+            find_kind(tree.root_node(), "object_var_section").expect("global var section");
+
+        let mut cursor = section.walk();
+        let declarations = section
+            .children(&mut cursor)
+            .filter(|c| c.kind() == "object_variable_declaration")
+            .count();
+
+        assert_eq!(
+            declarations,
+            3,
+            "section holds {:?}",
+            &source[section.byte_range()]
+        );
+        // The section must stop at the attributed procedure that follows it.
+        assert!(find_kind(tree.root_node(), "procedure_declaration").is_some());
     }
 
     /// Every bracket pattern must contribute both halves of a pair. The Zed

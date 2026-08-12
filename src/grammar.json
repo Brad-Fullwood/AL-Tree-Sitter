@@ -884,7 +884,7 @@
     },
     "object_var_section": {
       "type": "PREC_RIGHT",
-      "value": 3,
+      "value": 0,
       "content": {
         "type": "SEQ",
         "members": [
@@ -911,7 +911,7 @@
     },
     "object_variable_declaration": {
       "type": "PREC",
-      "value": 1,
+      "value": 2,
       "content": {
         "type": "CHOICE",
         "members": [
@@ -952,7 +952,7 @@
     },
     "empty_var_section": {
       "type": "PREC",
-      "value": 1,
+      "value": -1,
       "content": {
         "type": "SEQ",
         "members": [
@@ -4673,7 +4673,7 @@
               "members": [
                 {
                   "type": "PATTERN",
-                  "value": "[^'\\n]"
+                  "value": "[^'\\r\\n]"
                 },
                 {
                   "type": "STRING",
@@ -4737,7 +4737,7 @@
               "members": [
                 {
                   "type": "PATTERN",
-                  "value": "[^\"\\n]"
+                  "value": "[^\"\\r\\n]"
                 },
                 {
                   "type": "STRING",

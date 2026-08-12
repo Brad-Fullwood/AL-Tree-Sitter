@@ -1568,10 +1568,10 @@ fn generate_folds_scm(nodes: &[GrammarNodeType], out_path: &str) -> Result<()> {
 const REGION_FOLDS: &str = r#"
 ; Preprocessor regions
 ((directive) @fold.region.start
-  (#match? @fold.region.start "^#[ \t]*[rR][eE][gG][iI][oO][nN]"))
+  (#match? @fold.region.start "^#[ \t]*[rR][eE][gG][iI][oO][nN]([ \t]|$)"))
 
 ((directive) @fold.region.end
-  (#match? @fold.region.end "^#[ \t]*[eE][nN][dD][rR][eE][gG][iI][oO][nN]"))
+  (#match? @fold.region.end "^#[ \t]*[eE][nN][dD][rR][eE][gG][iI][oO][nN]([ \t]|$)"))
 "#;
 
 fn generate_locals_scm(

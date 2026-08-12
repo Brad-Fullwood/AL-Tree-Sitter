@@ -134,7 +134,54 @@ codeunit 50100 T
         (semicolon)))))
 
 ================================================================================
-attributes on variables
+attributes on local variables
+================================================================================
+
+codeunit 50100 T
+{
+    procedure P()
+    var
+        [InDataSet]
+        Visible: Boolean;
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (attribute
+              (identifier))
+            (regular_variable_declaration
+              (name_or_keyword
+                (name
+                  (identifier)))
+              (operator)
+              (type_reference
+                (kw_boolean))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+attributes on global variables are recovered, not attached
 ================================================================================
 
 codeunit 50100 T

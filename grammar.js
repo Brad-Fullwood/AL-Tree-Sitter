@@ -422,13 +422,21 @@ module.exports = grammar({
     $.semicolon,
   )),
 
-  object_var_section: $ => prec.right(3, seq(
+  // Right associativity without a numeric precedence is deliberate: a positive
+  // precedence here outranks the shift that continues the repeat, so the section
+  // would close after its first declaration and the rest would surface as bare
+  // `variable_declaration` siblings.
+  object_var_section: $ => prec.right(seq(
     repeat($.member_modifier),
     $.kw_var,
     repeat1($.object_variable_declaration),
   )),
 
-  object_variable_declaration: $ => prec(1, choice(
+  // Deliberately does NOT accept leading attributes, unlike the local
+  // `variable_declaration`. An object body puts attributed procedures right
+  // after the global var section, and a section that can start a declaration
+  // with `[` swallows the `[Test]` in front of the next procedure.
+  object_variable_declaration: $ => prec(2, choice(
     $.regular_variable_declaration,
     $.label_declaration,
   )),
@@ -439,7 +447,9 @@ module.exports = grammar({
     repeat($.variable_declaration),
   )),
 
-  empty_var_section: $ => prec(1, seq(
+  // Below object_var_section's declarations: a `var` that is followed by a
+  // declaration must open a real section, not an empty one.
+  empty_var_section: $ => prec(-1, seq(
     repeat($.member_modifier),
     $.kw_var,
   )),
@@ -1157,13 +1167,13 @@ module.exports = grammar({
   // AL escapes a single quote by doubling it. Ordinary string literals are
   // single-line, so excluding raw newlines keeps an unterminated literal from
   // swallowing the rest of the file up to the next quote.
-  string: _ => token(seq("'", repeat(choice(/[^'\n]/, "''")), "'")),
+  string: _ => token(seq("'", repeat(choice(/[^'\r\n]/, "''")), "'")),
   // Verbatim strings deliberately keep newlines; AL allows them to span lines.
   verbatim_string: _ => token(seq("@'", repeat(choice(/[^']/, "''")), "'")),
 
   // AL escapes a quote in a quoted identifier by doubling it. Like strings,
   // quoted identifiers never span lines.
-  quoted_identifier: _ => token(seq('"', repeat(choice(/[^"\n]/, '""')), '"')),
+  quoted_identifier: _ => token(seq('"', repeat(choice(/[^"\r\n]/, '""')), '"')),
 
   // AL has no `#` line comments; `#` starts a preprocessor directive, which the
   // external scanner owns. Matching it here would swallow directive lines.

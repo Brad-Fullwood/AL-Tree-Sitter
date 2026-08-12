@@ -28,7 +28,7 @@
 
 ; Preprocessor regions
 ((directive) @fold.region.start
-  (#match? @fold.region.start "^#[ \t]*[rR][eE][gG][iI][oO][nN]"))
+  (#match? @fold.region.start "^#[ \t]*[rR][eE][gG][iI][oO][nN]([ \t]|$)"))
 
 ((directive) @fold.region.end
-  (#match? @fold.region.end "^#[ \t]*[eE][nN][dD][rR][eE][gG][iI][oO][nN]"))
+  (#match? @fold.region.end "^#[ \t]*[eE][nN][dD][rR][eE][gG][iI][oO][nN]([ \t]|$)"))

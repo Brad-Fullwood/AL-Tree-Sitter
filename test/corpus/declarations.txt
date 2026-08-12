@@ -39,16 +39,16 @@ codeunit 50100 T
               (name_or_keyword
                 (name
                   (identifier))))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_integer))
             (semicolon))))
-      (variable_declaration
-        (regular_variable_declaration
-          (name_or_keyword
-            (name
-              (identifier)))
-          (operator)
-          (type_reference
-            (kw_integer))
-          (semicolon)))
       (procedure_declaration
         (kw_procedure)
         (name
@@ -121,15 +121,15 @@ codeunit 50100 T
               (identifier)
               (operator)
               (string))
-            (semicolon))))
-      (variable_declaration
-        (label_declaration
-          (name_or_keyword
-            (name
-              (identifier)))
-          (operator)
-          (string)
-          (semicolon))))))
+            (semicolon)))
+        (object_variable_declaration
+          (label_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (string)
+            (semicolon)))))))
 
 ================================================================================
 procedure signatures
