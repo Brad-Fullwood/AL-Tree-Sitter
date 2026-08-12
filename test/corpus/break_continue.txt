@@ -20,7 +20,9 @@ codeunit 50100 T
   (object_declaration
     (kw_codeunit)
     (integer)
-    (identifier)
+    (name_or_keyword
+      (name
+        (identifier)))
     (object_body
       (procedure_declaration
         (kw_procedure)

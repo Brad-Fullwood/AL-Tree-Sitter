@@ -49,6 +49,9 @@ jobs:
           cargo test --all-targets
           cargo test --manifest-path generator/Cargo.toml --all-targets
 
+      - name: Run grammar corpus tests
+        run: tree-sitter test
+
       - name: Validate focused fixtures and pinned repositories
         run: tests/run_repo_tests.sh
 

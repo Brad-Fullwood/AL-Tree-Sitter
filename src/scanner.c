@@ -212,14 +212,7 @@ typedef enum {
   KW_XMLREADOPTIONS,
   KW_XMLTEXT,
   KW_XMLWRITEOPTIONS,
-  OP_AND,
-  OP_AS,
-  OP_DIV,
-  OP_IS,
-  OP_MOD,
   OP_NOT,
-  OP_OR,
-  OP_XOR,
   KEYWORD,
   CONTROL_KEYWORD,
   OPERATOR_WORD,
@@ -240,11 +233,31 @@ typedef enum {
 #define MAX_IF_DEPTH 64
 #define MAX_DEFINES 128
 
+// In-source #define/#undef overrides. Bounded so the serialized scanner state
+// always fits TREE_SITTER_SERIALIZATION_BUFFER_SIZE:
+//   1 + MAX_IF_DEPTH + 1 + MAX_SOURCE_DEFINES * (2 + MAX_SOURCE_DEFINE_LEN)
+#define MAX_SOURCE_DEFINES 24
+#define MAX_SOURCE_DEFINE_LEN 31
+
 typedef struct {
   bool parent_active;
   bool branch_taken;
   bool this_active;
 } IfFrame;
+
+typedef struct {
+  char name[MAX_SOURCE_DEFINE_LEN + 1];
+  uint8_t len;
+  bool defined;
+} SourceDefine;
+
+// Fails to compile if the bounds above could ever overflow the serialization
+// buffer. tree-sitter aborts the parse when serialize() writes past it.
+typedef char al_serialized_state_fits[
+    (1 + MAX_IF_DEPTH + 1 + MAX_SOURCE_DEFINES * (2 + MAX_SOURCE_DEFINE_LEN))
+            <= TREE_SITTER_SERIALIZATION_BUFFER_SIZE
+        ? 1
+        : -1];
 
 typedef struct {
   uint8_t if_depth;
@@ -255,6 +268,11 @@ typedef struct {
   char *defines_buf;
   const char *defines[MAX_DEFINES];
   uint16_t defines_len;
+
+  // #define/#undef seen in the file. These shadow the AL_TS_DEFINES entries so
+  // `#undef` can switch off an externally supplied symbol as well.
+  SourceDefine source_defines[MAX_SOURCE_DEFINES];
+  uint8_t source_defines_len;
 } Scanner;
 
 static char *ts_strdup(const char *s) {
@@ -311,8 +329,43 @@ static bool scanner_is_active(const Scanner *scanner) {
   return scanner->if_stack[scanner->if_depth - 1].this_active;
 }
 
+static const SourceDefine *scanner_find_source_define(const Scanner *scanner, const char *ident,
+                                                      int len) {
+  if (!scanner || !ident || len <= 0) return NULL;
+  for (uint8_t i = 0; i < scanner->source_defines_len; i++) {
+    const SourceDefine *entry = &scanner->source_defines[i];
+    if (entry->len == (uint8_t)len && strncmp(entry->name, ident, (size_t)len) == 0) return entry;
+  }
+  return NULL;
+}
+
+// `ident` is already lowercased by the directive scanner.
+static void scanner_set_source_define(Scanner *scanner, const char *ident, int len, bool defined) {
+  if (!scanner || !ident || len <= 0 || len > MAX_SOURCE_DEFINE_LEN) return;
+
+  for (uint8_t i = 0; i < scanner->source_defines_len; i++) {
+    SourceDefine *entry = &scanner->source_defines[i];
+    if (entry->len == (uint8_t)len && strncmp(entry->name, ident, (size_t)len) == 0) {
+      entry->defined = defined;
+      return;
+    }
+  }
+
+  if (scanner->source_defines_len >= MAX_SOURCE_DEFINES) return;
+  SourceDefine *entry = &scanner->source_defines[scanner->source_defines_len++];
+  al_memcpy(entry->name, ident, (size_t)len);
+  entry->name[len] = '\0';
+  entry->len = (uint8_t)len;
+  entry->defined = defined;
+}
+
 static bool scanner_is_defined(const Scanner *scanner, const char *ident, int len) {
   if (!scanner || !ident || len <= 0) return false;
+
+  // An in-source #define/#undef wins over the AL_TS_DEFINES environment list.
+  const SourceDefine *entry = scanner_find_source_define(scanner, ident, len);
+  if (entry) return entry->defined;
+
   for (uint16_t i = 0; i < scanner->defines_len; i++) {
     const char *d = scanner->defines[i];
     if (!d) continue;
@@ -508,8 +561,11 @@ static bool scanner_scan_directive(Scanner *scanner, TSLexer *lexer, const bool 
 
   lexer->advance(lexer, false);
 
+  // Everything from `#` onwards belongs to the token. Skipping the interior
+  // whitespace would move the token start past `#region`/`#pragma`, leaving
+  // highlighting and region folding with a node that omits the directive name.
   while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
-    lexer->advance(lexer, true);
+    lexer->advance(lexer, false);
   }
 
   char kw[32];
@@ -526,7 +582,7 @@ static bool scanner_scan_directive(Scanner *scanner, TSLexer *lexer, const bool 
   kw[kw_len] = '\0';
 
   while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
-    lexer->advance(lexer, true);
+    lexer->advance(lexer, false);
   }
 
   char expr[512];
@@ -574,6 +630,17 @@ static bool scanner_scan_directive(Scanner *scanner, TSLexer *lexer, const bool 
   } else if (strcmp(kw, "endif") == 0) {
     if (scanner && scanner->if_depth > 0) {
       scanner->if_depth--;
+    }
+  } else if (strcmp(kw, "define") == 0 || strcmp(kw, "undef") == 0) {
+    // A #define inside a branch that is switched off must not take effect.
+    if (scanner && active_outer) {
+      const char *p = expr;
+      const char *id = NULL;
+      int id_len = 0;
+      expr_skip_ws(&p);
+      if (expr_parse_identifier(&p, &id, &id_len)) {
+        scanner_set_source_define(scanner, id, id_len, strcmp(kw, "define") == 0);
+      }
     }
   }
 
@@ -632,6 +699,24 @@ unsigned tree_sitter_al_external_scanner_serialize(void *payload, char *buffer) 
     if (scanner->if_stack[i].this_active)   bits |= 0x04;
     buffer[size++] = (char)bits;
   }
+
+  // In-source defines must survive GLR forks and incremental re-lexing, so they
+  // are part of the serialized state rather than payload-only scratch.
+  unsigned count_at = size;
+  buffer[size++] = 0;
+  uint8_t written = 0;
+  for (uint8_t i = 0; i < scanner->source_defines_len; i++) {
+    const SourceDefine *entry = &scanner->source_defines[i];
+    unsigned needed = 2u + entry->len;
+    if (size + needed > TREE_SITTER_SERIALIZATION_BUFFER_SIZE) break;
+    buffer[size++] = (char)entry->len;
+    buffer[size++] = (char)(entry->defined ? 1 : 0);
+    al_memcpy(buffer + size, entry->name, entry->len);
+    size += entry->len;
+    written++;
+  }
+  buffer[count_at] = (char)written;
+
   return size;
 }
 
@@ -640,6 +725,7 @@ void tree_sitter_al_external_scanner_deserialize(void *payload, const char *buff
   if (!scanner) return;
 
   scanner->if_depth = 0;
+  scanner->source_defines_len = 0;
   if (!buffer || length == 0) return;
 
   uint8_t depth = (uint8_t)buffer[0];
@@ -652,6 +738,23 @@ void tree_sitter_al_external_scanner_deserialize(void *payload, const char *buff
     scanner->if_stack[i].parent_active = (bits & 0x01) != 0;
     scanner->if_stack[i].branch_taken  = (bits & 0x02) != 0;
     scanner->if_stack[i].this_active   = (bits & 0x04) != 0;
+  }
+
+  unsigned offset = 1u + depth;
+  if (offset >= length) return;
+  uint8_t count = (uint8_t)buffer[offset++];
+  for (uint8_t i = 0; i < count && i < MAX_SOURCE_DEFINES; i++) {
+    if (offset + 2u > length) break;
+    uint8_t len = (uint8_t)buffer[offset];
+    bool defined = buffer[offset + 1] != 0;
+    offset += 2u;
+    if (len > MAX_SOURCE_DEFINE_LEN || offset + len > length) break;
+    SourceDefine *entry = &scanner->source_defines[scanner->source_defines_len++];
+    al_memcpy(entry->name, buffer + offset, len);
+    entry->name[len] = '\0';
+    entry->len = len;
+    entry->defined = defined;
+    offset += len;
   }
 }
 
@@ -868,14 +971,7 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
       !valid_symbols[KW_XMLREADOPTIONS] &&
       !valid_symbols[KW_XMLTEXT] &&
       !valid_symbols[KW_XMLWRITEOPTIONS] &&
-      !valid_symbols[OP_AND] &&
-      !valid_symbols[OP_AS] &&
-      !valid_symbols[OP_DIV] &&
-      !valid_symbols[OP_IS] &&
-      !valid_symbols[OP_MOD] &&
       !valid_symbols[OP_NOT] &&
-      !valid_symbols[OP_OR] &&
-      !valid_symbols[OP_XOR] &&
       !valid_symbols[KEYWORD] &&
       !valid_symbols[CONTROL_KEYWORD] &&
       !valid_symbols[OPERATOR_WORD] &&

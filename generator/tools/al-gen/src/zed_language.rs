@@ -9,20 +9,27 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// Query files copied verbatim from `tree-sitter-al/queries`.
+///
+/// `brackets.scm` and `outline.scm` used to be maintained as separate templates
+/// here, which let them drift from the grammar's own copies (the template
+/// brackets file was missing the `{`/`}` pair and carried an `@open` with no
+/// `@close`). The grammar queries are the single source of truth.
 const GENERATED_QUERY_FILES: &[&str] = &[
+    "brackets.scm",
     "folds.scm",
     "highlights.scm",
     "indents.scm",
     "locals.scm",
+    "outline.scm",
     "textobjects.scm",
 ];
 
+/// Zed-specific files with no tree-sitter-side equivalent.
 const TEMPLATE_FILES: &[&str] = &[
-    "brackets.scm",
     "config.toml",
     "injections.scm",
     "inline_values.scm",
-    "outline.scm",
     "overrides.scm",
     "semantic_token_rules.json",
 ];

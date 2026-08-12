@@ -215,20 +215,24 @@
             }
           },
           {
-            "type": "FIELD",
-            "name": "name",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "name_or_keyword"
-                },
-                {
-                  "type": "BLANK"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "PREC_DYNAMIC",
+                "value": 1,
+                "content": {
+                  "type": "FIELD",
+                  "name": "name",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "name_or_keyword"
+                  }
                 }
-              ]
-            }
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           },
           {
             "type": "REPEAT",
@@ -1947,31 +1951,6 @@
               ]
             }
           }
-        }
-      ]
-    },
-    "option_member": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "quoted_identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "string"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "verbatim_string"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "name_or_keyword"
         }
       ]
     },
@@ -4615,12 +4594,12 @@
             "value": "[0-9]{1,14}"
           },
           {
-            "type": "STRING",
-            "value": "D"
+            "type": "PATTERN",
+            "value": "[Dd]"
           },
           {
-            "type": "STRING",
-            "value": "T"
+            "type": "PATTERN",
+            "value": "[Tt]"
           }
         ]
       }
@@ -4635,8 +4614,8 @@
             "value": "[0-9]{1,8}"
           },
           {
-            "type": "STRING",
-            "value": "D"
+            "type": "PATTERN",
+            "value": "[Dd]"
           }
         ]
       }
@@ -4672,8 +4651,8 @@
             ]
           },
           {
-            "type": "STRING",
-            "value": "T"
+            "type": "PATTERN",
+            "value": "[Tt]"
           }
         ]
       }
@@ -4694,7 +4673,7 @@
               "members": [
                 {
                   "type": "PATTERN",
-                  "value": "[^']"
+                  "value": "[^'\\n]"
                 },
                 {
                   "type": "STRING",
@@ -4758,7 +4737,7 @@
               "members": [
                 {
                   "type": "PATTERN",
-                  "value": "[^\"]"
+                  "value": "[^\"\\n]"
                 },
                 {
                   "type": "STRING",
@@ -4785,19 +4764,6 @@
               {
                 "type": "STRING",
                 "value": "//"
-              },
-              {
-                "type": "PATTERN",
-                "value": "[^\\n]*"
-              }
-            ]
-          },
-          {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "STRING",
-                "value": "#"
               },
               {
                 "type": "PATTERN",
@@ -4926,24 +4892,12 @@
       "_atom"
     ],
     [
-      "option_member",
-      "name_or_keyword"
-    ],
-    [
       "key_declaration",
       "_atom"
     ],
     [
       "member_modifier",
       "legacy_local_incomplete_procedure_pair"
-    ],
-    [
-      "type_reference",
-      "option_member"
-    ],
-    [
-      "option_member",
-      "name"
     ],
     [
       "option_type"
@@ -5673,35 +5627,7 @@
     },
     {
       "type": "SYMBOL",
-      "name": "op_and"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "op_as"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "op_div"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "op_is"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "op_mod"
-    },
-    {
-      "type": "SYMBOL",
       "name": "op_not"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "op_or"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "op_xor"
     },
     {
       "type": "SYMBOL",

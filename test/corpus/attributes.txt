@@ -1,0 +1,169 @@
+================================================================================
+attributes on procedures
+================================================================================
+
+codeunit 50100 T
+{
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::"My Codeunit", 'OnFoo', '', false, false)]
+    local procedure HandleFoo()
+    begin
+    end;
+
+    [Test]
+    procedure TestSomething()
+    begin
+    end;
+
+    [TryFunction]
+    [Obsolete('use something else', '24.0')]
+    procedure Legacy()
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (attribute
+          (identifier)
+          (attribute_argument_list
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (type_keyword))
+                    (scope_suffix
+                      (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (object_keyword))
+                    (scope_suffix
+                      (name
+                        (quoted_identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))))
+        (member_modifier
+          (kw_local))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (attribute
+          (identifier))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (attribute
+          (identifier))
+        (attribute
+          (identifier)
+          (attribute_argument_list
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+attributes on variables
+================================================================================
+
+codeunit 50100 T
+{
+    var
+        [InDataSet]
+        Visible: Boolean;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (empty_var_section
+        (kw_var))
+      (bracketed_block
+        (control_keyword))
+      (variable_declaration
+        (regular_variable_declaration
+          (name_or_keyword
+            (name
+              (identifier)))
+          (operator)
+          (type_reference
+            (kw_boolean))
+          (semicolon))))))

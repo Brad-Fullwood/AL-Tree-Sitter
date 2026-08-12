@@ -1,0 +1,304 @@
+================================================================================
+table declaration
+================================================================================
+
+table 50100 MyTable
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_table)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+page declaration
+================================================================================
+
+page 50101 MyPage
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_page)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+report declaration
+================================================================================
+
+report 50102 MyReport
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_report)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+query declaration
+================================================================================
+
+query 50103 MyQuery
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_query)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+xmlport declaration
+================================================================================
+
+xmlport 50104 MyXmlport
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_xmlport)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+codeunit declaration
+================================================================================
+
+codeunit 50105 MyCodeunit
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+enum declaration
+================================================================================
+
+enum 50106 MyEnum
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_enum)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+interface declaration
+================================================================================
+
+interface MyInterface
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_interface)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+permissionset declaration
+================================================================================
+
+permissionset 50107 MyPermissions
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_permissionset)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+entitlement declaration
+================================================================================
+
+entitlement 50108 MyEntitlement
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_entitlement)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+controladdin declaration
+================================================================================
+
+controladdin MyAddin
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_controladdin)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+profile declaration with a quoted name
+================================================================================
+
+profile "My Profile"
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_profile)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body)))
+
+================================================================================
+quoted object name keeps the name field
+================================================================================
+
+codeunit 50109 "My Codeunit"
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body)))
+
+================================================================================
+object body content does not disturb the name field
+================================================================================
+
+codeunit 50110 MyCodeunit
+{
+    procedure P()
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+several objects in one file each keep their name field
+================================================================================
+
+codeunit 50111 First
+{
+}
+
+codeunit 50112 Second
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body))
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body)))

@@ -935,14 +935,7 @@ static bool al_lookup_control_kw_token(const char *word, TokenType *out_tok) {
 }
 
 static const AlTokenMapEntry AL_OPERATOR_WORD_TOKENS[] = {
-  {"and", OP_AND},
-  {"as", OP_AS},
-  {"div", OP_DIV},
-  {"is", OP_IS},
-  {"mod", OP_MOD},
   {"not", OP_NOT},
-  {"or", OP_OR},
-  {"xor", OP_XOR},
 };
 
 static bool al_lookup_operator_word_token(const char *word, TokenType *out_tok) {

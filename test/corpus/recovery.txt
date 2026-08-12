@@ -1,0 +1,216 @@
+================================================================================
+legacy local procedure missing END before its successor
+================================================================================
+
+codeunit 50100 T
+{
+    local procedure Incomplete()
+    begin
+        A();
+
+    procedure Successor()
+    begin
+        B();
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (legacy_local_incomplete_procedure_pair
+        (kw_local)
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (kw_begin)
+        (statement_list
+          (statement
+            (expression_statement
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))
+                    (call_suffix
+                      (argument_list)))))))
+          (semicolon))
+        (procedure_declaration
+          (kw_procedure)
+          (name
+            (identifier))
+          (parameter_list)
+          (begin_end_block
+            (kw_begin)
+            (statement_list
+              (statement
+                (expression_statement
+                  (expression
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (name
+                            (identifier)))
+                        (call_suffix
+                          (argument_list)))))))
+              (semicolon))
+            (kw_end))
+          (semicolon))))))
+
+================================================================================
+unterminated string stays on its own line
+================================================================================
+
+codeunit 50100 T
+{
+    procedure Broken()
+    begin
+        Message('oops);
+    end;
+
+    procedure StillParses()
+    begin
+        Message('fine');
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))))))
+          (ERROR
+            (UNEXPECTED '\n'))
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (call_suffix
+                        (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+unterminated quoted identifier stays on its own line
+================================================================================
+
+codeunit 50100 T
+{
+    procedure Broken()
+    begin
+        Rec."Oops := 1;
+    end;
+
+    procedure StillParses()
+    begin
+        Message('fine');
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))))))
+          (ERROR
+            (UNEXPECTED '\n'))
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (call_suffix
+                        (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))

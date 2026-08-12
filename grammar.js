@@ -185,14 +185,7 @@ module.exports = grammar({
     $.kw_xmlreadoptions,
     $.kw_xmltext,
     $.kw_xmlwriteoptions,
-    $.op_and,
-    $.op_as,
-    $.op_div,
-    $.op_is,
-    $.op_mod,
     $.op_not,
-    $.op_or,
-    $.op_xor,
     $.keyword,
     $.control_keyword,
     $.operator_word,
@@ -226,11 +219,8 @@ module.exports = grammar({
     [$.continue_statement, $.name],
     [$.name_or_keyword, $._atom],
     [$.name, $._atom],
-    [$.option_member, $.name_or_keyword],
     [$.key_declaration, $._atom],
     [$.member_modifier, $.legacy_local_incomplete_procedure_pair],
-    [$.type_reference, $.option_member],
-    [$.option_member, $.name],
     [$.option_type],
   ],
 
@@ -285,7 +275,10 @@ module.exports = grammar({
       $.object_keyword
     )),
     field('id', optional($.integer)),
-    field('name', optional($.name_or_keyword)),
+    // Dynamic precedence is required: the header name is genuinely ambiguous
+    // with the _pre_object_body catch-all, and without a runtime preference GLR
+    // discards the field-carrying parse (notably for the last object in a file).
+    optional(prec.dynamic(1, field('name', $.name_or_keyword))),
     // Conditional compilation can split an object header across branches.
     repeat($._pre_object_body),
     field('body', $.object_body),
@@ -665,14 +658,6 @@ module.exports = grammar({
        $.comma,
        $.string
     )))
-  ),
-
-  option_member: $ => choice(
-    $.quoted_identifier,
-    $.identifier,
-    $.string,
-    $.verbatim_string,
-    $.name_or_keyword,
   ),
 
   of_clause: $ => prec.right(seq(
@@ -1164,20 +1149,26 @@ module.exports = grammar({
   identifier: _ => /[A-Za-z_\u0080-\uFFFF][A-Za-z0-9_\u0080-\uFFFF]*/,
   decimal: _ => token(/[0-9]+\.[0-9]+/),
   integer: _ => /[0-9]+[Ll]?/,
-  datetime_literal: _ => token(seq(/[0-9]{1,14}/, 'D', 'T')),
-  date_literal: _ => token(seq(/[0-9]{1,8}/, 'D')),
-  time_literal: _ => token(seq(/[0-9]{1,6}/, optional(seq('.', /[0-9]+/)), 'T')),
+  // AL date/time suffixes are case-insensitive, like the rest of the language.
+  datetime_literal: _ => token(seq(/[0-9]{1,14}/, /[Dd]/, /[Tt]/)),
+  date_literal: _ => token(seq(/[0-9]{1,8}/, /[Dd]/)),
+  time_literal: _ => token(seq(/[0-9]{1,6}/, optional(seq('.', /[0-9]+/)), /[Tt]/)),
 
-  // AL escapes a single quote by doubling it.
-  string: _ => token(seq("'", repeat(choice(/[^']/, "''")), "'")),
+  // AL escapes a single quote by doubling it. Ordinary string literals are
+  // single-line, so excluding raw newlines keeps an unterminated literal from
+  // swallowing the rest of the file up to the next quote.
+  string: _ => token(seq("'", repeat(choice(/[^'\n]/, "''")), "'")),
+  // Verbatim strings deliberately keep newlines; AL allows them to span lines.
   verbatim_string: _ => token(seq("@'", repeat(choice(/[^']/, "''")), "'")),
 
-  // AL escapes a quote in a quoted identifier by doubling it.
-  quoted_identifier: _ => token(seq('"', repeat(choice(/[^"]/, '""')), '"')),
+  // AL escapes a quote in a quoted identifier by doubling it. Like strings,
+  // quoted identifiers never span lines.
+  quoted_identifier: _ => token(seq('"', repeat(choice(/[^"\n]/, '""')), '"')),
 
+  // AL has no `#` line comments; `#` starts a preprocessor directive, which the
+  // external scanner owns. Matching it here would swallow directive lines.
   comment: _ => token(choice(
     seq('//', /[^\n]*/),
-    seq('#', /[^\n]*/),
     seq(
       '/*',
       /[^*]*\*+([^/*][^*]*\*+)*/,
