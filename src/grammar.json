@@ -400,6 +400,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "key_section"
+        },
+        {
+          "type": "SYMBOL",
           "name": "key_declaration"
         },
         {
@@ -603,6 +607,27 @@
         ]
       }
     },
+    "key_section": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "keyword",
+          "content": {
+            "type": "SYMBOL",
+            "name": "kw_keys"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "SYMBOL",
+            "name": "object_body"
+          }
+        }
+      ]
+    },
     "key_declaration": {
       "type": "PREC_RIGHT",
       "value": 0,
@@ -614,7 +639,7 @@
             "name": "keyword",
             "content": {
               "type": "SYMBOL",
-              "name": "keyword"
+              "name": "kw_key"
             }
           },
           {
@@ -640,47 +665,8 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "CHOICE",
-                      "members": [
-                        {
-                          "type": "SYMBOL",
-                          "name": "name_or_keyword"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "string"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "REPEAT",
-                      "content": {
-                        "type": "SEQ",
-                        "members": [
-                          {
-                            "type": "SYMBOL",
-                            "name": "comma"
-                          },
-                          {
-                            "type": "CHOICE",
-                            "members": [
-                              {
-                                "type": "SYMBOL",
-                                "name": "name_or_keyword"
-                              },
-                              {
-                                "type": "SYMBOL",
-                                "name": "string"
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    }
-                  ]
+                  "type": "SYMBOL",
+                  "name": "key_field_list"
                 },
                 {
                   "type": "BLANK"
@@ -696,12 +682,83 @@
             "type": "FIELD",
             "name": "body",
             "content": {
-              "type": "SYMBOL",
-              "name": "braced_block"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "object_body"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
             }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "semicolon"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           }
         ]
       }
+    },
+    "key_field_list": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "qualified_name"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "name_or_keyword"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "string"
+            }
+          ]
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "comma"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "qualified_name"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "name_or_keyword"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "string"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
     },
     "_section_header_piece": {
       "type": "CHOICE",
@@ -915,6 +972,46 @@
       "content": {
         "type": "CHOICE",
         "members": [
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_var_attribute_marker"
+              },
+              {
+                "type": "REPEAT1",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "attribute"
+                }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "regular_variable_declaration"
+              }
+            ]
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_var_attribute_marker"
+              },
+              {
+                "type": "REPEAT1",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "attribute"
+                }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "label_declaration"
+              }
+            ]
+          },
           {
             "type": "SYMBOL",
             "name": "regular_variable_declaration"
@@ -4884,18 +4981,6 @@
       "name"
     ],
     [
-      "name_or_keyword",
-      "_atom"
-    ],
-    [
-      "name",
-      "_atom"
-    ],
-    [
-      "key_declaration",
-      "_atom"
-    ],
-    [
       "member_modifier",
       "legacy_local_incomplete_procedure_pair"
     ],
@@ -5672,6 +5757,18 @@
     {
       "type": "SYMBOL",
       "name": "inactive_code"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_key"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_keys"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_var_attribute_marker"
     }
   ],
   "inline": [],

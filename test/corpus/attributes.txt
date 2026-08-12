@@ -181,36 +181,92 @@ codeunit 50100 T
         (semicolon)))))
 
 ================================================================================
-attributes on global variables are recovered, not attached
+attributes on global variables attach to the declaration
 ================================================================================
 
-codeunit 50100 T
+page 50100 P
 {
     var
+        Plain: Integer;
         [InDataSet]
         Visible: Boolean;
+        [InDataSet]
+        [Obsolete('gone', '24.0')]
+        Multi: Boolean;
+
+    [Test]
+    procedure AfterSection()
+    begin
+    end;
 }
 
 --------------------------------------------------------------------------------
 
 (source_file
   (object_declaration
-    (kw_codeunit)
+    (kw_page)
     (integer)
     (name_or_keyword
       (name
         (identifier)))
     (object_body
-      (empty_var_section
-        (kw_var))
-      (bracketed_block
-        (control_keyword))
-      (variable_declaration
-        (regular_variable_declaration
-          (name_or_keyword
-            (name
-              (identifier)))
-          (operator)
-          (type_reference
-            (kw_boolean))
-          (semicolon))))))
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_integer))
+            (semicolon)))
+        (object_variable_declaration
+          (attribute
+            (identifier))
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_boolean))
+            (semicolon)))
+        (object_variable_declaration
+          (attribute
+            (identifier))
+          (attribute
+            (identifier)
+            (attribute_argument_list
+              (attribute_argument
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string))))))
+              (comma)
+              (attribute_argument
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string))))))))
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_boolean))
+            (semicolon))))
+      (procedure_declaration
+        (attribute
+          (identifier))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))

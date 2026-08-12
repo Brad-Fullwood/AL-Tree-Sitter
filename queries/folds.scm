@@ -15,6 +15,7 @@
   (foreach_statement)
   (if_statement)
   (key_declaration)
+  (key_section)
   (object_declaration)
   (object_section)
   (object_var_section)

@@ -365,6 +365,35 @@ fn dedicated_operator_words(keywords: &Keywords) -> Result<Vec<&String>> {
     Ok(selected)
 }
 
+/// Metadata keywords that get their own external token.
+///
+/// `keys`/`key` are ordinary metadata keywords everywhere else in AL, so they
+/// cannot simply be reclassified. The scanner only emits these tokens when the
+/// keyword is immediately followed by the punctuation that starts a keys block
+/// (`keys {`) or a key declaration (`key (`), which is what lets the grammar
+/// give the table key list real nodes instead of a generic `object_section`.
+const DEDICATED_METADATA_KEYWORD_TOKENS: &[&str] = &["key", "keys"];
+
+/// The subset of the extracted metadata keywords that gets a dedicated token.
+fn dedicated_metadata_keywords(keywords: &Keywords) -> Result<Vec<&String>> {
+    let selected: Vec<&String> = keywords
+        .metadata
+        .iter()
+        .filter(|kw| DEDICATED_METADATA_KEYWORD_TOKENS.contains(&kw.as_str()))
+        .collect();
+
+    for expected in DEDICATED_METADATA_KEYWORD_TOKENS {
+        if !selected.iter().any(|kw| kw.as_str() == *expected) {
+            anyhow::bail!(
+                "metadata keyword `{expected}` has a dedicated external token but was not \
+                 extracted from the TextMate grammar"
+            );
+        }
+    }
+
+    Ok(selected)
+}
+
 // This order must match grammar.js externals and the scanner's TokenType enum.
 fn build_external_tokens(keywords: &Keywords) -> Result<Vec<ExternalTokenSpec>> {
     let mut out = Vec::new();
@@ -390,6 +419,17 @@ fn build_external_tokens(keywords: &Keywords) -> Result<Vec<ExternalTokenSpec>> 
     out.push(token_spec("signed_case_label", "SIGNED_CASE_LABEL"));
     out.push(token_spec("directive", "DIRECTIVE"));
     out.push(token_spec("inactive_code", "INACTIVE_CODE"));
+
+    for kw in dedicated_metadata_keywords(keywords)? {
+        out.push(kw_token_spec("kw", kw, "KW"));
+    }
+
+    // Zero-width marker emitted in front of a `[` that opens an attribute on a
+    // global variable rather than on the member that follows the var section.
+    out.push(token_spec(
+        "_var_attribute_marker",
+        "VAR_ATTRIBUTE_MARKER",
+    ));
 
     Ok(out)
 }
@@ -484,6 +524,17 @@ fn gen_scanner_keyword_dispatch_fragment() -> String {
       && (!strcmp(word, "moveafter") || !strcmp(word, "movebefore")
           || !strcmp(word, "movefirst") || !strcmp(word, "movelast"))) {
     lexer->result_symbol = MOVEMENT_DIRECTIVE;
+    return true;
+  }
+  // `key`/`keys` stay ordinary metadata keywords unless the punctuation that
+  // opens a keys block or a key declaration follows, so `Keys := ...` and a
+  // `Key = ...` property keep their existing classification.
+  if (valid_symbols[KW_KEYS] && !strcmp(word, "keys") && al_peek_significant(lexer) == '{') {
+    lexer->result_symbol = KW_KEYS;
+    return true;
+  }
+  if (valid_symbols[KW_KEY] && !strcmp(word, "key") && al_peek_significant(lexer) == '(') {
+    lexer->result_symbol = KW_KEY;
     return true;
   }
   if (valid_symbols[METADATA_KEYWORD] && is_al_metadata_keyword(word)) {

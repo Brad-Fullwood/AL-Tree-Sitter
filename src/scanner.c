@@ -224,6 +224,9 @@ typedef enum {
   SIGNED_CASE_LABEL,
   DIRECTIVE,
   INACTIVE_CODE,
+  KW_KEY,
+  KW_KEYS,
+  VAR_ATTRIBUTE_MARKER,
 
 } TokenType;
 
@@ -758,6 +761,129 @@ void tree_sitter_al_external_scanner_deserialize(void *payload, const char *buff
   }
 }
 
+// Advances over whitespace and comments without extending the current token.
+// Callers must have already marked the token end.
+static void al_skip_trivia(TSLexer *lexer) {
+  for (;;) {
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r' ||
+           lexer->lookahead == '\n' || lexer->lookahead == 0xFEFF) {
+      lexer->advance(lexer, false);
+    }
+    if (lexer->lookahead != '/') return;
+
+    lexer->advance(lexer, false);
+    if (lexer->lookahead == '/') {
+      while (lexer->lookahead != 0 && lexer->lookahead != '\n') lexer->advance(lexer, false);
+      continue;
+    }
+    if (lexer->lookahead == '*') {
+      lexer->advance(lexer, false);
+      int32_t previous = 0;
+      while (lexer->lookahead != 0 && !(previous == '*' && lexer->lookahead == '/')) {
+        previous = lexer->lookahead;
+        lexer->advance(lexer, false);
+      }
+      if (lexer->lookahead == '/') lexer->advance(lexer, false);
+      continue;
+    }
+    // A bare slash is neither whitespace nor a comment opener.
+    return;
+  }
+}
+
+// Next non-trivia character after the current token. `scan_word` has already
+// marked the token end, so reading ahead here does not extend it.
+static int32_t al_peek_significant(TSLexer *lexer) {
+  al_skip_trivia(lexer);
+  return lexer->lookahead;
+}
+
+static bool al_is_word_start(int32_t c) {
+  return c == '_' || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c >= 0x80;
+}
+
+static bool al_is_word_char(int32_t c) {
+  return al_is_word_start(c) || (c >= '0' && c <= '9');
+}
+
+// Consumes one AL name: a bare identifier or a "quoted identifier".
+static bool al_skip_name(TSLexer *lexer) {
+  if (lexer->lookahead == '"') {
+    lexer->advance(lexer, false);
+    for (;;) {
+      if (lexer->lookahead == 0 || lexer->lookahead == '\n') return false;
+      if (lexer->lookahead == '"') {
+        lexer->advance(lexer, false);
+        // A doubled quote is an escape, so the name continues.
+        if (lexer->lookahead != '"') return true;
+      }
+      lexer->advance(lexer, false);
+    }
+  }
+
+  if (!al_is_word_start(lexer->lookahead)) return false;
+  while (al_is_word_char(lexer->lookahead)) lexer->advance(lexer, false);
+  return true;
+}
+
+// Decides whether a `[` opens an attribute on a global variable or an attribute
+// on the member that follows the var section. LR(1) cannot tell the two apart at
+// the bracket, so the scanner reads ahead over the balanced `[...]` groups and
+// looks at what comes next: a name list terminated by `:` is a variable
+// declaration and the section continues; anything else (`procedure`, `local`,
+// `trigger`, ...) means the attribute belongs to the next member.
+//
+// The token is zero width: it only steers the parser, and the `[` is still
+// consumed by the ordinary `attribute` rule.
+static bool scanner_scan_var_attribute_marker(TSLexer *lexer, const bool *valid_symbols) {
+  if (!valid_symbols[VAR_ATTRIBUTE_MARKER]) return false;
+
+  while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r' ||
+         lexer->lookahead == '\n' || lexer->lookahead == 0xFEFF) {
+    lexer->advance(lexer, true);
+  }
+  if (lexer->lookahead != '[') return false;
+
+  // Everything past this point is lookahead only.
+  lexer->mark_end(lexer);
+
+  while (lexer->lookahead == '[') {
+    unsigned depth = 0;
+    do {
+      if (lexer->lookahead == 0) return false;
+      if (lexer->lookahead == '"' || lexer->lookahead == '\'') {
+        int32_t quote = lexer->lookahead;
+        lexer->advance(lexer, false);
+        while (lexer->lookahead != 0 && lexer->lookahead != quote) lexer->advance(lexer, false);
+        if (lexer->lookahead == 0) return false;
+        lexer->advance(lexer, false);
+        continue;
+      }
+      if (lexer->lookahead == '[') depth++;
+      if (lexer->lookahead == ']') depth--;
+      lexer->advance(lexer, false);
+    } while (depth > 0);
+    al_skip_trivia(lexer);
+  }
+
+  // `Name`, `Name, Other`, or `"Quoted Name"` followed by the `:` separator.
+  for (;;) {
+    if (!al_skip_name(lexer)) return false;
+    al_skip_trivia(lexer);
+    if (lexer->lookahead != ',') break;
+    lexer->advance(lexer, false);
+    al_skip_trivia(lexer);
+  }
+
+  if (lexer->lookahead != ':') return false;
+  lexer->advance(lexer, false);
+  // `:=` is an assignment, not a declaration separator.
+  if (lexer->lookahead == '=') return false;
+
+  lexer->result_symbol = VAR_ATTRIBUTE_MARKER;
+  return true;
+}
+
 static bool scan_word(TSLexer *lexer, char *out, int out_cap) {
   // Treat a UTF-8 BOM as leading whitespace. Some legacy sources contain
   // more than one BOM, and the keyword scanner must skip each one.
@@ -982,7 +1108,10 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
       !valid_symbols[MOVEMENT_DIRECTIVE] &&
       !valid_symbols[SIGNED_CASE_LABEL] &&
       !valid_symbols[DIRECTIVE] &&
-      !valid_symbols[INACTIVE_CODE]) {
+      !valid_symbols[INACTIVE_CODE] &&
+      !valid_symbols[KW_KEY] &&
+      !valid_symbols[KW_KEYS] &&
+      !valid_symbols[VAR_ATTRIBUTE_MARKER]) {
     return false;
   }
 
@@ -994,6 +1123,10 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
     return true;
   }
 
+
+  if (scanner_scan_var_attribute_marker(lexer, valid_symbols)) {
+    return true;
+  }
 
   if (valid_symbols[SIGNED_CASE_LABEL] && lexer->lookahead == '-') {
     lexer->advance(lexer, false);
@@ -1051,6 +1184,17 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
       && (!strcmp(word, "moveafter") || !strcmp(word, "movebefore")
           || !strcmp(word, "movefirst") || !strcmp(word, "movelast"))) {
     lexer->result_symbol = MOVEMENT_DIRECTIVE;
+    return true;
+  }
+  // `key`/`keys` stay ordinary metadata keywords unless the punctuation that
+  // opens a keys block or a key declaration follows, so `Keys := ...` and a
+  // `Key = ...` property keep their existing classification.
+  if (valid_symbols[KW_KEYS] && !strcmp(word, "keys") && al_peek_significant(lexer) == '{') {
+    lexer->result_symbol = KW_KEYS;
+    return true;
+  }
+  if (valid_symbols[KW_KEY] && !strcmp(word, "key") && al_peek_significant(lexer) == '(') {
+    lexer->result_symbol = KW_KEY;
     return true;
   }
   if (valid_symbols[METADATA_KEYWORD] && is_al_metadata_keyword(word)) {

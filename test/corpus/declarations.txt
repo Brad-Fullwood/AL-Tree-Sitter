@@ -340,3 +340,88 @@ codeunit 50100 T
                 (comma)
                 (quoted_identifier)))
             (semicolon)))))))
+
+================================================================================
+table keys with single-field, multi-field and quoted keys
+================================================================================
+
+table 50100 MyTable
+{
+    keys
+    {
+        key(PK; "No.")
+        {
+            Clustered = true;
+        }
+        key(Key2; Name, Description)
+        {
+            Enabled = false;
+        }
+        key("Quoted Key"; "No.")
+        {
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_table)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (key_section
+        (kw_keys)
+        (object_body
+          (key_declaration
+            (kw_key)
+            (name_or_keyword
+              (name
+                (identifier)))
+            (semicolon)
+            (key_field_list
+              (name_or_keyword
+                (name
+                  (quoted_identifier))))
+            (object_body
+              (property_assignment
+                (name
+                  (identifier))
+                (name
+                  (identifier))
+                (semicolon))))
+          (key_declaration
+            (kw_key)
+            (name_or_keyword
+              (name
+                (identifier)))
+            (semicolon)
+            (key_field_list
+              (name_or_keyword
+                (name
+                  (identifier)))
+              (comma)
+              (name_or_keyword
+                (name
+                  (identifier))))
+            (object_body
+              (property_assignment
+                (name
+                  (identifier))
+                (name
+                  (identifier))
+                (semicolon))))
+          (key_declaration
+            (kw_key)
+            (name_or_keyword
+              (name
+                (quoted_identifier)))
+            (semicolon)
+            (key_field_list
+              (name_or_keyword
+                (name
+                  (quoted_identifier))))
+            (object_body)))))))

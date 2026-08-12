@@ -197,6 +197,9 @@ module.exports = grammar({
     $.signed_case_label,
     $.directive,
     $.inactive_code,
+    $.kw_key,
+    $.kw_keys,
+    $._var_attribute_marker,
 
   ],
 
@@ -217,9 +220,8 @@ module.exports = grammar({
     [$.continue_statement, $.expression_statement],
     [$.break_statement, $.name],
     [$.continue_statement, $.name],
-    [$.name_or_keyword, $._atom],
-    [$.name, $._atom],
-    [$.key_declaration, $._atom],
+    // The `_atom` pairings that used to be listed here became unnecessary once
+    // key_declaration stopped starting with a generic keyword token.
     [$.member_modifier, $.legacy_local_incomplete_procedure_pair],
     [$.option_type],
   ],
@@ -324,6 +326,7 @@ module.exports = grammar({
 
   _object_body_item: $ => choice(
     $.enum_value_declaration,
+    $.key_section,
     $.key_declaration,
     $.object_section,
     $.property_assignment,
@@ -367,18 +370,31 @@ module.exports = grammar({
     optional($.semicolon),
   )),
 
+  // `keys { ... }` on a table or tableextension. The external scanner only
+  // produces kw_keys when a `{` follows, so `Keys := ...` and a `Keys` property
+  // keep their ordinary metadata-keyword classification.
+  key_section: $ => seq(
+    field('keyword', $.kw_keys),
+    field('body', $.object_body),
+  ),
+
+  // `key(Name; Field, Field) { properties }`. Reusing object_body keeps the key
+  // properties structurally parsed as property_assignment.
   key_declaration: $ => prec.right(seq(
-    field('keyword', $.keyword),
+    field('keyword', $.kw_key),
     '(',
     field('name', $.name_or_keyword),
     $.semicolon,
-    field('fields', optional(seq(
-      choice($.name_or_keyword, $.string),
-      repeat(seq($.comma, choice($.name_or_keyword, $.string))),
-    ))),
+    field('fields', optional($.key_field_list)),
     ')',
-    field('body', $.braced_block),
+    field('body', optional($.object_body)),
+    optional($.semicolon),
   )),
+
+  key_field_list: $ => seq(
+    choice($.qualified_name, $.name_or_keyword, $.string),
+    repeat(seq($.comma, choice($.qualified_name, $.name_or_keyword, $.string))),
+  ),
 
   _section_header_piece: $ => choice(
     $.name,
@@ -432,11 +448,14 @@ module.exports = grammar({
     repeat1($.object_variable_declaration),
   )),
 
-  // Deliberately does NOT accept leading attributes, unlike the local
-  // `variable_declaration`. An object body puts attributed procedures right
-  // after the global var section, and a section that can start a declaration
-  // with `[` swallows the `[Test]` in front of the next procedure.
+  // An attributed declaration is gated on the scanner's zero-width marker. An
+  // object body puts attributed procedures right after the global var section,
+  // and at the `[` one token of lookahead cannot tell `[InDataSet] X: Boolean`
+  // from `[Test]` in front of the next procedure; the marker is only emitted
+  // for the former, so the section never swallows a member's attribute.
   object_variable_declaration: $ => prec(2, choice(
+    seq($._var_attribute_marker, repeat1($.attribute), $.regular_variable_declaration),
+    seq($._var_attribute_marker, repeat1($.attribute), $.label_declaration),
     $.regular_variable_declaration,
     $.label_declaration,
   )),

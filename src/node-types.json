@@ -1137,28 +1137,20 @@
     "fields": {
       "body": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
-            "type": "braced_block",
+            "type": "object_body",
             "named": true
           }
         ]
       },
       "fields": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
           {
-            "type": "comma",
-            "named": true
-          },
-          {
-            "type": "name_or_keyword",
-            "named": true
-          },
-          {
-            "type": "string",
+            "type": "key_field_list",
             "named": true
           }
         ]
@@ -1168,7 +1160,7 @@
         "required": true,
         "types": [
           {
-            "type": "keyword",
+            "type": "kw_key",
             "named": true
           }
         ]
@@ -1185,7 +1177,7 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
@@ -1193,6 +1185,59 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "key_field_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "comma",
+          "named": true
+        },
+        {
+          "type": "name_or_keyword",
+          "named": true
+        },
+        {
+          "type": "qualified_name",
+          "named": true
+        },
+        {
+          "type": "string",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "key_section",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "object_body",
+            "named": true
+          }
+        ]
+      },
+      "keyword": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "kw_keys",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -1617,6 +1662,10 @@
           "named": true
         },
         {
+          "type": "key_section",
+          "named": true
+        },
+        {
           "type": "legacy_local_incomplete_procedure_pair",
           "named": true
         },
@@ -1997,9 +2046,13 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "attribute",
+          "named": true
+        },
         {
           "type": "label_declaration",
           "named": true
@@ -4241,7 +4294,15 @@
     "named": true
   },
   {
+    "type": "kw_key",
+    "named": true
+  },
+  {
     "type": "kw_keyref",
+    "named": true
+  },
+  {
+    "type": "kw_keys",
     "named": true
   },
   {

@@ -340,6 +340,205 @@ enum 50101 MyEnum
         }
     }
 
+    /// Attributes on global variables attach to the declaration they precede.
+    ///
+    /// This is what the scanner's zero-width `_var_attribute_marker` buys: at
+    /// the `[` one token of lookahead cannot separate an attributed global from
+    /// an attributed member, so the scanner reads past the balanced brackets and
+    /// only marks the position when a `name:` declaration follows.
+    #[test]
+    fn attributes_attach_to_global_variables() {
+        let source = r#"
+page 50100 MyPage
+{
+    var
+        Plain: Integer;
+        [InDataSet]
+        Visible: Boolean;
+        [InDataSet]
+        [Obsolete('gone', '24.0')]
+        Multi: Boolean;
+        [InDataSet]
+        A, B : Boolean;
+        [InDataSet]
+        "Quoted Var": Boolean;
+
+    [Test]
+    procedure AfterSection()
+    begin
+    end;
+
+    [TryFunction]
+    local procedure Another()
+    begin
+    end;
+}
+"#;
+        let tree = parse(source);
+        let section =
+            find_kind(tree.root_node(), "object_var_section").expect("global var section");
+
+        let mut cursor = section.walk();
+        let declarations: Vec<_> = section
+            .children(&mut cursor)
+            .filter(|c| c.kind() == "object_variable_declaration")
+            .collect();
+        assert_eq!(declarations.len(), 5, "every global stays in the section");
+
+        let attribute_counts: Vec<usize> = declarations
+            .iter()
+            .map(|declaration| {
+                let mut walker = declaration.walk();
+                declaration
+                    .children(&mut walker)
+                    .filter(|c| c.kind() == "attribute")
+                    .count()
+            })
+            .collect();
+        assert_eq!(
+            attribute_counts,
+            vec![0, 1, 2, 1, 1],
+            "attributes must be children of the declaration they precede"
+        );
+
+        // The section still ends at the attributed members that follow it, and
+        // their attributes stay with them.
+        let mut procedures = 0;
+        let mut stack = vec![tree.root_node()];
+        while let Some(node) = stack.pop() {
+            if node.kind() == "procedure_declaration" {
+                procedures += 1;
+                assert!(
+                    find_kind(node, "attribute").is_some(),
+                    "the member kept its own attribute"
+                );
+            }
+            let mut walker = node.walk();
+            stack.extend(node.children(&mut walker));
+        }
+        assert_eq!(procedures, 2);
+    }
+
+    /// A table `keys { … }` block produces real `key_section`/`key_declaration`
+    /// nodes, so the outline and fold captures for them are reachable.
+    #[test]
+    fn key_declarations_are_real_nodes() {
+        let source = r#"
+table 50100 MyTable
+{
+    fields
+    {
+        field(1; "No."; Code[20]) { }
+    }
+
+    keys
+    {
+        key(PK; "No.")
+        {
+            Clustered = true;
+        }
+        key(Key2; Name, Description)
+        {
+        }
+    }
+}
+"#;
+        let tree = parse(source);
+        let section = find_kind(tree.root_node(), "key_section").expect("keys block");
+        assert_eq!(
+            section
+                .child_by_field_name("keyword")
+                .expect("keys keyword")
+                .kind(),
+            "kw_keys"
+        );
+
+        let body = section.child_by_field_name("body").expect("keys body");
+        let mut cursor = body.walk();
+        let keys: Vec<_> = body
+            .children(&mut cursor)
+            .filter(|c| c.kind() == "key_declaration")
+            .collect();
+        assert_eq!(keys.len(), 2);
+
+        let names: Vec<&str> = keys
+            .iter()
+            .map(|k| {
+                &source[k
+                    .child_by_field_name("name")
+                    .expect("key name")
+                    .byte_range()]
+            })
+            .collect();
+        assert_eq!(names, vec!["PK", "Key2"]);
+
+        // Single- and multi-field key field lists, and key properties.
+        let fields: Vec<&str> = keys
+            .iter()
+            .map(|k| {
+                &source[k
+                    .child_by_field_name("fields")
+                    .expect("key fields")
+                    .byte_range()]
+            })
+            .collect();
+        assert_eq!(fields, vec!["\"No.\"", "Name, Description"]);
+        assert!(find_kind(keys[0], "property_assignment").is_some());
+    }
+
+    #[test]
+    fn outline_and_fold_queries_reach_key_declarations() {
+        let source = r#"
+table 50100 MyTable
+{
+    keys
+    {
+        key(PK; "No.") { }
+        key(Key2; Name) { }
+    }
+}
+"#;
+        let names = captured_texts(super::OUTLINE_QUERY, "name", source);
+        assert!(names.contains(&"PK"), "outline captured {names:?}");
+        assert!(names.contains(&"Key2"), "outline captured {names:?}");
+
+        let folds = captured_texts(super::FOLDS_QUERY, "fold", source);
+        assert!(
+            folds.iter().filter(|f| f.starts_with("key(")).count() == 2,
+            "fold captured {folds:?}"
+        );
+    }
+
+    /// `key`/`keys` only become dedicated tokens in front of `(`/`{`, so their
+    /// ordinary metadata-keyword uses are untouched.
+    #[test]
+    fn key_keyword_is_not_hijacked_elsewhere() {
+        let source = r#"
+codeunit 50100 T
+{
+    var
+        Keys: List of [Text];
+
+    procedure P()
+    var
+        Key: Text;
+    begin
+        Keys := Dict.Keys();
+        Key := Keys.Get(1);
+    end;
+}
+"#;
+        let tree = parse(source);
+        assert!(
+            find_kind(tree.root_node(), "key_section").is_none(),
+            "no keys block here"
+        );
+        assert!(
+            find_kind(tree.root_node(), "key_declaration").is_none(),
+            "no key declaration here"
+        );
+    }
+
     /// A `directive` node has to span the whole `#...` line. It used to start
     /// after the directive name, which left region folding and directive
     /// highlighting with a node that omitted `#region`/`#pragma`.
