@@ -773,7 +773,9 @@ static void al_skip_trivia(TSLexer *lexer) {
 
     lexer->advance(lexer, false);
     if (lexer->lookahead == '/') {
-      while (lexer->lookahead != 0 && lexer->lookahead != '\n') lexer->advance(lexer, false);
+      while (lexer->lookahead != 0 && lexer->lookahead != '\n' && lexer->lookahead != '\r') {
+        lexer->advance(lexer, false);
+      }
       continue;
     }
     if (lexer->lookahead == '*') {
@@ -851,6 +853,12 @@ static bool scanner_scan_var_attribute_marker(TSLexer *lexer, const bool *valid_
     unsigned depth = 0;
     do {
       if (lexer->lookahead == 0) return false;
+      // A bracket or quote inside a comment or a string argument is text, not
+      // structure: `[Obsolete(/* ] */ 'gone')]` must not close the group early.
+      if (lexer->lookahead == '/') {
+        al_skip_trivia(lexer);
+        continue;
+      }
       if (lexer->lookahead == '"' || lexer->lookahead == '\'') {
         int32_t quote = lexer->lookahead;
         lexer->advance(lexer, false);

@@ -268,6 +268,46 @@ enum 50101 MyEnum
         }
     }
 
+    /// A `//` comment ends at either line terminator. Stopping only at LF let a
+    /// comment in a CR-only file swallow the rest of the file.
+    #[test]
+    fn line_comments_end_at_any_line_terminator() {
+        for (label, newline) in [("lf", "\n"), ("crlf", "\r\n"), ("cr", "\r")] {
+            let source = [
+                "codeunit 50100 T",
+                "{",
+                "    // a comment",
+                "    procedure P()",
+                "    begin",
+                "    end;",
+                "}",
+                "",
+            ]
+            .join(newline);
+
+            let mut parser = Parser::new();
+            parser
+                .set_language(&super::LANGUAGE.into())
+                .expect("Error loading AL parser");
+            let tree = parser.parse(&source, None).expect("parse tree");
+
+            assert!(
+                !tree.root_node().has_error(),
+                "{label}: unexpected parse error"
+            );
+            let comment = find_kind(tree.root_node(), "comment").expect("comment node");
+            assert_eq!(
+                &source[comment.byte_range()],
+                "// a comment",
+                "{label}: comment must stop at the line terminator"
+            );
+            assert!(
+                find_kind(tree.root_node(), "procedure_declaration").is_some(),
+                "{label}: the code after the comment must still parse"
+            );
+        }
+    }
+
     #[test]
     fn every_shipped_query_compiles() {
         for (name, source) in [

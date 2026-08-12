@@ -426,10 +426,7 @@ fn build_external_tokens(keywords: &Keywords) -> Result<Vec<ExternalTokenSpec>> 
 
     // Zero-width marker emitted in front of a `[` that opens an attribute on a
     // global variable rather than on the member that follows the var section.
-    out.push(token_spec(
-        "_var_attribute_marker",
-        "VAR_ATTRIBUTE_MARKER",
-    ));
+    out.push(token_spec("_var_attribute_marker", "VAR_ATTRIBUTE_MARKER"));
 
     Ok(out)
 }

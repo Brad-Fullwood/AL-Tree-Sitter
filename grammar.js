@@ -1197,7 +1197,7 @@ module.exports = grammar({
   // AL has no `#` line comments; `#` starts a preprocessor directive, which the
   // external scanner owns. Matching it here would swallow directive lines.
   comment: _ => token(choice(
-    seq('//', /[^\n]*/),
+    seq('//', /[^\r\n]*/),
     seq(
       '/*',
       /[^*]*\*+([^/*][^*]*\*+)*/,

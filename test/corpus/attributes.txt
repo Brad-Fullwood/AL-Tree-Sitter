@@ -270,3 +270,89 @@ page 50100 P
           (kw_begin)
           (kw_end))
         (semicolon)))))
+
+================================================================================
+attribute arguments containing brackets and comments
+================================================================================
+
+page 50100 P
+{
+    var
+        [Obsolete(/* ] */ 'gone', '24.0')]
+        Commented: Boolean;
+        [SomeAttr('a]b')]
+        Quoted: Boolean;
+
+    [Test]
+    procedure AfterSection()
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_page)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (attribute
+            (identifier)
+            (attribute_argument_list
+              (comment)
+              (attribute_argument
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string))))))
+              (comma)
+              (attribute_argument
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string))))))))
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_boolean))
+            (semicolon)))
+        (object_variable_declaration
+          (attribute
+            (identifier)
+            (attribute_argument_list
+              (attribute_argument
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string))))))))
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_boolean))
+            (semicolon))))
+      (procedure_declaration
+        (attribute
+          (identifier))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
