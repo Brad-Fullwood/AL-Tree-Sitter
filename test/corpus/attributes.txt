@@ -356,3 +356,51 @@ page 50100 P
           (kw_begin)
           (kw_end))
         (semicolon)))))
+
+================================================================================
+attributed global variable before a member section
+================================================================================
+
+page 50100 P
+{
+    var
+        [InDataSet]
+        Visible: Boolean;
+
+    layout
+    {
+        area(Content) { }
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_page)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (attribute
+            (identifier))
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_boolean))
+            (semicolon))))
+      (object_section
+        (metadata_keyword)
+        (object_body
+          (object_section
+            (metadata_keyword)
+            (parenthesized_block
+              (identifier))
+            (object_body)))))))

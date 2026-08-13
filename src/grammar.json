@@ -940,87 +940,87 @@
       }
     },
     "object_var_section": {
-      "type": "PREC_RIGHT",
-      "value": 0,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "REPEAT",
-            "content": {
-              "type": "SYMBOL",
-              "name": "member_modifier"
-            }
-          },
-          {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
             "type": "SYMBOL",
-            "name": "kw_var"
-          },
-          {
-            "type": "REPEAT1",
-            "content": {
-              "type": "SYMBOL",
-              "name": "object_variable_declaration"
-            }
+            "name": "member_modifier"
           }
-        ]
-      }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "kw_var"
+        },
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "SYMBOL",
+            "name": "object_variable_declaration"
+          }
+        }
+      ]
     },
     "object_variable_declaration": {
-      "type": "PREC",
-      "value": 2,
+      "type": "PREC_DYNAMIC",
+      "value": 1,
       "content": {
-        "type": "CHOICE",
-        "members": [
-          {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "_var_attribute_marker"
-              },
-              {
-                "type": "REPEAT1",
-                "content": {
+        "type": "PREC",
+        "value": 2,
+        "content": {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
                   "type": "SYMBOL",
-                  "name": "attribute"
-                }
-              },
-              {
-                "type": "SYMBOL",
-                "name": "regular_variable_declaration"
-              }
-            ]
-          },
-          {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "_var_attribute_marker"
-              },
-              {
-                "type": "REPEAT1",
-                "content": {
+                  "name": "_var_attribute_marker"
+                },
+                {
+                  "type": "REPEAT1",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "attribute"
+                  }
+                },
+                {
                   "type": "SYMBOL",
-                  "name": "attribute"
+                  "name": "regular_variable_declaration"
                 }
-              },
-              {
-                "type": "SYMBOL",
-                "name": "label_declaration"
-              }
-            ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "regular_variable_declaration"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "label_declaration"
-          }
-        ]
+              ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_var_attribute_marker"
+                },
+                {
+                  "type": "REPEAT1",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "attribute"
+                  }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "label_declaration"
+                }
+              ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "regular_variable_declaration"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "label_declaration"
+            }
+          ]
+        }
       }
     },
     "var_section": {
@@ -4983,6 +4983,9 @@
     [
       "member_modifier",
       "legacy_local_incomplete_procedure_pair"
+    ],
+    [
+      "object_var_section"
     ],
     [
       "option_type"

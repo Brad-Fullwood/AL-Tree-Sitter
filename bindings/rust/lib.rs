@@ -579,6 +579,91 @@ codeunit 50100 T
         );
     }
 
+    /// A global `var` section ends at the next member section as well as at the
+    /// next member. Declaration names are `name_or_keyword`, so `layout`,
+    /// `actions` and `fields` are all legal variable names and one token of
+    /// lookahead cannot tell a continuing declaration from the section that
+    /// follows; the section boundary is a declared GLR conflict where error cost
+    /// discards the parse that swallows the section keyword.
+    #[test]
+    fn object_var_section_ends_at_the_next_member_section() {
+        // (label, source, declarations the section must hold, kind that follows)
+        let cases: &[(&str, &str, usize, &str)] = &[
+            (
+                "page var -> layout",
+                "page 50100 P\n{\n    var\n        A: Integer;\n        B: Integer;\n\n    layout\n    {\n        area(Content) { }\n    }\n}\n",
+                2,
+                "object_section",
+            ),
+            (
+                "page var -> actions",
+                "page 50100 P\n{\n    var\n        A: Integer;\n\n    actions\n    {\n        area(Processing) { }\n    }\n}\n",
+                1,
+                "object_section",
+            ),
+            (
+                "table var -> fields",
+                "table 50100 T\n{\n    var\n        A: Integer;\n\n    fields\n    {\n        field(1; \"No.\"; Code[20]) { }\n    }\n}\n",
+                1,
+                "object_section",
+            ),
+            (
+                "table var -> keys",
+                "table 50100 T\n{\n    var\n        A: Integer;\n\n    keys\n    {\n        key(PK; \"No.\") { }\n    }\n}\n",
+                1,
+                "key_section",
+            ),
+            (
+                "report var -> dataset",
+                "report 50100 R\n{\n    var\n        A: Integer;\n\n    dataset\n    {\n        dataitem(C; Customer) { }\n    }\n}\n",
+                1,
+                "object_section",
+            ),
+            (
+                "attributed var -> layout",
+                "page 50100 P\n{\n    var\n        [InDataSet]\n        V: Boolean;\n\n    layout\n    {\n        area(Content) { }\n    }\n}\n",
+                1,
+                "object_section",
+            ),
+            (
+                "var -> procedure still closes",
+                "codeunit 50100 C\n{\n    var\n        A: Integer;\n        B: Integer;\n\n    procedure P()\n    begin\n    end;\n}\n",
+                2,
+                "procedure_declaration",
+            ),
+        ];
+
+        for (label, source, expected_declarations, follower) in cases {
+            let tree = parse(source);
+            let section = find_kind(tree.root_node(), "object_var_section")
+                .unwrap_or_else(|| panic!("{label}: no object_var_section"));
+
+            let mut cursor = section.walk();
+            let declarations = section
+                .children(&mut cursor)
+                .filter(|c| c.kind() == "object_variable_declaration")
+                .count();
+            assert_eq!(
+                declarations, *expected_declarations,
+                "{label}: section must keep every declaration and no more"
+            );
+
+            let body = section.parent().expect("object_body");
+            let mut cursor = body.walk();
+            let after: Vec<&str> = body
+                .children(&mut cursor)
+                .skip_while(|c| c.id() != section.id())
+                .skip(1)
+                .map(|c| c.kind())
+                .collect();
+            assert_eq!(
+                after.first(),
+                Some(follower),
+                "{label}: section must be followed by {follower}, got {after:?}"
+            );
+        }
+    }
+
     /// A `directive` node has to span the whole `#...` line. It used to start
     /// after the directive name, which left region folding and directive
     /// highlighting with a node that omitted `#region`/`#pragma`.

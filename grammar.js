@@ -223,6 +223,12 @@ module.exports = grammar({
     // The `_atom` pairings that used to be listed here became unnecessary once
     // key_declaration stopped starting with a generic keyword token.
     [$.member_modifier, $.legacy_local_incomplete_procedure_pair],
+    // A global var section and the member section that may follow it both accept
+    // a metadata keyword at the boundary (`layout`, `actions`, `fields` are legal
+    // variable names), and one token of lookahead cannot separate them. GLR
+    // explores both and error cost picks the parse that does not swallow the
+    // section keyword.
+    [$.object_var_section],
     [$.option_type],
   ],
 
@@ -438,27 +444,32 @@ module.exports = grammar({
     $.semicolon,
   )),
 
-  // Right associativity without a numeric precedence is deliberate: a positive
-  // precedence here outranks the shift that continues the repeat, so the section
-  // would close after its first declaration and the rest would surface as bare
-  // `variable_declaration` siblings.
-  object_var_section: $ => prec.right(seq(
+  // Deliberately carries neither associativity nor a numeric precedence, so the
+  // section boundary stays a real conflict that GLR resolves. Any static
+  // resolution is wrong in one direction or the other: preferring the reduce
+  // closes the section after its first declaration, and preferring the shift
+  // swallows the `layout`/`actions`/`fields` keyword of the section that follows
+  // (declaration names are `name_or_keyword`, so those are all legal names).
+  // GLR compares error cost first, which discards the swallowing parse, and the
+  // dynamic precedence on object_variable_declaration then prefers the longest
+  // run of declarations when both parses are error free.
+  object_var_section: $ => seq(
     repeat($.member_modifier),
     $.kw_var,
     repeat1($.object_variable_declaration),
-  )),
+  ),
 
   // An attributed declaration is gated on the scanner's zero-width marker. An
   // object body puts attributed procedures right after the global var section,
   // and at the `[` one token of lookahead cannot tell `[InDataSet] X: Boolean`
   // from `[Test]` in front of the next procedure; the marker is only emitted
   // for the former, so the section never swallows a member's attribute.
-  object_variable_declaration: $ => prec(2, choice(
+  object_variable_declaration: $ => prec.dynamic(1, prec(2, choice(
     seq($._var_attribute_marker, repeat1($.attribute), $.regular_variable_declaration),
     seq($._var_attribute_marker, repeat1($.attribute), $.label_declaration),
     $.regular_variable_declaration,
     $.label_declaration,
-  )),
+  ))),
 
   var_section: $ => prec.right(3, seq(
     $.kw_var,
