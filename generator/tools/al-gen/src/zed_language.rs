@@ -26,12 +26,22 @@ const GENERATED_QUERY_FILES: &[&str] = &[
 ];
 
 /// Zed-specific files with no tree-sitter-side equivalent.
+///
+/// `tasks.json` and `runnables.scm` are a pair: the runnable queries emit the
+/// `al-test`, `al-event-publisher` and `al-event-subscriber` tags that the task
+/// entries subscribe to, so a tag added to one needs a task in the other or the
+/// inline run button resolves to nothing. Both invoke a bare `al-explorer`,
+/// which the extension downloads into its work directory but cannot place on
+/// PATH — see `Docs/features/language-assets.md` for the install step users
+/// need before the tasks resolve.
 const TEMPLATE_FILES: &[&str] = &[
     "config.toml",
     "injections.scm",
     "inline_values.scm",
     "overrides.scm",
+    "runnables.scm",
     "semantic_token_rules.json",
+    "tasks.json",
 ];
 
 pub fn generate(extension_root: &Path, grammar_queries_dir: &Path) -> Result<()> {
