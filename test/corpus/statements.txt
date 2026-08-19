@@ -1,0 +1,441 @@
+================================================================================
+if then else
+================================================================================
+
+codeunit 50100 T
+{
+    procedure P()
+    begin
+        if A then
+            B()
+        else
+            C();
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (if_statement
+                (kw_if)
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_then)
+                (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            (argument_list)))))))
+                (kw_else)
+                (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            (argument_list)))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+case statement with an else arm
+================================================================================
+
+codeunit 50100 T
+{
+    procedure P()
+    begin
+        case X of
+            1:
+                A();
+            2, 3:
+                B();
+            else
+                C();
+        end;
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (case_statement
+                (kw_case)
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_of)
+                (case_branch
+                  (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer)))))
+                  (statement
+                    (expression_statement
+                      (expression
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (name
+                                (identifier)))
+                            (call_suffix
+                              (argument_list)))))))
+                  (semicolon))
+                (case_branch
+                  (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))
+                    (comma)
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer)))))
+                  (statement
+                    (expression_statement
+                      (expression
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (name
+                                (identifier)))
+                            (call_suffix
+                              (argument_list)))))))
+                  (semicolon))
+                (kw_else)
+                (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            (argument_list)))))))
+                (semicolon)
+                (kw_end)))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+loops
+================================================================================
+
+codeunit 50100 T
+{
+    procedure P()
+    begin
+        for I := 1 to 10 do
+            A();
+        for I := 10 downto 1 do
+            B();
+        foreach Item in Items do
+            C();
+        while X > 0 do
+            D();
+        repeat
+            E();
+        until X = 0;
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (for_statement
+                (kw_for)
+                (identifier)
+                (operator)
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                (kw_to)
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                (kw_do)
+                (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            (argument_list)))))))))
+            (semicolon)
+            (statement
+              (for_statement
+                (kw_for)
+                (identifier)
+                (operator)
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                (kw_downto)
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                (kw_do)
+                (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            (argument_list)))))))))
+            (semicolon)
+            (statement
+              (foreach_statement
+                (kw_foreach)
+                (name_or_keyword
+                  (name
+                    (identifier)))
+                (kw_in)
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_do)
+                (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            (argument_list)))))))))
+            (semicolon)
+            (statement
+              (while_statement
+                (kw_while)
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                (kw_do)
+                (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            (argument_list)))))))))
+            (semicolon)
+            (statement
+              (repeat_statement
+                (kw_repeat)
+                (statement_list
+                  (statement
+                    (expression_statement
+                      (expression
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (name
+                                (identifier)))
+                            (call_suffix
+                              (argument_list)))))))
+                  (semicolon))
+                (kw_until)
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+with, asserterror and exit
+================================================================================
+
+codeunit 50100 T
+{
+    procedure P(): Integer
+    begin
+        with Rec do
+            Modify();
+        asserterror Error('boom');
+        exit(1);
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (operator)
+        (type_reference
+          (kw_integer))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (with_statement
+                (kw_with)
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_do)
+                (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            (argument_list)))))))))
+            (semicolon)
+            (statement
+              (asserterror_statement
+                (kw_asserterror)
+                (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (string)))))))))))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))

@@ -21,6 +21,7 @@ struct Options {
     repo_tests: bool,
     repo_tests_only: bool,
     zed_language_only: bool,
+    structural_queries_only: bool,
 }
 
 #[derive(Debug, PartialEq)]
@@ -52,13 +53,18 @@ fn parse_options() -> Result<Options> {
             "--test" | "--tests" => options.repo_tests = true,
             "--repo-tests-only" => options.repo_tests_only = true,
             "--zed-language-only" => options.zed_language_only = true,
+            "--structural-queries-only" => options.structural_queries_only = true,
             _ => anyhow::bail!("Unknown argument: {argument}"),
         }
     }
-    let exclusive_modes =
-        usize::from(options.repo_tests_only) + usize::from(options.zed_language_only);
+    let exclusive_modes = usize::from(options.repo_tests_only)
+        + usize::from(options.zed_language_only)
+        + usize::from(options.structural_queries_only);
     if exclusive_modes > 1 || (options.repo_tests && exclusive_modes > 0) {
-        anyhow::bail!("--test, --repo-tests-only, and --zed-language-only are mutually exclusive");
+        anyhow::bail!(
+            "--test, --repo-tests-only, --zed-language-only, and --structural-queries-only are \
+             mutually exclusive"
+        );
     }
     Ok(options)
 }
@@ -84,6 +90,16 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    // folds/locals/textobjects are derived purely from the committed
+    // node-types.json, so they can be refreshed after a grammar change without
+    // locating Microsoft's AL extension.
+    if options.structural_queries_only {
+        let node_types_path = tree_sitter_root.join("src/node-types.json");
+        let queries_dir = tree_sitter_root.join("queries");
+        generate_structural_queries(path_str(&node_types_path)?, path_str(&queries_dir)?)?;
+        return Ok(());
+    }
+
     println!("Finding the installed AL extension");
     let extension_path = find_al_extension()?;
     println!("Extension: {}", extension_path.display());
@@ -97,7 +113,7 @@ fn main() -> Result<()> {
     print_keyword_stats(&keywords);
 
     println!("Generating scanner sources");
-    let external_tokens = build_external_tokens(&keywords);
+    let external_tokens = build_external_tokens(&keywords)?;
 
     let src_dir = tree_sitter_root.join("src");
     fs::create_dir_all(&src_dir)?;
@@ -320,15 +336,73 @@ fn kw_token_spec(prefix: &str, kw: &str, c_prefix: &str) -> ExternalTokenSpec {
     )
 }
 
+/// Operator words that get their own external token.
+///
+/// Every other operator word (`and`, `or`, `div`, `mod`, `xor`, `is`, `as`) is
+/// lexed as the generic `operator_word` token, so minting a dedicated token for
+/// it only grew the parse table and left unreachable nodes in the node types and
+/// highlight queries. `not` is the exception: the grammar references `$.op_not`
+/// directly in `unary_operator` and `case_label_expression`.
+const DEDICATED_OPERATOR_WORD_TOKENS: &[&str] = &["not"];
+
+/// The subset of the extracted operator words that gets a dedicated token.
+fn dedicated_operator_words(keywords: &Keywords) -> Result<Vec<&String>> {
+    let selected: Vec<&String> = keywords
+        .operator_words
+        .iter()
+        .filter(|kw| DEDICATED_OPERATOR_WORD_TOKENS.contains(&kw.as_str()))
+        .collect();
+
+    for expected in DEDICATED_OPERATOR_WORD_TOKENS {
+        if !selected.iter().any(|kw| kw.as_str() == *expected) {
+            anyhow::bail!(
+                "operator word `{expected}` has a dedicated external token but was not extracted \
+                 from the TextMate grammar"
+            );
+        }
+    }
+
+    Ok(selected)
+}
+
+/// Metadata keywords that get their own external token.
+///
+/// `keys`/`key` are ordinary metadata keywords everywhere else in AL, so they
+/// cannot simply be reclassified. The scanner only emits these tokens when the
+/// keyword is immediately followed by the punctuation that starts a keys block
+/// (`keys {`) or a key declaration (`key (`), which is what lets the grammar
+/// give the table key list real nodes instead of a generic `object_section`.
+const DEDICATED_METADATA_KEYWORD_TOKENS: &[&str] = &["key", "keys"];
+
+/// The subset of the extracted metadata keywords that gets a dedicated token.
+fn dedicated_metadata_keywords(keywords: &Keywords) -> Result<Vec<&String>> {
+    let selected: Vec<&String> = keywords
+        .metadata
+        .iter()
+        .filter(|kw| DEDICATED_METADATA_KEYWORD_TOKENS.contains(&kw.as_str()))
+        .collect();
+
+    for expected in DEDICATED_METADATA_KEYWORD_TOKENS {
+        if !selected.iter().any(|kw| kw.as_str() == *expected) {
+            anyhow::bail!(
+                "metadata keyword `{expected}` has a dedicated external token but was not \
+                 extracted from the TextMate grammar"
+            );
+        }
+    }
+
+    Ok(selected)
+}
+
 // This order must match grammar.js externals and the scanner's TokenType enum.
-fn build_external_tokens(keywords: &Keywords) -> Vec<ExternalTokenSpec> {
+fn build_external_tokens(keywords: &Keywords) -> Result<Vec<ExternalTokenSpec>> {
     let mut out = Vec::new();
 
     for kw in &keywords.control {
         out.push(kw_token_spec("kw", kw, "KW"));
     }
 
-    for kw in &keywords.operator_words {
+    for kw in dedicated_operator_words(keywords)? {
         out.push(kw_token_spec("op", kw, "OP"));
     }
 
@@ -346,7 +420,15 @@ fn build_external_tokens(keywords: &Keywords) -> Vec<ExternalTokenSpec> {
     out.push(token_spec("directive", "DIRECTIVE"));
     out.push(token_spec("inactive_code", "INACTIVE_CODE"));
 
-    out
+    for kw in dedicated_metadata_keywords(keywords)? {
+        out.push(kw_token_spec("kw", kw, "KW"));
+    }
+
+    // Zero-width marker emitted in front of a `[` that opens an attribute on a
+    // global variable rather than on the member that follows the var section.
+    out.push(token_spec("_var_attribute_marker", "VAR_ATTRIBUTE_MARKER"));
+
+    Ok(out)
 }
 
 fn render_template(template: &str, vars: &[(&str, &str)]) -> String {
@@ -439,6 +521,17 @@ fn gen_scanner_keyword_dispatch_fragment() -> String {
       && (!strcmp(word, "moveafter") || !strcmp(word, "movebefore")
           || !strcmp(word, "movefirst") || !strcmp(word, "movelast"))) {
     lexer->result_symbol = MOVEMENT_DIRECTIVE;
+    return true;
+  }
+  // `key`/`keys` stay ordinary metadata keywords unless the punctuation that
+  // opens a keys block or a key declaration follows, so `Keys := ...` and a
+  // `Key = ...` property keep their existing classification.
+  if (valid_symbols[KW_KEYS] && !strcmp(word, "keys") && al_peek_significant(lexer) == '{') {
+    lexer->result_symbol = KW_KEYS;
+    return true;
+  }
+  if (valid_symbols[KW_KEY] && !strcmp(word, "key") && al_peek_significant(lexer) == '(') {
+    lexer->result_symbol = KW_KEY;
     return true;
   }
   if (valid_symbols[METADATA_KEYWORD] && is_al_metadata_keyword(word)) {
@@ -1054,7 +1147,7 @@ fn generate_keywords_c(keywords: &Keywords, out_dir: &str) -> Result<()> {
     out.push_str("}\n");
 
     out.push_str("\nstatic const AlTokenMapEntry AL_OPERATOR_WORD_TOKENS[] = {\n");
-    for kw in &keywords.operator_words {
+    for kw in dedicated_operator_words(keywords)? {
         out.push_str(&format!(
             "  {{\"{}\", OP_{}}},\n",
             c_escape(kw),
@@ -1186,13 +1279,12 @@ fn gen_choice_fragment(elements: &BTreeSet<String>, exclude: &[&str]) -> Result<
     Ok(out)
 }
 
-fn capture_for_scope<'a>(
-    captures: &'a BTreeMap<String, String>,
-    scope: &str,
-    default: &'a str,
-) -> &'a str {
-    captures.get(scope).map(String::as_str).unwrap_or(default)
-}
+/// Capture for the `property_keyword` token.
+///
+/// The TextMate grammar files AL property names under an `operators` scope, so
+/// deriving this from the scope map rendered `Caption`/`ApplicationArea` and
+/// friends with the same style as `:=`. They are property names, not operators.
+const PROPERTY_KEYWORD_CAPTURE: &str = "@property";
 
 fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     let template_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tools/al-gen/templates");
@@ -1282,7 +1374,7 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     }
 
     specific_tokens.push('\n');
-    for kw in &keywords.operator_words {
+    for kw in dedicated_operator_words(keywords)? {
         specific_tokens.push_str(&format!("(op_{}) @keyword.operator\n", kw));
     }
 
@@ -1319,11 +1411,7 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
         |s| s.contains("metadata"),
         "@keyword",
     );
-    let property_capture = capture_for_scope(
-        &keywords.scope_captures,
-        "keyword.operators.property.al",
-        "@operator",
-    );
+    let property_capture = PROPERTY_KEYWORD_CAPTURE;
     let operator_capture = find_capture(
         &keywords.scope_captures,
         |s| s.contains("keyword.operator"),
@@ -1470,9 +1558,6 @@ fn generate_folds_scm(nodes: &[GrammarNodeType], out_path: &str) -> Result<()> {
         "continue_statement",
         "exit_statement",
         "expression_statement",
-        "enum_value_declaration",
-        "event_procedure_declaration",
-        "key_declaration",
         "label_declaration",
         "namespace_or_using_declaration",
         "object_variable_declaration",
@@ -1515,10 +1600,27 @@ fn generate_folds_scm(nodes: &[GrammarNodeType], out_path: &str) -> Result<()> {
         out.push_str(&format!("  ({})\n", name));
     }
     out.push_str("] @fold\n");
+    out.push_str(REGION_FOLDS);
 
     fs::write(out_path, out)?;
     Ok(())
 }
+
+/// `#region`/`#endregion` folding.
+///
+/// The two markers are sibling `directive` extras with no node spanning the
+/// region, so a plain `@fold` capture cannot express the range. The start and
+/// end markers are captured separately instead; the host pairs them by nesting
+/// order, the same way the extension's native folding does. Matching is
+/// case-insensitive because AL directives are.
+const REGION_FOLDS: &str = r#"
+; Preprocessor regions
+((directive) @fold.region.start
+  (#match? @fold.region.start "^#[ \t]*[rR][eE][gG][iI][oO][nN]([ \t]|$)"))
+
+((directive) @fold.region.end
+  (#match? @fold.region.end "^#[ \t]*[eE][nN][dD][rR][eE][gG][iI][oO][nN]([ \t]|$)"))
+"#;
 
 fn generate_locals_scm(
     nodes: &[GrammarNodeType],
@@ -2847,22 +2949,38 @@ mod tests {
     }
 
     #[test]
-    fn property_capture_uses_the_operator_scope() {
-        let captures = BTreeMap::from([
-            (
-                "keyword.other.property.al".to_string(),
-                "@keyword".to_string(),
-            ),
-            (
-                "keyword.operators.property.al".to_string(),
-                "@operator".to_string(),
-            ),
-        ]);
+    fn property_keywords_are_not_styled_as_operators() {
+        // The TextMate grammar files property names under `keyword.operators.*`,
+        // which would render `Caption = 'x'` with the same style as `:=`.
+        assert_eq!(PROPERTY_KEYWORD_CAPTURE, "@property");
+    }
 
-        assert_eq!(
-            capture_for_scope(&captures, "keyword.operators.property.al", "@operator"),
-            "@operator"
-        );
+    #[test]
+    fn only_referenced_operator_words_get_dedicated_tokens() {
+        let keywords = Keywords {
+            operator_words: BTreeSet::from([
+                "and".to_string(),
+                "not".to_string(),
+                "or".to_string(),
+            ]),
+            ..Default::default()
+        };
+
+        let selected = dedicated_operator_words(&keywords).unwrap();
+
+        assert_eq!(selected, vec![&"not".to_string()]);
+    }
+
+    #[test]
+    fn a_missing_dedicated_operator_word_is_an_error() {
+        let keywords = Keywords {
+            operator_words: BTreeSet::from(["and".to_string()]),
+            ..Default::default()
+        };
+
+        let error = dedicated_operator_words(&keywords).unwrap_err().to_string();
+
+        assert!(error.contains("`not`"), "{error}");
     }
 
     #[test]

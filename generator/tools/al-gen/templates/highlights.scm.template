@@ -7,13 +7,20 @@
 (integer) {{NUMBER_CAPTURE}}
 (decimal) {{NUMBER_CAPTURE}}
 (date_literal) {{NUMBER_CAPTURE}}
+(time_literal) {{NUMBER_CAPTURE}}
+(datetime_literal) {{NUMBER_CAPTURE}}
+
+; Preprocessor
+(directive) @keyword.directive
+(inactive_code) @comment.unused
 
 ; Generic captures precede structural overrides because query matches are last-wins.
 (identifier) {{VARIABLE_CAPTURE}}
 (quoted_identifier) {{QUOTED_IDENTIFIER_CAPTURE}}
 
+; AL is case-insensitive, so TRUE/True/true are all the boolean literal.
 ((identifier) {{CONSTANT_CAPTURE}}
- (#match? {{CONSTANT_CAPTURE}} "^(true|false)$"))
+ (#match? {{CONSTANT_CAPTURE}} "^([tT][rR][uU][eE]|[fF][aA][lL][sS][eE])$"))
 
 ; Keywords
 {{CONTROL_KW_TOKEN_HIGHLIGHTS}}
@@ -32,10 +39,18 @@
 (comma) {{PUNCTUATION_CAPTURE}}
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
 
-; Object declarations
+; Object declarations. The leaf is captured rather than the name_or_keyword
+; wrapper so the generic (identifier)/(quoted_identifier) captures above do not
+; win inside the wrapper's span.
 (object_declaration name: (name_or_keyword (name (quoted_identifier) @title)))
 (object_declaration name: (name_or_keyword (name (identifier) @title)))
-(object_declaration (quoted_identifier) @type)
+(object_declaration
+  name: (name_or_keyword [
+    (object_keyword)
+    (metadata_keyword)
+    (property_keyword)
+    (keyword)
+  ] @title))
 
 ; Properties
 (property_assignment name: (_) @property)

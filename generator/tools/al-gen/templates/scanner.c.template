@@ -41,11 +41,31 @@ typedef enum {
 #define MAX_IF_DEPTH 64
 #define MAX_DEFINES 128
 
+// In-source #define/#undef overrides. Bounded so the serialized scanner state
+// always fits TREE_SITTER_SERIALIZATION_BUFFER_SIZE:
+//   1 + MAX_IF_DEPTH + 1 + MAX_SOURCE_DEFINES * (2 + MAX_SOURCE_DEFINE_LEN)
+#define MAX_SOURCE_DEFINES 24
+#define MAX_SOURCE_DEFINE_LEN 31
+
 typedef struct {
   bool parent_active;
   bool branch_taken;
   bool this_active;
 } IfFrame;
+
+typedef struct {
+  char name[MAX_SOURCE_DEFINE_LEN + 1];
+  uint8_t len;
+  bool defined;
+} SourceDefine;
+
+// Fails to compile if the bounds above could ever overflow the serialization
+// buffer. tree-sitter aborts the parse when serialize() writes past it.
+typedef char al_serialized_state_fits[
+    (1 + MAX_IF_DEPTH + 1 + MAX_SOURCE_DEFINES * (2 + MAX_SOURCE_DEFINE_LEN))
+            <= TREE_SITTER_SERIALIZATION_BUFFER_SIZE
+        ? 1
+        : -1];
 
 typedef struct {
   uint8_t if_depth;
@@ -56,6 +76,11 @@ typedef struct {
   char *defines_buf;
   const char *defines[MAX_DEFINES];
   uint16_t defines_len;
+
+  // #define/#undef seen in the file. These shadow the AL_TS_DEFINES entries so
+  // `#undef` can switch off an externally supplied symbol as well.
+  SourceDefine source_defines[MAX_SOURCE_DEFINES];
+  uint8_t source_defines_len;
 } Scanner;
 
 static char *ts_strdup(const char *s) {
@@ -112,8 +137,43 @@ static bool scanner_is_active(const Scanner *scanner) {
   return scanner->if_stack[scanner->if_depth - 1].this_active;
 }
 
+static const SourceDefine *scanner_find_source_define(const Scanner *scanner, const char *ident,
+                                                      int len) {
+  if (!scanner || !ident || len <= 0) return NULL;
+  for (uint8_t i = 0; i < scanner->source_defines_len; i++) {
+    const SourceDefine *entry = &scanner->source_defines[i];
+    if (entry->len == (uint8_t)len && strncmp(entry->name, ident, (size_t)len) == 0) return entry;
+  }
+  return NULL;
+}
+
+// `ident` is already lowercased by the directive scanner.
+static void scanner_set_source_define(Scanner *scanner, const char *ident, int len, bool defined) {
+  if (!scanner || !ident || len <= 0 || len > MAX_SOURCE_DEFINE_LEN) return;
+
+  for (uint8_t i = 0; i < scanner->source_defines_len; i++) {
+    SourceDefine *entry = &scanner->source_defines[i];
+    if (entry->len == (uint8_t)len && strncmp(entry->name, ident, (size_t)len) == 0) {
+      entry->defined = defined;
+      return;
+    }
+  }
+
+  if (scanner->source_defines_len >= MAX_SOURCE_DEFINES) return;
+  SourceDefine *entry = &scanner->source_defines[scanner->source_defines_len++];
+  al_memcpy(entry->name, ident, (size_t)len);
+  entry->name[len] = '\0';
+  entry->len = (uint8_t)len;
+  entry->defined = defined;
+}
+
 static bool scanner_is_defined(const Scanner *scanner, const char *ident, int len) {
   if (!scanner || !ident || len <= 0) return false;
+
+  // An in-source #define/#undef wins over the AL_TS_DEFINES environment list.
+  const SourceDefine *entry = scanner_find_source_define(scanner, ident, len);
+  if (entry) return entry->defined;
+
   for (uint16_t i = 0; i < scanner->defines_len; i++) {
     const char *d = scanner->defines[i];
     if (!d) continue;
@@ -309,8 +369,11 @@ static bool scanner_scan_directive(Scanner *scanner, TSLexer *lexer, const bool 
 
   lexer->advance(lexer, false);
 
+  // Everything from `#` onwards belongs to the token. Skipping the interior
+  // whitespace would move the token start past `#region`/`#pragma`, leaving
+  // highlighting and region folding with a node that omits the directive name.
   while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
-    lexer->advance(lexer, true);
+    lexer->advance(lexer, false);
   }
 
   char kw[32];
@@ -327,7 +390,7 @@ static bool scanner_scan_directive(Scanner *scanner, TSLexer *lexer, const bool 
   kw[kw_len] = '\0';
 
   while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
-    lexer->advance(lexer, true);
+    lexer->advance(lexer, false);
   }
 
   char expr[512];
@@ -375,6 +438,17 @@ static bool scanner_scan_directive(Scanner *scanner, TSLexer *lexer, const bool 
   } else if (strcmp(kw, "endif") == 0) {
     if (scanner && scanner->if_depth > 0) {
       scanner->if_depth--;
+    }
+  } else if (strcmp(kw, "define") == 0 || strcmp(kw, "undef") == 0) {
+    // A #define inside a branch that is switched off must not take effect.
+    if (scanner && active_outer) {
+      const char *p = expr;
+      const char *id = NULL;
+      int id_len = 0;
+      expr_skip_ws(&p);
+      if (expr_parse_identifier(&p, &id, &id_len)) {
+        scanner_set_source_define(scanner, id, id_len, strcmp(kw, "define") == 0);
+      }
     }
   }
 
@@ -433,6 +507,24 @@ unsigned tree_sitter_al_external_scanner_serialize(void *payload, char *buffer) 
     if (scanner->if_stack[i].this_active)   bits |= 0x04;
     buffer[size++] = (char)bits;
   }
+
+  // In-source defines must survive GLR forks and incremental re-lexing, so they
+  // are part of the serialized state rather than payload-only scratch.
+  unsigned count_at = size;
+  buffer[size++] = 0;
+  uint8_t written = 0;
+  for (uint8_t i = 0; i < scanner->source_defines_len; i++) {
+    const SourceDefine *entry = &scanner->source_defines[i];
+    unsigned needed = 2u + entry->len;
+    if (size + needed > TREE_SITTER_SERIALIZATION_BUFFER_SIZE) break;
+    buffer[size++] = (char)entry->len;
+    buffer[size++] = (char)(entry->defined ? 1 : 0);
+    al_memcpy(buffer + size, entry->name, entry->len);
+    size += entry->len;
+    written++;
+  }
+  buffer[count_at] = (char)written;
+
   return size;
 }
 
@@ -441,6 +533,7 @@ void tree_sitter_al_external_scanner_deserialize(void *payload, const char *buff
   if (!scanner) return;
 
   scanner->if_depth = 0;
+  scanner->source_defines_len = 0;
   if (!buffer || length == 0) return;
 
   uint8_t depth = (uint8_t)buffer[0];
@@ -454,6 +547,154 @@ void tree_sitter_al_external_scanner_deserialize(void *payload, const char *buff
     scanner->if_stack[i].branch_taken  = (bits & 0x02) != 0;
     scanner->if_stack[i].this_active   = (bits & 0x04) != 0;
   }
+
+  unsigned offset = 1u + depth;
+  if (offset >= length) return;
+  uint8_t count = (uint8_t)buffer[offset++];
+  for (uint8_t i = 0; i < count && i < MAX_SOURCE_DEFINES; i++) {
+    if (offset + 2u > length) break;
+    uint8_t len = (uint8_t)buffer[offset];
+    bool defined = buffer[offset + 1] != 0;
+    offset += 2u;
+    if (len > MAX_SOURCE_DEFINE_LEN || offset + len > length) break;
+    SourceDefine *entry = &scanner->source_defines[scanner->source_defines_len++];
+    al_memcpy(entry->name, buffer + offset, len);
+    entry->name[len] = '\0';
+    entry->len = len;
+    entry->defined = defined;
+    offset += len;
+  }
+}
+
+// Advances over whitespace and comments without extending the current token.
+// Callers must have already marked the token end.
+static void al_skip_trivia(TSLexer *lexer) {
+  for (;;) {
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r' ||
+           lexer->lookahead == '\n' || lexer->lookahead == 0xFEFF) {
+      lexer->advance(lexer, false);
+    }
+    if (lexer->lookahead != '/') return;
+
+    lexer->advance(lexer, false);
+    if (lexer->lookahead == '/') {
+      while (lexer->lookahead != 0 && lexer->lookahead != '\n' && lexer->lookahead != '\r') {
+        lexer->advance(lexer, false);
+      }
+      continue;
+    }
+    if (lexer->lookahead == '*') {
+      lexer->advance(lexer, false);
+      int32_t previous = 0;
+      while (lexer->lookahead != 0 && !(previous == '*' && lexer->lookahead == '/')) {
+        previous = lexer->lookahead;
+        lexer->advance(lexer, false);
+      }
+      if (lexer->lookahead == '/') lexer->advance(lexer, false);
+      continue;
+    }
+    // A bare slash is neither whitespace nor a comment opener.
+    return;
+  }
+}
+
+// Next non-trivia character after the current token. `scan_word` has already
+// marked the token end, so reading ahead here does not extend it.
+static int32_t al_peek_significant(TSLexer *lexer) {
+  al_skip_trivia(lexer);
+  return lexer->lookahead;
+}
+
+static bool al_is_word_start(int32_t c) {
+  return c == '_' || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c >= 0x80;
+}
+
+static bool al_is_word_char(int32_t c) {
+  return al_is_word_start(c) || (c >= '0' && c <= '9');
+}
+
+// Consumes one AL name: a bare identifier or a "quoted identifier".
+static bool al_skip_name(TSLexer *lexer) {
+  if (lexer->lookahead == '"') {
+    lexer->advance(lexer, false);
+    for (;;) {
+      if (lexer->lookahead == 0 || lexer->lookahead == '\n') return false;
+      if (lexer->lookahead == '"') {
+        lexer->advance(lexer, false);
+        // A doubled quote is an escape, so the name continues.
+        if (lexer->lookahead != '"') return true;
+      }
+      lexer->advance(lexer, false);
+    }
+  }
+
+  if (!al_is_word_start(lexer->lookahead)) return false;
+  while (al_is_word_char(lexer->lookahead)) lexer->advance(lexer, false);
+  return true;
+}
+
+// Decides whether a `[` opens an attribute on a global variable or an attribute
+// on the member that follows the var section. LR(1) cannot tell the two apart at
+// the bracket, so the scanner reads ahead over the balanced `[...]` groups and
+// looks at what comes next: a name list terminated by `:` is a variable
+// declaration and the section continues; anything else (`procedure`, `local`,
+// `trigger`, ...) means the attribute belongs to the next member.
+//
+// The token is zero width: it only steers the parser, and the `[` is still
+// consumed by the ordinary `attribute` rule.
+static bool scanner_scan_var_attribute_marker(TSLexer *lexer, const bool *valid_symbols) {
+  if (!valid_symbols[VAR_ATTRIBUTE_MARKER]) return false;
+
+  while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r' ||
+         lexer->lookahead == '\n' || lexer->lookahead == 0xFEFF) {
+    lexer->advance(lexer, true);
+  }
+  if (lexer->lookahead != '[') return false;
+
+  // Everything past this point is lookahead only.
+  lexer->mark_end(lexer);
+
+  while (lexer->lookahead == '[') {
+    unsigned depth = 0;
+    do {
+      if (lexer->lookahead == 0) return false;
+      // A bracket or quote inside a comment or a string argument is text, not
+      // structure: `[Obsolete(/* ] */ 'gone')]` must not close the group early.
+      if (lexer->lookahead == '/') {
+        al_skip_trivia(lexer);
+        continue;
+      }
+      if (lexer->lookahead == '"' || lexer->lookahead == '\'') {
+        int32_t quote = lexer->lookahead;
+        lexer->advance(lexer, false);
+        while (lexer->lookahead != 0 && lexer->lookahead != quote) lexer->advance(lexer, false);
+        if (lexer->lookahead == 0) return false;
+        lexer->advance(lexer, false);
+        continue;
+      }
+      if (lexer->lookahead == '[') depth++;
+      if (lexer->lookahead == ']') depth--;
+      lexer->advance(lexer, false);
+    } while (depth > 0);
+    al_skip_trivia(lexer);
+  }
+
+  // `Name`, `Name, Other`, or `"Quoted Name"` followed by the `:` separator.
+  for (;;) {
+    if (!al_skip_name(lexer)) return false;
+    al_skip_trivia(lexer);
+    if (lexer->lookahead != ',') break;
+    lexer->advance(lexer, false);
+    al_skip_trivia(lexer);
+  }
+
+  if (lexer->lookahead != ':') return false;
+  lexer->advance(lexer, false);
+  // `:=` is an assignment, not a declaration separator.
+  if (lexer->lookahead == '=') return false;
+
+  lexer->result_symbol = VAR_ATTRIBUTE_MARKER;
+  return true;
 }
 
 static bool scan_word(TSLexer *lexer, char *out, int out_cap) {
@@ -492,6 +733,10 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
 {{VALID_SYMBOLS_FASTPATH}}
 
 {{DIRECTIVE_HANDLING}}
+
+  if (scanner_scan_var_attribute_marker(lexer, valid_symbols)) {
+    return true;
+  }
 
   if (valid_symbols[SIGNED_CASE_LABEL] && lexer->lookahead == '-') {
     lexer->advance(lexer, false);

@@ -1,0 +1,318 @@
+================================================================================
+conditional compilation excludes the untaken branch
+================================================================================
+
+codeunit 50100 T
+{
+    procedure P()
+    begin
+#if CLEAN99
+        Excluded();
+#else
+        Included();
+#endif
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (directive)
+          (inactive_code)
+          (directive)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (call_suffix
+                        (argument_list)))))))
+            (semicolon))
+          (directive)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+define then guard activates the guarded block
+================================================================================
+
+#define MYFLAG
+codeunit 50100 T
+{
+    procedure P()
+    begin
+#if MYFLAG
+        Included();
+#else
+        Excluded();
+#endif
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (directive)
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (directive)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (call_suffix
+                        (argument_list)))))))
+            (semicolon))
+          (directive)
+          (inactive_code)
+          (directive)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+undef switches a defined symbol back off
+================================================================================
+
+#define MYFLAG
+#undef MYFLAG
+codeunit 50100 T
+{
+    procedure P()
+    begin
+#if MYFLAG
+        Excluded();
+#else
+        Included();
+#endif
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (directive)
+  (directive)
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (directive)
+          (inactive_code)
+          (directive)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (call_suffix
+                        (argument_list)))))))
+            (semicolon))
+          (directive)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+a define inside an untaken branch does not take effect
+================================================================================
+
+codeunit 50100 T
+{
+    procedure P()
+    begin
+#if CLEAN99
+    #define INNER
+#else
+    #define OUTER
+#endif
+#if INNER
+        Excluded();
+#endif
+#if OUTER
+        Included();
+#endif
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (directive)
+          (directive)
+          (directive)
+          (directive)
+          (directive)
+          (directive)
+          (inactive_code)
+          (directive)
+          (directive)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (call_suffix
+                        (argument_list)))))))
+            (semicolon))
+          (directive)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+nested conditionals
+================================================================================
+
+#define OUTER
+codeunit 50100 T
+{
+    procedure P()
+    begin
+#if OUTER
+    #define INNER
+    #if INNER
+        Included();
+    #endif
+#endif
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (directive)
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (directive)
+          (directive)
+          (directive)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (call_suffix
+                        (argument_list)))))))
+            (semicolon))
+          (directive)
+          (directive)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+pragma and region directives are not comments
+================================================================================
+
+#pragma warning disable AA0072
+codeunit 50100 T
+{
+    #region Helpers
+    procedure P()
+    begin
+    end;
+    #endregion
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (directive)
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (directive)
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon))
+      (directive))))

@@ -1,0 +1,197 @@
+================================================================================
+tableextension declaration
+================================================================================
+
+tableextension 50100 MyTableExt extends Customer
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_tableextension)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    (implements_clause
+      (metadata_keyword)
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+pageextension declaration with a quoted target
+================================================================================
+
+pageextension 50101 MyPageExt extends "Customer Card"
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_pageextension)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    (implements_clause
+      (metadata_keyword)
+      (name
+        (quoted_identifier)))
+    body: (object_body)))
+
+================================================================================
+reportextension declaration
+================================================================================
+
+reportextension 50102 MyReportExt extends MyReport
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_reportextension)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    (implements_clause
+      (metadata_keyword)
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+enumextension declaration
+================================================================================
+
+enumextension 50103 MyEnumExt extends MyEnum
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_enumextension)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    (implements_clause
+      (metadata_keyword)
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+permissionsetextension declaration
+================================================================================
+
+permissionsetextension 50104 MyPermExt extends MyPermissions
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_permissionsetextension)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    (implements_clause
+      (metadata_keyword)
+      (name
+        (identifier)))
+    body: (object_body)))
+
+================================================================================
+profileextension declaration
+================================================================================
+
+profileextension MyProfileExt extends "Base Profile"
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_profileextension)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    (implements_clause
+      (metadata_keyword)
+      (name
+        (quoted_identifier)))
+    body: (object_body)))
+
+================================================================================
+pagecustomization declaration
+================================================================================
+
+pagecustomization MyCustomization customizes "Customer Card"
+{
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_pagecustomization)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    (implements_clause
+      (metadata_keyword)
+      (name
+        (quoted_identifier)))
+    body: (object_body)))
+
+================================================================================
+enum implementing an interface
+================================================================================
+
+enum 50105 MyEnum implements IMyInterface
+{
+    value(0; Draft)
+    {
+        Caption = 'Draft';
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_enum)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    (implements_clause
+      (metadata_keyword)
+      (name
+        (identifier)))
+    body: (object_body
+      (enum_value_declaration
+        keyword: (object_keyword)
+        id: (integer)
+        (semicolon)
+        name: (name
+          (identifier))
+        (object_body
+          (property_assignment
+            name: (name
+              (identifier))
+            value: (string)
+            (semicolon)))))))

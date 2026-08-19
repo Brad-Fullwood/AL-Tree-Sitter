@@ -1,0 +1,686 @@
+================================================================================
+var section with several declarations
+================================================================================
+
+codeunit 50100 T
+{
+    var
+        GlobalRec: Record Customer;
+        GlobalInt: Integer;
+
+    procedure P()
+    var
+        LocalText: Text[100];
+        A, B : Integer;
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_record)
+              (name_or_keyword
+                (name
+                  (identifier))))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_integer))
+            (semicolon))))
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              (name_or_keyword
+                (name
+                  (identifier)))
+              (operator)
+              (type_reference
+                (kw_text)
+                (bracketed_block
+                  (integer)))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              (name_or_keyword
+                (name
+                  (identifier)))
+              (comma)
+              (name_or_keyword
+                (name
+                  (identifier)))
+              (operator)
+              (type_reference
+                (kw_integer))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+label declarations
+================================================================================
+
+codeunit 50100 T
+{
+    var
+        MyLabel: Label 'Hello', Comment = 'greeting';
+        Legacy: 'Implicit';
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (label_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (metadata_keyword)
+            (string)
+            (label_property
+              (comma)
+              (identifier)
+              (operator)
+              (string))
+            (semicolon)))
+        (object_variable_declaration
+          (label_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (string)
+            (semicolon)))))))
+
+================================================================================
+procedure signatures
+================================================================================
+
+codeunit 50100 T
+{
+    local procedure A(var Rec: Record Customer; Value: Integer): Boolean
+    begin
+    end;
+
+    internal procedure B(Optional: Integer): Text[50]
+    begin
+    end;
+
+    procedure C(Result: Boolean): Boolean
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (member_modifier
+          (kw_local))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list
+          (parameter
+            (kw_var)
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_record)
+              (name_or_keyword
+                (name
+                  (identifier)))))
+          (semicolon)
+          (parameter
+            (name_or_keyword
+              (object_keyword))
+            (operator)
+            (type_reference
+              (kw_integer))))
+        (operator)
+        (type_reference
+          (kw_boolean))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (member_modifier
+          (kw_internal))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list
+          (parameter
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_integer))))
+        (operator)
+        (type_reference
+          (kw_text)
+          (bracketed_block
+            (integer)))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list
+          (parameter
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_boolean))))
+        (operator)
+        (type_reference
+          (kw_boolean))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+triggers and events
+================================================================================
+
+codeunit 50100 T
+{
+    trigger OnRun()
+    begin
+    end;
+
+    event procedure OnFoo(Value: Integer);
+
+    event OnLegacy(Value: Integer)
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (trigger_declaration
+        (kw_trigger)
+        (name_or_keyword
+          (name
+            (identifier)))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (event_procedure_declaration
+          (kw_event)
+          (kw_procedure)
+          (name
+            (identifier))
+          (parameter_list
+            (parameter
+              (name_or_keyword
+                (object_keyword))
+              (operator)
+              (type_reference
+                (kw_integer))))
+          (semicolon)))
+      (event_declaration
+        (kw_event)
+        (name_or_keyword
+          (name
+            (identifier)))
+        (parameter_list
+          (parameter
+            (name_or_keyword
+              (object_keyword))
+            (operator)
+            (type_reference
+              (kw_integer))))
+        (begin_end_block
+          (kw_begin)
+          (kw_end)))
+      (semicolon))))
+
+================================================================================
+option type declaration
+================================================================================
+
+codeunit 50100 T
+{
+    var
+        Choice: Option Alpha,Beta,"Gamma Delta";
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (option_type
+                (kw_option)
+                (identifier)
+                (comma)
+                (identifier)
+                (comma)
+                (quoted_identifier)))
+            (semicolon)))))))
+
+================================================================================
+table keys with single-field, multi-field and quoted keys
+================================================================================
+
+table 50100 MyTable
+{
+    keys
+    {
+        key(PK; "No.")
+        {
+            Clustered = true;
+        }
+        key(Key2; Name, Description)
+        {
+            Enabled = false;
+        }
+        key("Quoted Key"; "No.")
+        {
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_table)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (key_section
+        (kw_keys)
+        (object_body
+          (key_declaration
+            (kw_key)
+            (name_or_keyword
+              (name
+                (identifier)))
+            (semicolon)
+            (key_field_list
+              (name_or_keyword
+                (name
+                  (quoted_identifier))))
+            (object_body
+              (property_assignment
+                (name
+                  (identifier))
+                (name
+                  (identifier))
+                (semicolon))))
+          (key_declaration
+            (kw_key)
+            (name_or_keyword
+              (name
+                (identifier)))
+            (semicolon)
+            (key_field_list
+              (name_or_keyword
+                (name
+                  (identifier)))
+              (comma)
+              (name_or_keyword
+                (name
+                  (identifier))))
+            (object_body
+              (property_assignment
+                (name
+                  (identifier))
+                (name
+                  (identifier))
+                (semicolon))))
+          (key_declaration
+            (kw_key)
+            (name_or_keyword
+              (name
+                (quoted_identifier)))
+            (semicolon)
+            (key_field_list
+              (name_or_keyword
+                (name
+                  (quoted_identifier))))
+            (object_body)))))))
+
+================================================================================
+page var section before layout and actions
+================================================================================
+
+page 50100 P
+{
+    var
+        A: Integer;
+        B: Integer;
+
+    layout
+    {
+        area(Content) { }
+    }
+
+    actions
+    {
+        area(Processing) { }
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_page)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_integer))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_integer))
+            (semicolon))))
+      (object_section
+        (metadata_keyword)
+        (object_body
+          (object_section
+            (metadata_keyword)
+            (parenthesized_block
+              (identifier))
+            (object_body))))
+      (object_section
+        (metadata_keyword)
+        (object_body
+          (object_section
+            (metadata_keyword)
+            (parenthesized_block
+              (identifier))
+            (object_body)))))))
+
+================================================================================
+table var section before fields and keys
+================================================================================
+
+table 50100 T
+{
+    var
+        A: Integer;
+
+    fields
+    {
+        field(1; "No."; Code[20]) { }
+    }
+
+    keys
+    {
+        key(PK; "No.") { }
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_table)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_integer))
+            (semicolon))))
+      (object_section
+        (metadata_keyword)
+        (object_body
+          (object_section
+            (metadata_keyword)
+            (parenthesized_block
+              (integer)
+              (semicolon)
+              (quoted_identifier)
+              (semicolon)
+              (control_keyword)
+              (bracketed_block
+                (integer)))
+            (object_body))))
+      (key_section
+        (kw_keys)
+        (object_body
+          (key_declaration
+            (kw_key)
+            (name_or_keyword
+              (name
+                (identifier)))
+            (semicolon)
+            (key_field_list
+              (name_or_keyword
+                (name
+                  (quoted_identifier))))
+            (object_body)))))))
+
+================================================================================
+report var section before dataset
+================================================================================
+
+report 50100 R
+{
+    var
+        A: Integer;
+
+    dataset
+    {
+        dataitem(C; Customer) { }
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_report)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_integer))
+            (semicolon))))
+      (object_section
+        (metadata_keyword)
+        (object_body
+          (object_section
+            (metadata_keyword)
+            (parenthesized_block
+              (identifier)
+              (semicolon)
+              (identifier))
+            (object_body)))))))
+
+================================================================================
+var section after sections still closes before a member
+================================================================================
+
+table 50100 T
+{
+    fields
+    {
+        field(1; "No."; Code[20]) { }
+    }
+
+    var
+        A: Integer;
+        B: Integer;
+
+    procedure P()
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_table)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_section
+        (metadata_keyword)
+        (object_body
+          (object_section
+            (metadata_keyword)
+            (parenthesized_block
+              (integer)
+              (semicolon)
+              (quoted_identifier)
+              (semicolon)
+              (control_keyword)
+              (bracketed_block
+                (integer)))
+            (object_body))))
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_integer))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_integer))
+            (semicolon))))
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))

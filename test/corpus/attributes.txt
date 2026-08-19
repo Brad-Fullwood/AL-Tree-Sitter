@@ -1,0 +1,406 @@
+================================================================================
+attributes on procedures
+================================================================================
+
+codeunit 50100 T
+{
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::"My Codeunit", 'OnFoo', '', false, false)]
+    local procedure HandleFoo()
+    begin
+    end;
+
+    [Test]
+    procedure TestSomething()
+    begin
+    end;
+
+    [TryFunction]
+    [Obsolete('use something else', '24.0')]
+    procedure Legacy()
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (attribute
+          (identifier)
+          (attribute_argument_list
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (type_keyword))
+                    (scope_suffix
+                      (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (object_keyword))
+                    (scope_suffix
+                      (name
+                        (quoted_identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))))
+        (member_modifier
+          (kw_local))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (attribute
+          (identifier))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (attribute
+          (identifier))
+        (attribute
+          (identifier)
+          (attribute_argument_list
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+attributes on local variables
+================================================================================
+
+codeunit 50100 T
+{
+    procedure P()
+    var
+        [InDataSet]
+        Visible: Boolean;
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (attribute
+              (identifier))
+            (regular_variable_declaration
+              (name_or_keyword
+                (name
+                  (identifier)))
+              (operator)
+              (type_reference
+                (kw_boolean))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+attributes on global variables attach to the declaration
+================================================================================
+
+page 50100 P
+{
+    var
+        Plain: Integer;
+        [InDataSet]
+        Visible: Boolean;
+        [InDataSet]
+        [Obsolete('gone', '24.0')]
+        Multi: Boolean;
+
+    [Test]
+    procedure AfterSection()
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_page)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_integer))
+            (semicolon)))
+        (object_variable_declaration
+          (attribute
+            (identifier))
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_boolean))
+            (semicolon)))
+        (object_variable_declaration
+          (attribute
+            (identifier))
+          (attribute
+            (identifier)
+            (attribute_argument_list
+              (attribute_argument
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string))))))
+              (comma)
+              (attribute_argument
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string))))))))
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_boolean))
+            (semicolon))))
+      (procedure_declaration
+        (attribute
+          (identifier))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+attribute arguments containing brackets and comments
+================================================================================
+
+page 50100 P
+{
+    var
+        [Obsolete(/* ] */ 'gone', '24.0')]
+        Commented: Boolean;
+        [SomeAttr('a]b')]
+        Quoted: Boolean;
+
+    [Test]
+    procedure AfterSection()
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_page)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (attribute
+            (identifier)
+            (attribute_argument_list
+              (comment)
+              (attribute_argument
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string))))))
+              (comma)
+              (attribute_argument
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string))))))))
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_boolean))
+            (semicolon)))
+        (object_variable_declaration
+          (attribute
+            (identifier)
+            (attribute_argument_list
+              (attribute_argument
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string))))))))
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_boolean))
+            (semicolon))))
+      (procedure_declaration
+        (attribute
+          (identifier))
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+attributed global variable before a member section
+================================================================================
+
+page 50100 P
+{
+    var
+        [InDataSet]
+        Visible: Boolean;
+
+    layout
+    {
+        area(Content) { }
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_page)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (attribute
+            (identifier))
+          (regular_variable_declaration
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_boolean))
+            (semicolon))))
+      (object_section
+        (metadata_keyword)
+        (object_body
+          (object_section
+            (metadata_keyword)
+            (parenthesized_block
+              (identifier))
+            (object_body)))))))

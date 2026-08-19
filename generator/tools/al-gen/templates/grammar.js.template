@@ -22,13 +22,15 @@ module.exports = grammar({
     [$.continue_statement, $.expression_statement],
     [$.break_statement, $.name],
     [$.continue_statement, $.name],
-    [$.name_or_keyword, $._atom],
-    [$.name, $._atom],
-    [$.option_member, $.name_or_keyword],
-    [$.key_declaration, $._atom],
+    // The `_atom` pairings that used to be listed here became unnecessary once
+    // key_declaration stopped starting with a generic keyword token.
     [$.member_modifier, $.legacy_local_incomplete_procedure_pair],
-    [$.type_reference, $.option_member],
-    [$.option_member, $.name],
+    // A global var section and the member section that may follow it both accept
+    // a metadata keyword at the boundary (`layout`, `actions`, `fields` are legal
+    // variable names), and one token of lookahead cannot separate them. GLR
+    // explores both and error cost picks the parse that does not swallow the
+    // section keyword.
+    [$.object_var_section],
     [$.option_type],
   ],
 
@@ -61,7 +63,10 @@ module.exports = grammar({
       $.object_keyword
     )),
     field('id', optional($.integer)),
-    field('name', optional($.name_or_keyword)),
+    // Dynamic precedence is required: the header name is genuinely ambiguous
+    // with the _pre_object_body catch-all, and without a runtime preference GLR
+    // discards the field-carrying parse (notably for the last object in a file).
+    optional(prec.dynamic(1, field('name', $.name_or_keyword))),
     // Conditional compilation can split an object header across branches.
     repeat($._pre_object_body),
     field('body', $.object_body),
@@ -107,6 +112,7 @@ module.exports = grammar({
 
   _object_body_item: $ => choice(
     $.enum_value_declaration,
+    $.key_section,
     $.key_declaration,
     $.object_section,
     $.property_assignment,
@@ -150,18 +156,31 @@ module.exports = grammar({
     optional($.semicolon),
   )),
 
+  // `keys { ... }` on a table or tableextension. The external scanner only
+  // produces kw_keys when a `{` follows, so `Keys := ...` and a `Keys` property
+  // keep their ordinary metadata-keyword classification.
+  key_section: $ => seq(
+    field('keyword', {{KW:keys}}),
+    field('body', $.object_body),
+  ),
+
+  // `key(Name; Field, Field) { properties }`. Reusing object_body keeps the key
+  // properties structurally parsed as property_assignment.
   key_declaration: $ => prec.right(seq(
-    field('keyword', $.keyword),
+    field('keyword', {{KW:key}}),
     '(',
     field('name', $.name_or_keyword),
     $.semicolon,
-    field('fields', optional(seq(
-      choice($.name_or_keyword, $.string),
-      repeat(seq($.comma, choice($.name_or_keyword, $.string))),
-    ))),
+    field('fields', optional($.key_field_list)),
     ')',
-    field('body', $.braced_block),
+    field('body', optional($.object_body)),
+    optional($.semicolon),
   )),
+
+  key_field_list: $ => seq(
+    choice($.qualified_name, $.name_or_keyword, $.string),
+    repeat(seq($.comma, choice($.qualified_name, $.name_or_keyword, $.string))),
+  ),
 
   _section_header_piece: $ => choice(
     $.name,
@@ -205,16 +224,32 @@ module.exports = grammar({
     $.semicolon,
   )),
 
-  object_var_section: $ => prec.right(3, seq(
+  // Deliberately carries neither associativity nor a numeric precedence, so the
+  // section boundary stays a real conflict that GLR resolves. Any static
+  // resolution is wrong in one direction or the other: preferring the reduce
+  // closes the section after its first declaration, and preferring the shift
+  // swallows the `layout`/`actions`/`fields` keyword of the section that follows
+  // (declaration names are `name_or_keyword`, so those are all legal names).
+  // GLR compares error cost first, which discards the swallowing parse, and the
+  // dynamic precedence on object_variable_declaration then prefers the longest
+  // run of declarations when both parses are error free.
+  object_var_section: $ => seq(
     repeat($.member_modifier),
     {{KW:var}},
     repeat1($.object_variable_declaration),
-  )),
+  ),
 
-  object_variable_declaration: $ => prec(1, choice(
+  // An attributed declaration is gated on the scanner's zero-width marker. An
+  // object body puts attributed procedures right after the global var section,
+  // and at the `[` one token of lookahead cannot tell `[InDataSet] X: Boolean`
+  // from `[Test]` in front of the next procedure; the marker is only emitted
+  // for the former, so the section never swallows a member's attribute.
+  object_variable_declaration: $ => prec.dynamic(1, prec(2, choice(
+    seq($._var_attribute_marker, repeat1($.attribute), $.regular_variable_declaration),
+    seq($._var_attribute_marker, repeat1($.attribute), $.label_declaration),
     $.regular_variable_declaration,
     $.label_declaration,
-  )),
+  ))),
 
   var_section: $ => prec.right(3, seq(
     {{KW:var}},
@@ -222,7 +257,9 @@ module.exports = grammar({
     repeat($.variable_declaration),
   )),
 
-  empty_var_section: $ => prec(1, seq(
+  // Below object_var_section's declarations: a `var` that is followed by a
+  // declaration must open a real section, not an empty one.
+  empty_var_section: $ => prec(-1, seq(
     repeat($.member_modifier),
     {{KW:var}},
   )),
@@ -308,14 +345,6 @@ module.exports = grammar({
        $.comma,
        $.string
     )))
-  ),
-
-  option_member: $ => choice(
-    $.quoted_identifier,
-    $.identifier,
-    $.string,
-    $.verbatim_string,
-    $.name_or_keyword,
   ),
 
   of_clause: $ => prec.right(seq(
@@ -807,20 +836,26 @@ module.exports = grammar({
   identifier: _ => /[A-Za-z_\u0080-\uFFFF][A-Za-z0-9_\u0080-\uFFFF]*/,
   decimal: _ => token(/[0-9]+\.[0-9]+/),
   integer: _ => /[0-9]+[Ll]?/,
-  datetime_literal: _ => token(seq(/[0-9]{1,14}/, 'D', 'T')),
-  date_literal: _ => token(seq(/[0-9]{1,8}/, 'D')),
-  time_literal: _ => token(seq(/[0-9]{1,6}/, optional(seq('.', /[0-9]+/)), 'T')),
+  // AL date/time suffixes are case-insensitive, like the rest of the language.
+  datetime_literal: _ => token(seq(/[0-9]{1,14}/, /[Dd]/, /[Tt]/)),
+  date_literal: _ => token(seq(/[0-9]{1,8}/, /[Dd]/)),
+  time_literal: _ => token(seq(/[0-9]{1,6}/, optional(seq('.', /[0-9]+/)), /[Tt]/)),
 
-  // AL escapes a single quote by doubling it.
-  string: _ => token(seq("'", repeat(choice(/[^']/, "''")), "'")),
+  // AL escapes a single quote by doubling it. Ordinary string literals are
+  // single-line, so excluding raw newlines keeps an unterminated literal from
+  // swallowing the rest of the file up to the next quote.
+  string: _ => token(seq("'", repeat(choice(/[^'\r\n]/, "''")), "'")),
+  // Verbatim strings deliberately keep newlines; AL allows them to span lines.
   verbatim_string: _ => token(seq("@'", repeat(choice(/[^']/, "''")), "'")),
 
-  // AL escapes a quote in a quoted identifier by doubling it.
-  quoted_identifier: _ => token(seq('"', repeat(choice(/[^"]/, '""')), '"')),
+  // AL escapes a quote in a quoted identifier by doubling it. Like strings,
+  // quoted identifiers never span lines.
+  quoted_identifier: _ => token(seq('"', repeat(choice(/[^"\r\n]/, '""')), '"')),
 
+  // AL has no `#` line comments; `#` starts a preprocessor directive, which the
+  // external scanner owns. Matching it here would swallow directive lines.
   comment: _ => token(choice(
-    seq('//', /[^\n]*/),
-    seq('#', /[^\n]*/),
+    seq('//', /[^\r\n]*/),
     seq(
       '/*',
       /[^*]*\*+([^/*][^*]*\*+)*/,
