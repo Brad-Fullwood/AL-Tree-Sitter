@@ -15,6 +15,9 @@ const REPO_TEST_CONFIG: &str = "tests/test_repos.toml";
 const REPO_TEST_WORKDIR: &str = "tests/.repos";
 const FIXTURES_INVALID_DIR: &str = "tests/fixtures/invalid";
 const FIXTURES_VALID_DIR: &str = "tests/fixtures/valid";
+/// Schema the generated `themes/bc-themes.json` declares, so an editor
+/// validates and completes the theme file.
+const ZED_THEME_SCHEMA: &str = "https://zed.dev/schema/themes/v0.2.0.json";
 
 #[derive(Default)]
 struct Options {
@@ -22,6 +25,7 @@ struct Options {
     repo_tests_only: bool,
     zed_language_only: bool,
     structural_queries_only: bool,
+    themes_only: bool,
 }
 
 #[derive(Debug, PartialEq)]
@@ -54,16 +58,18 @@ fn parse_options() -> Result<Options> {
             "--repo-tests-only" => options.repo_tests_only = true,
             "--zed-language-only" => options.zed_language_only = true,
             "--structural-queries-only" => options.structural_queries_only = true,
+            "--themes-only" => options.themes_only = true,
             _ => anyhow::bail!("Unknown argument: {argument}"),
         }
     }
     let exclusive_modes = usize::from(options.repo_tests_only)
         + usize::from(options.zed_language_only)
-        + usize::from(options.structural_queries_only);
+        + usize::from(options.structural_queries_only)
+        + usize::from(options.themes_only);
     if exclusive_modes > 1 || (options.repo_tests && exclusive_modes > 0) {
         anyhow::bail!(
-            "--test, --repo-tests-only, --zed-language-only, and --structural-queries-only are \
-             mutually exclusive"
+            "--test, --repo-tests-only, --zed-language-only, --structural-queries-only and \
+             --themes-only are mutually exclusive"
         );
     }
     Ok(options)
@@ -97,6 +103,17 @@ fn main() -> Result<()> {
         let node_types_path = tree_sitter_root.join("src/node-types.json");
         let queries_dir = tree_sitter_root.join("queries");
         generate_structural_queries(path_str(&node_types_path)?, path_str(&queries_dir)?)?;
+        return Ok(());
+    }
+
+    // Themes are converted from the AL extension's own VS Code theme files and
+    // depend on nothing the grammar pipeline produces, so they can be
+    // regenerated on their own to check that themes/bc-themes.json still
+    // matches its generator.
+    if options.themes_only {
+        let extension_path = find_al_extension()?;
+        println!("Extension: {}", extension_path.display());
+        generate_themes(&extension_path, &extension_root.join("themes"))?;
         return Ok(());
     }
 
@@ -2509,7 +2526,71 @@ fn convert_vscode_theme_to_zed(vscode_theme: &serde_json::Value) -> Result<serde
     let mut style = serde_json::Map::new();
     map_ui_colors(colors, &mut style, appearance)?;
 
-    let syntax = map_token_colors(token_colors);
+    let background = style
+        .get("background")
+        .and_then(|v| v.as_str())
+        .context("Converted theme has no background color to measure contrast against")?
+        .to_string();
+
+    let text = style
+        .get("editor.foreground")
+        .and_then(|v| v.as_str())
+        .unwrap_or("#000000")
+        .to_string();
+    let accent = colors
+        .get("button.background")
+        .or_else(|| colors.get("statusBar.background"))
+        .and_then(|v| v.as_str())
+        .unwrap_or(&background)
+        .to_string();
+
+    // Hover and selection surfaces sit behind ordinary text in Zed, unlike
+    // the VS Code list colors they are mapped from.
+    for (key, target) in [
+        ("element.hover", HOVER_SURFACE_CONTRAST),
+        ("element.selected", SELECTED_SURFACE_CONTRAST),
+        ("ghost_element.hover", HOVER_SURFACE_CONTRAST),
+        ("ghost_element.selected", SELECTED_SURFACE_CONTRAST),
+    ] {
+        if !style.contains_key(key) {
+            continue;
+        }
+        let surface =
+            tinted_surface(&accent, &background, target).with_context(|| key.to_string())?;
+        let readable = contrast_ratio(&text, &surface)
+            .with_context(|| format!("Invalid {key} color: {surface}"))?;
+        if readable < MIN_SYNTAX_CONTRAST {
+            anyhow::bail!(
+                "{key} is {surface}, leaving the theme's text {text} at {readable:.2}:1 on it, \
+                 below the {MIN_SYNTAX_CONTRAST}:1 minimum"
+            );
+        }
+        style.insert(key.to_string(), serde_json::Value::String(surface));
+    }
+
+    let mut syntax = map_token_colors(token_colors);
+    for (override_appearance, token, color) in SYNTAX_OVERRIDES {
+        if *override_appearance != appearance {
+            continue;
+        }
+        if let Some(entry) = syntax.get_mut(*token).and_then(|e| e.as_object_mut()) {
+            entry.insert(
+                "color".to_string(),
+                serde_json::Value::String((*color).to_string()),
+            );
+        }
+    }
+    enforce_syntax_contrast(&mut syntax, &background, appearance)?;
+
+    // Players come from the corrected syntax palette, so every participant
+    // cursor is a color the theme already ships and already clears the
+    // contrast floor.
+    let brand = colors
+        .get("button.background")
+        .or_else(|| colors.get("statusBar.background"))
+        .and_then(|v| v.as_str())
+        .unwrap_or(&background);
+    style.insert("players".to_string(), build_players(&syntax, brand)?);
     style.insert("syntax".to_string(), serde_json::Value::Object(syntax));
 
     Ok(serde_json::json!({
@@ -2690,25 +2771,256 @@ fn map_ui_colors(
         style.insert("border.variant".to_string(), border);
     }
 
-    if let Some(brand_color) = colors
-        .get("button.background")
-        .or_else(|| colors.get("statusBar.background"))
-        .and_then(|v| v.as_str())
-    {
-        let (red, green, blue) = parse_hex_color(brand_color)
-            .with_context(|| format!("Invalid player color: {brand_color}"))?;
-        let brand_color = format!("#{red:02X}{green:02X}{blue:02X}");
-        style.insert(
-            "players".to_string(),
-            serde_json::json!([{
-                "cursor": format!("{brand_color}ff"),
-                "background": format!("{brand_color}ff"),
-                "selection": format!("{brand_color}40")
-            }]),
-        );
+    Ok(())
+}
+
+/// Minimum contrast ratio a shipped syntax color must reach against the
+/// theme's own editor background. WCAG AA for body text; source code is body
+/// text, and `keyword` is the densest token class in an AL file.
+const MIN_SYNTAX_CONTRAST: f64 = 4.5;
+
+/// Syntax colors this converter sets in place of the value Microsoft's theme
+/// supplies, with the reason. Keyed by `(appearance, token)`. Anything not
+/// listed here comes straight from the VS Code theme.
+const SYNTAX_OVERRIDES: &[(&str, &str, &str)] = &[
+    // BC_light.json paints attributes in the same red family as diagnostics,
+    // so `[Test]` and `[EventSubscriber]` read as errors. Zed's Light+ uses
+    // purple for the same token class.
+    ("light", "attribute", "#AF00DB"),
+];
+
+/// Tint strength of the hover and selection surfaces, as a contrast ratio
+/// against the theme's own background. Both are close to what Microsoft's BC
+/// dark theme already used, so they read as the same design on a light
+/// background rather than as a near-black block.
+const HOVER_SURFACE_CONTRAST: f64 = 1.4;
+const SELECTED_SURFACE_CONTRAST: f64 = 2.1;
+
+/// Number of collaboration player colors Zed themes carry. Zed cycles through
+/// them per participant, so a theme with one entry gives every participant the
+/// same cursor.
+const PLAYER_COUNT: usize = 8;
+
+/// Relative luminance per WCAG 2.1, from a `#RRGGBB` or `#RRGGBBAA` string.
+/// The alpha channel is ignored: Zed composites syntax colors over the editor
+/// background, which is what the ratio is measured against.
+fn relative_luminance(hex: &str) -> Option<f64> {
+    let (red, green, blue) = parse_hex_color(hex)?;
+    let channel = |value: u8| {
+        let value = f64::from(value) / 255.0;
+        if value <= 0.04045 {
+            value / 12.92
+        } else {
+            ((value + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    Some(0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue))
+}
+
+/// WCAG 2.1 contrast ratio between two colors, from 1.0 to 21.0.
+fn contrast_ratio(foreground: &str, background: &str) -> Option<f64> {
+    let (mut high, mut low) = (
+        relative_luminance(foreground)?,
+        relative_luminance(background)?,
+    );
+    if high < low {
+        std::mem::swap(&mut high, &mut low);
+    }
+    Some((high + 0.05) / (low + 0.05))
+}
+
+/// Push a color away from the background until it reaches `MIN_SYNTAX_CONTRAST`.
+///
+/// Microsoft's BC themes are authored for the VS Code palette, and several of
+/// their colors land below the readability threshold on the background this
+/// converter pairs them with. The brand teal `#00747F` reaches 5.52:1 on white
+/// but only 3.02:1 on the dark theme's `#1E1E1E`, and it is the `keyword`
+/// color, so the densest part of an AL file is the least readable part.
+///
+/// Adjustment is in 2% steps towards white on a dark background and towards
+/// black on a light one, which keeps the hue recognisable. Returns the color
+/// unchanged when it already clears the threshold.
+fn raise_contrast(color: &str, background: &str, appearance: &str) -> Result<String> {
+    let clears = |candidate: &str| {
+        contrast_ratio(candidate, background).is_some_and(|ratio| ratio >= MIN_SYNTAX_CONTRAST)
+    };
+    if clears(color) {
+        let (red, green, blue) =
+            parse_hex_color(color).with_context(|| format!("Invalid syntax color: {color}"))?;
+        return Ok(format!("#{red:02X}{green:02X}{blue:02X}"));
     }
 
+    let mut candidate = color.to_string();
+    for _ in 0..50 {
+        candidate = if appearance == "dark" {
+            lighten_color(&candidate, 0.02)?
+        } else {
+            darken_color(&candidate, 0.02)?
+        };
+        if clears(&candidate) {
+            return Ok(candidate);
+        }
+    }
+    anyhow::bail!(
+        "Could not raise {color} to {MIN_SYNTAX_CONTRAST}:1 against {background} \
+         for a {appearance} theme"
+    )
+}
+
+/// Blend `from` towards `to` by `factor` (0.0 keeps `from`, 1.0 returns `to`).
+fn blend_color(from: &str, to: &str, factor: f64) -> Result<String> {
+    let (from_red, from_green, from_blue) =
+        parse_hex_color(from).with_context(|| format!("Invalid color: {from}"))?;
+    let (to_red, to_green, to_blue) =
+        parse_hex_color(to).with_context(|| format!("Invalid color: {to}"))?;
+    let mix = |a: u8, b: u8| (f64::from(a) + (f64::from(b) - f64::from(a)) * factor).round() as u8;
+    Ok(format!(
+        "#{:02X}{:02X}{:02X}",
+        mix(from_red, to_red),
+        mix(from_green, to_green),
+        mix(from_blue, to_blue)
+    ))
+}
+
+/// Build a hover or selection surface as a tint of the theme's accent over its
+/// own background, at the requested strength.
+///
+/// VS Code's `list.hoverBackground` and `list.activeSelectionBackground` come
+/// with a matching `*Foreground`, so Microsoft's BC themes use a near-black
+/// teal for both appearances and repaint the text white on top. Zed's
+/// `element.hover` and `element.selected` sit behind ordinary text, so copying
+/// those values across gave the light theme dark text on a near-black surface.
+/// Tinting the accent towards the background instead keeps the brand hue on
+/// both appearances and puts the surface on the readable side of the text.
+///
+/// `target` is the strength, as a contrast ratio against the background: the
+/// blend moves towards the background until the surface is no stronger than
+/// that.
+fn tinted_surface(accent: &str, background: &str, target: f64) -> Result<String> {
+    for step in 0..=100 {
+        let candidate = blend_color(accent, background, f64::from(step) * 0.01)?;
+        if contrast_ratio(&candidate, background)
+            .with_context(|| format!("Invalid surface color: {candidate}"))?
+            <= target
+        {
+            return Ok(candidate);
+        }
+    }
+    // Blending all the way reaches the background, whose ratio against itself
+    // is 1.0, so the loop above always returns before this.
+    blend_color(accent, background, 1.0)
+}
+
+/// Raise every syntax color that falls below `MIN_SYNTAX_CONTRAST` against the
+/// theme's editor background, then assert the whole palette clears it. The
+/// assertion is the part that matters: it fails the build rather than shipping
+/// an unreadable theme, whatever a future Microsoft palette contains.
+fn enforce_syntax_contrast(
+    syntax: &mut serde_json::Map<String, serde_json::Value>,
+    background: &str,
+    appearance: &str,
+) -> Result<()> {
+    for (token, entry) in syntax.iter_mut() {
+        let Some(color) = entry.get("color").and_then(|v| v.as_str()) else {
+            continue;
+        };
+        let raised = raise_contrast(color, background, appearance)
+            .with_context(|| format!("syntax.{token}"))?;
+        if let Some(object) = entry.as_object_mut() {
+            object.insert("color".to_string(), serde_json::Value::String(raised));
+        }
+    }
+
+    for (token, entry) in syntax.iter() {
+        let Some(color) = entry.get("color").and_then(|v| v.as_str()) else {
+            continue;
+        };
+        let ratio = contrast_ratio(color, background)
+            .with_context(|| format!("Invalid syntax.{token} color: {color}"))?;
+        if ratio < MIN_SYNTAX_CONTRAST {
+            anyhow::bail!(
+                "syntax.{token} is {color}, {ratio:.2}:1 against the theme background \
+                 {background}, below the {MIN_SYNTAX_CONTRAST}:1 minimum"
+            );
+        }
+    }
     Ok(())
+}
+
+/// Build Zed's `players` array from the theme's own syntax palette.
+///
+/// Zed cycles these per collaboration participant, so all eight entries need
+/// to be distinguishable from each other. Taking them from the syntax palette
+/// in a fixed order gives eight colors that already belong to the theme and
+/// already clear the contrast floor, in place of eight repeats of one brand
+/// color. `keyword` leads because it is the brand color in both BC themes.
+fn build_players(
+    syntax: &serde_json::Map<String, serde_json::Value>,
+    fallback: &str,
+) -> Result<serde_json::Value> {
+    const PREFERRED: &[&str] = &[
+        "keyword",
+        "function",
+        "string",
+        "type",
+        "number",
+        "attribute",
+        "tag",
+        "variable",
+    ];
+    const SPARE: &[&str] = &[
+        "constant",
+        "property",
+        "comment",
+        "error",
+        "string.regex",
+        "boolean",
+        "operator",
+        "punctuation",
+        "embedded",
+        "title",
+    ];
+
+    let color_of = |token: &str| {
+        syntax
+            .get(token)
+            .and_then(|entry| entry.get("color"))
+            .and_then(|v| v.as_str())
+            .map(str::to_string)
+    };
+
+    let mut chosen: Vec<String> = Vec::with_capacity(PLAYER_COUNT);
+    for token in PREFERRED.iter().chain(SPARE) {
+        if chosen.len() == PLAYER_COUNT {
+            break;
+        }
+        if let Some(color) = color_of(token)
+            && !chosen.contains(&color)
+        {
+            chosen.push(color);
+        }
+    }
+    // A palette too small or too repetitive to fill eight slots pads with the
+    // brand color rather than shipping a short array.
+    let (red, green, blue) =
+        parse_hex_color(fallback).with_context(|| format!("Invalid player color: {fallback}"))?;
+    let fallback = format!("#{red:02X}{green:02X}{blue:02X}");
+    while chosen.len() < PLAYER_COUNT {
+        chosen.push(fallback.clone());
+    }
+
+    Ok(serde_json::Value::Array(
+        chosen
+            .into_iter()
+            .map(|color| {
+                serde_json::json!({
+                    "cursor": format!("{color}ff"),
+                    "background": format!("{color}ff"),
+                    "selection": format!("{color}40")
+                })
+            })
+            .collect(),
+    ))
 }
 
 /// Map VS Code `tokenColors` array to Zed `syntax` object.
@@ -2880,9 +3192,12 @@ fn generate_themes(extension_path: &Path, output_dir: &Path) -> Result<()> {
         zed_themes.push(convert_vscode_theme_to_zed(&vscode_theme)?);
     }
 
+    // `$schema` first, so an editor opening the file validates it against Zed's
+    // theme schema and completes the style keys.
     let zed_theme_file = serde_json::json!({
-        "name": "Business Central",
+        "$schema": ZED_THEME_SCHEMA,
         "author": "Microsoft (converted)",
+        "name": "Business Central",
         "themes": zed_themes
     });
 
@@ -3064,5 +3379,205 @@ mod tests {
             .to_string();
 
         assert!(error.contains("AL_EXTENSION_PATH is not an extension directory"));
+    }
+
+    // -- Theme conversion: contrast floor and player palette -----------------
+
+    /// The BC brand teal is the `keyword` color in both themes. It reaches
+    /// 5.52:1 on white but only 3.02:1 on the dark theme's own background, and
+    /// `keyword` is the densest token class in an AL file (`procedure`, `var`,
+    /// `begin`, `end`, `if`, `then`).
+    #[test]
+    fn the_brand_teal_is_unreadable_on_the_dark_background_and_is_raised() {
+        let dark = "#1E1E1E";
+        let before = contrast_ratio("#00747F", dark).unwrap();
+        assert!(
+            before < MIN_SYNTAX_CONTRAST,
+            "expected the unmodified brand teal to fail the floor, got {before:.2}:1"
+        );
+
+        let raised = raise_contrast("#00747F", dark, "dark").unwrap();
+        let after = contrast_ratio(&raised, dark).unwrap();
+        assert!(
+            after >= MIN_SYNTAX_CONTRAST,
+            "raise_contrast returned {raised}, {after:.2}:1 against {dark}"
+        );
+    }
+
+    #[test]
+    fn a_color_that_already_clears_the_floor_is_returned_unchanged() {
+        // #D4D4D4 is 11.25:1 on #1E1E1E.
+        assert_eq!(
+            raise_contrast("#D4D4D4", "#1E1E1E", "dark").unwrap(),
+            "#D4D4D4"
+        );
+    }
+
+    #[test]
+    fn a_light_theme_color_is_darkened_rather_than_lightened() {
+        let white = "#FFFFFF";
+        let raised = raise_contrast("#BBBBBB", white, "light").unwrap();
+        assert!(
+            relative_luminance(&raised).unwrap() < relative_luminance("#BBBBBB").unwrap(),
+            "a light theme must darken towards the floor, got {raised}"
+        );
+        assert!(contrast_ratio(&raised, white).unwrap() >= MIN_SYNTAX_CONTRAST);
+    }
+
+    #[test]
+    fn contrast_ratio_matches_the_wcag_reference_values() {
+        let black_on_white = contrast_ratio("#000000", "#FFFFFF").unwrap();
+        assert!((black_on_white - 21.0).abs() < 0.01, "{black_on_white}");
+        let same = contrast_ratio("#1E1E1E", "#1E1E1E").unwrap();
+        assert!((same - 1.0).abs() < 0.001, "{same}");
+        // Order must not matter.
+        assert!(
+            (contrast_ratio("#00747F", "#1E1E1E").unwrap()
+                - contrast_ratio("#1E1E1E", "#00747F").unwrap())
+            .abs()
+                < 1e-9
+        );
+    }
+
+    /// The build must fail rather than ship an unreadable palette, whatever a
+    /// future Microsoft theme contains.
+    #[test]
+    fn enforce_syntax_contrast_raises_every_token_and_then_passes_its_own_check() {
+        let mut syntax: serde_json::Map<String, serde_json::Value> =
+            serde_json::from_value(serde_json::json!({
+                "keyword":  { "color": "#00747F", "font_style": null, "font_weight": null },
+                "comment":  { "color": "#64707D", "font_style": "italic", "font_weight": null },
+                "variable": { "color": "#9CDCFE", "font_style": null, "font_weight": null },
+                "embedded": { "font_style": null, "font_weight": null }
+            }))
+            .unwrap();
+
+        enforce_syntax_contrast(&mut syntax, "#1E1E1E", "dark").unwrap();
+
+        for (token, entry) in &syntax {
+            let Some(color) = entry.get("color").and_then(|v| v.as_str()) else {
+                continue;
+            };
+            let ratio = contrast_ratio(color, "#1E1E1E").unwrap();
+            assert!(
+                ratio >= MIN_SYNTAX_CONTRAST,
+                "syntax.{token} is {color}, {ratio:.2}:1"
+            );
+        }
+        // Untouched fields survive, and an entry with no color is left alone
+        // rather than rejected.
+        assert_eq!(syntax["comment"]["font_style"], "italic");
+        assert!(syntax["embedded"].get("color").is_none());
+        // An already-readable color is not disturbed.
+        assert_eq!(syntax["variable"]["color"], "#9CDCFE");
+    }
+
+    /// The generated file used to carry one player entry derived from a single
+    /// brand color, so every collaboration participant got the same cursor.
+    #[test]
+    fn players_are_eight_distinct_colors_from_the_theme_palette() {
+        let syntax: serde_json::Map<String, serde_json::Value> =
+            serde_json::from_value(serde_json::json!({
+                "keyword":   { "color": "#00747F" },
+                "function":  { "color": "#DCDCAA" },
+                "string":    { "color": "#CE9178" },
+                "type":      { "color": "#4EC9B0" },
+                "number":    { "color": "#9FD89F" },
+                "attribute": { "color": "#9CDCFE" },
+                "tag":       { "color": "#569CD6" },
+                "variable":  { "color": "#9CDCFE" },
+                "constant":  { "color": "#62CFD7" }
+            }))
+            .unwrap();
+
+        let players = build_players(&syntax, "#00747F").unwrap();
+        let players = players.as_array().unwrap();
+        assert_eq!(players.len(), PLAYER_COUNT);
+
+        let cursors: Vec<&str> = players
+            .iter()
+            .map(|p| p["cursor"].as_str().unwrap())
+            .collect();
+        // `variable` repeats `attribute`, so it is skipped and `constant`
+        // takes the eighth slot.
+        assert_eq!(
+            cursors,
+            vec![
+                "#00747Fff",
+                "#DCDCAAff",
+                "#CE9178ff",
+                "#4EC9B0ff",
+                "#9FD89Fff",
+                "#9CDCFEff",
+                "#569CD6ff",
+                "#62CFD7ff",
+            ]
+        );
+        for player in players {
+            let cursor = player["cursor"].as_str().unwrap();
+            assert_eq!(player["background"].as_str().unwrap(), cursor);
+            assert_eq!(
+                player["selection"].as_str().unwrap(),
+                format!("{}40", &cursor[..7])
+            );
+        }
+    }
+
+    #[test]
+    fn a_palette_too_small_for_eight_players_is_padded_with_the_brand_color() {
+        let syntax: serde_json::Map<String, serde_json::Value> =
+            serde_json::from_value(serde_json::json!({ "keyword": { "color": "#00747F" } }))
+                .unwrap();
+        let players = build_players(&syntax, "#123456").unwrap();
+        let players = players.as_array().unwrap();
+        assert_eq!(players.len(), PLAYER_COUNT);
+        assert_eq!(players[0]["cursor"], "#00747Fff");
+        assert_eq!(players[PLAYER_COUNT - 1]["cursor"], "#123456ff");
+    }
+
+    /// Microsoft's BC themes give both appearances the same near-black teal
+    /// for `list.hoverBackground`, because VS Code repaints the list text
+    /// white on top. Zed puts ordinary text on `element.hover`, so a straight
+    /// copy left the light theme with dark text on a near-black surface.
+    #[test]
+    fn hover_and_selection_surfaces_are_tints_of_the_background_on_both_appearances() {
+        for (background, text) in [("#1E1E1E", "#D4D4D4"), ("#FFFFFF", "#202428")] {
+            let hover = tinted_surface("#00747F", background, HOVER_SURFACE_CONTRAST).unwrap();
+            let selected =
+                tinted_surface("#00747F", background, SELECTED_SURFACE_CONTRAST).unwrap();
+
+            let hover_strength = contrast_ratio(&hover, background).unwrap();
+            let selected_strength = contrast_ratio(&selected, background).unwrap();
+            assert!(
+                hover_strength <= HOVER_SURFACE_CONTRAST,
+                "hover {hover} is {hover_strength:.2}:1 against {background}"
+            );
+            assert!(
+                selected_strength <= SELECTED_SURFACE_CONTRAST,
+                "selection {selected} is {selected_strength:.2}:1 against {background}"
+            );
+            // A selection must read as stronger than a hover, or the two are
+            // indistinguishable.
+            assert!(
+                selected_strength > hover_strength,
+                "selection {selected_strength:.2}:1 is no stronger than hover \
+                 {hover_strength:.2}:1 on {background}"
+            );
+            // The theme's own text has to stay readable on both.
+            for surface in [&hover, &selected] {
+                let readable = contrast_ratio(text, surface).unwrap();
+                assert!(
+                    readable >= MIN_SYNTAX_CONTRAST,
+                    "text {text} is {readable:.2}:1 on {surface} ({background} theme)"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn blending_all_the_way_reaches_the_target_color() {
+        assert_eq!(blend_color("#000000", "#FFFFFF", 1.0).unwrap(), "#FFFFFF");
+        assert_eq!(blend_color("#000000", "#FFFFFF", 0.0).unwrap(), "#000000");
+        assert_eq!(blend_color("#000000", "#FFFFFF", 0.5).unwrap(), "#808080");
     }
 }
