@@ -646,6 +646,39 @@ fn find_syntax_file(extension_path: &Path) -> Result<PathBuf> {
 
 fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
     let xml = read_encoding_aware(syntax_file)?;
+    let out = extract_keywords_from_xml(&xml)?;
+
+    println!("TextMate capture mappings:");
+    for (scope, capture) in &out.scope_captures {
+        println!("  {scope} -> {capture}");
+    }
+
+    Ok(out)
+}
+
+/// Round `offset` down to the nearest UTF-8 character boundary of `xml`.
+///
+/// The scope search window is sized in bytes (`match start - 1000`), so a
+/// multibyte character anywhere near a keyword list would otherwise make the
+/// slice panic and stop a regeneration run.
+fn floor_char_boundary(xml: &str, offset: usize) -> usize {
+    let mut offset = offset.min(xml.len());
+    while !xml.is_char_boundary(offset) {
+        offset -= 1;
+    }
+    offset
+}
+
+/// Round `offset` up to the nearest UTF-8 character boundary of `xml`.
+fn ceil_char_boundary(xml: &str, offset: usize) -> usize {
+    let mut offset = offset.min(xml.len());
+    while !xml.is_char_boundary(offset) {
+        offset += 1;
+    }
+    offset
+}
+
+fn extract_keywords_from_xml(xml: &str) -> Result<Keywords> {
     let mut out = Keywords::default();
 
     let kw_list_re = Regex::new(r#"(?i)\(\?i:\((.*?)\)\)"#)?;
@@ -654,11 +687,11 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
     let single_kw_re =
         Regex::new(r#"(?i)<key>match</key>\s*<string>\\b\(\?i:([a-zA-Z0-9_]+)\)\\b</string>"#)?;
 
-    for mat in kw_list_re.find_iter(&xml) {
+    for mat in kw_list_re.find_iter(xml) {
         let kw_list_str = &xml[mat.start()..mat.end()];
 
-        let start_search = mat.start().saturating_sub(1000);
-        let end_search = (mat.end() + 1000).min(xml.len());
+        let start_search = floor_char_boundary(xml, mat.start().saturating_sub(1000));
+        let end_search = ceil_char_boundary(xml, mat.end() + 1000);
         let search_window = &xml[start_search..end_search];
 
         let mut scope_name = None;
@@ -715,14 +748,14 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
         }
     }
 
-    for caps in single_kw_re.captures_iter(&xml) {
+    for caps in single_kw_re.captures_iter(xml) {
         let kw = caps[1].trim().to_lowercase();
         if is_identifier_like(&kw) {
             out.control.insert(kw);
         }
     }
 
-    for name_caps in name_re.captures_iter(&xml) {
+    for name_caps in name_re.captures_iter(xml) {
         let scope_name = name_caps.get(1).unwrap().as_str();
         if !scope_name.starts_with("punctuation.whitespace")
             && !scope_name.starts_with("source.")
@@ -731,11 +764,6 @@ fn extract_keywords(syntax_file: &Path) -> Result<Keywords> {
             let capture = textmate_to_treesitter_capture(scope_name);
             out.scope_captures.insert(scope_name.to_string(), capture);
         }
-    }
-
-    println!("TextMate capture mappings:");
-    for (scope, capture) in &out.scope_captures {
-        println!("  {scope} -> {capture}");
     }
 
     Ok(out)
@@ -3003,6 +3031,30 @@ mod tests {
             .unwrap_or("@keyword");
 
         assert_eq!(capture, "@keyword");
+    }
+
+    #[test]
+    fn a_non_ascii_character_near_a_keyword_list_does_not_panic() {
+        // The scope search window is `match start - 1000 .. match end + 1000`
+        // in bytes. Placing a multibyte character so that one of those offsets
+        // lands inside it used to panic the whole regeneration run.
+        let scope = "<key>name</key><string>keyword.control.al</string>";
+        let rule = r#"<key>match</key><string>\b(?i:(begin|end))\b</string>"#;
+        let trailer = "é".repeat(600);
+
+        // Sweeping the filler by one byte at a time walks both window offsets
+        // across the two bytes of an `é`.
+        for filler_len in 900..1000 {
+            let lead = "x".repeat(filler_len);
+            let xml = format!("<!-- é{lead} -->{scope}{rule}<!-- {trailer} -->");
+
+            let keywords = extract_keywords_from_xml(&xml).unwrap();
+
+            assert!(
+                keywords.control.contains("begin"),
+                "filler_len {filler_len}"
+            );
+        }
     }
 
     #[test]
