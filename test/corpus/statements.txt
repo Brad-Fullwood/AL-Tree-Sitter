@@ -439,3 +439,102 @@ codeunit 50100 T
             (semicolon))
           (kw_end))
         (semicolon)))))
+
+================================================================================
+case labels with a leading minus
+================================================================================
+
+codeunit 50100 "Case Probe"
+{
+    procedure Sign(X: Integer): Integer
+    begin
+        case X of
+            -1:
+                exit(-1);
+            0, 1:
+                exit(1);
+        end;
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (case_statement
+                (kw_case)
+                value: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_of)
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (signed_case_label)))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (unary_operator)
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer))))))))))
+                  (semicolon))
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))
+                    (comma)
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer)))))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))
+                  (semicolon))
+                (kw_end)))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
