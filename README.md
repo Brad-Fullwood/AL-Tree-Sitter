@@ -19,7 +19,7 @@ cargo test
 Fixture and repository validation also require the
 [`tree-sitter` CLI](https://tree-sitter.github.io/tree-sitter/cli/installation.html)
 at the exact version recorded in `.tree-sitter-cli-version`. The exact pin is
-part of the generated-parser contract; older releases lack the prebuilt-library
+part of the generated-parser contract. Older releases lack the prebuilt-library
 JSON-summary interface used by the corpus runner.
 
 ```sh
@@ -50,7 +50,7 @@ tests/run_repo_tests.sh
 
 It builds the committed parser, runs the focused valid/invalid fixtures, and
 parses every pinned external corpus revision. Internally it uses
-`--repo-tests-only`; that mode deliberately performs no generator-owned source
+`--repo-tests-only`. That mode deliberately performs no generator-owned source
 rewrite.
 
 ## Regenerating the grammar
@@ -81,13 +81,13 @@ cargo run --release --manifest-path generator/Cargo.toml -- --structural-queries
 
 `queries/brackets.scm`, `queries/indents.scm`, and `queries/outline.scm` are
 hand-maintained here and copied verbatim into the parent extension's
-`languages/al` directory. Edit them in `queries/`; never edit the copies.
+`languages/al` directory. Edit them in `queries/`, not the copies.
 
 ## Validation fixtures
 
 Files under `tests/fixtures/valid` must parse without errors. Files under
 `tests/fixtures/invalid` must produce parse errors. The optional repository suite
-validates the grammar against larger AL codebases; it reports parse results but
+validates the grammar against larger AL codebases. It reports parse results but
 does not replace focused fixtures for grammar changes.
 
 `test/corpus/` holds tree-sitter corpus tests, which pin the exact tree shape
@@ -102,7 +102,7 @@ tree-sitter test
 `#define` and `#undef` in the source update the scanner's symbol table, so a
 later `#if` sees them. Symbols can also be supplied externally through the
 `AL_TS_DEFINES` environment variable (whitespace-, comma-, or semicolon-
-separated); an in-source `#define`/`#undef` overrides the environment value for
+separated). An in-source `#define`/`#undef` overrides the environment value for
 the rest of the file. `AL_TS_UNKNOWN_TRUE` controls whether an unknown symbol
 evaluates to true (default: false).
 
