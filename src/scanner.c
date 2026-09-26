@@ -837,7 +837,8 @@ static bool al_skip_name(TSLexer *lexer) {
 //
 // The token is zero width: it only steers the parser, and the `[` is still
 // consumed by the ordinary `attribute` rule.
-static bool scanner_scan_var_attribute_marker(TSLexer *lexer, const bool *valid_symbols) {
+static bool scanner_scan_var_attribute_marker(TSLexer *lexer, const bool *valid_symbols,
+                                              bool *consumed) {
   if (!valid_symbols[VAR_ATTRIBUTE_MARKER]) return false;
 
   while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r' ||
@@ -845,6 +846,8 @@ static bool scanner_scan_var_attribute_marker(TSLexer *lexer, const bool *valid_
     lexer->advance(lexer, true);
   }
   if (lexer->lookahead != '[') return false;
+  // From here the lexer reads ahead, so a false result must end the whole scan.
+  *consumed = true;
 
   // Everything past this point is lookahead only.
   lexer->mark_end(lexer);
@@ -1132,8 +1135,14 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
   }
 
 
-  if (scanner_scan_var_attribute_marker(lexer, valid_symbols)) {
+  bool marker_consumed = false;
+  if (scanner_scan_var_attribute_marker(lexer, valid_symbols, &marker_consumed)) {
     return true;
+  }
+  // The marker lookahead read past `[...]` and the word after it. Scanning on
+  // from there would lex `[Attr] local procedure` as one keyword token.
+  if (marker_consumed) {
+    return false;
   }
 
   if (valid_symbols[SIGNED_CASE_LABEL] && lexer->lookahead == '-') {

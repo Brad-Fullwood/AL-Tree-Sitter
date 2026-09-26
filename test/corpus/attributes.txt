@@ -404,3 +404,203 @@ page 50100 P
             (parenthesized_block
               (identifier))
             (object_body)))))))
+
+================================================================================
+attributed local procedure after a global var section
+================================================================================
+
+codeunit 50199 "Tick Counter"
+{
+    var
+        Calls: Integer;
+
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::Ticker, 'OnTick', '', false, false)]
+    local procedure Count(var Seen: Integer)
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))
+            (semicolon))))
+      (procedure_declaration
+        (attribute
+          name: (identifier)
+          (attribute_argument_list
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (type_keyword))
+                    (scope_suffix
+                      member: (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (object_keyword))
+                    (scope_suffix
+                      member: (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))))
+        (member_modifier
+          (kw_local))
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            (kw_var)
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+attributed internal and local event publishers after a global var section
+================================================================================
+
+codeunit 50199 "Tick Counter"
+{
+    var
+        Calls: Integer;
+
+    [IntegrationEvent(false, false)]
+    internal procedure OnTick()
+    begin
+    end;
+
+    [BusinessEvent(false)]
+    local procedure OnTock()
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))
+            (semicolon))))
+      (procedure_declaration
+        (attribute
+          name: (identifier)
+          (attribute_argument_list
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))))
+        (member_modifier
+          (kw_internal))
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (attribute
+          name: (identifier)
+          (attribute_argument_list
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))))
+        (member_modifier
+          (kw_local))
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
