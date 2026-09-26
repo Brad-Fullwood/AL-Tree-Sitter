@@ -56,8 +56,10 @@ rewrite.
 ## Regenerating the grammar
 
 The generator reads `syntaxes/alsyntax.tmlanguage` from the newest installed
-`ms-dynamics-smb.al-*` extension under either `~/.vscode/extensions` or
-`~/.cursor/extensions`. It updates:
+`ms-dynamics-smb.al-*` extension under either `~/.cursor/extensions` or
+`~/.vscode/extensions`. Set `AL_EXTENSION_PATH` to the unpacked root of a pinned
+extension to use that one instead, as CI and the parent repository's
+`--full-regenerate` check do. It updates:
 
 - `grammar.js` and the generated files under `src/`
 - queries under `queries/`
