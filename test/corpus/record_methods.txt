@@ -468,6 +468,11 @@ bare field names and record methods in table code
 
 table 50100 "Tour Member"
 {
+    fields
+    {
+        field(1; "No."; Code[20]) { }
+    }
+
     procedure Deposit(Amount: Decimal): Decimal
     begin
         Balance += Amount;
@@ -488,6 +493,20 @@ table 50100 "Tour Member"
       (name
         (quoted_identifier)))
     body: (object_body
+      (object_section
+        keyword: (metadata_keyword)
+        body: (object_body
+          (object_section
+            keyword: (metadata_keyword)
+            (parenthesized_block
+              (integer)
+              (semicolon)
+              (quoted_identifier)
+              (semicolon)
+              (control_keyword)
+              (bracketed_block
+                (integer)))
+            body: (object_body))))
       (procedure_declaration
         (kw_procedure)
         name: (name

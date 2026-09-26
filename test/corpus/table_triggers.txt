@@ -4,6 +4,11 @@ table triggers OnInsert, OnModify, OnDelete and OnRename
 
 table 50100 "Tour Member"
 {
+    fields
+    {
+        field(1; "No."; Code[20]) { }
+    }
+
     trigger OnInsert()
     begin
         if Balance = 0 then
@@ -36,6 +41,20 @@ table 50100 "Tour Member"
       (name
         (quoted_identifier)))
     body: (object_body
+      (object_section
+        keyword: (metadata_keyword)
+        body: (object_body
+          (object_section
+            keyword: (metadata_keyword)
+            (parenthesized_block
+              (integer)
+              (semicolon)
+              (quoted_identifier)
+              (semicolon)
+              (control_keyword)
+              (bracketed_block
+                (integer)))
+            body: (object_body))))
       (trigger_declaration
         (kw_trigger)
         name: (name_or_keyword
