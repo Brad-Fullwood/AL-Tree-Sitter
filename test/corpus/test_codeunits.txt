@@ -1,0 +1,392 @@
+================================================================================
+test codeunit with Test and handler attributes
+================================================================================
+
+codeunit 50101 "Tour Tests"
+{
+    Subtype = Test;
+    TestPermissions = Disabled;
+
+    [Test]
+    [HandlerFunctions('ConfirmYes')]
+    procedure DeleteAsks()
+    begin
+    end;
+
+    [ConfirmHandler]
+    procedure ConfirmYes(Question: Text[1024]; var Reply: Boolean)
+    begin
+        Reply := true;
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (property_assignment
+        name: (name
+          (identifier))
+        value: (name
+          (identifier))
+        (semicolon))
+      (property_assignment
+        name: (keyword)
+        value: (name
+          (identifier))
+        (semicolon))
+      (procedure_declaration
+        (attribute
+          name: (identifier))
+        (attribute
+          name: (identifier)
+          (attribute_argument_list
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))))
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (attribute
+          name: (identifier))
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_text)
+              (bracketed_block
+                (integer))))
+          (semicolon)
+          (parameter
+            (kw_var)
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_boolean))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+asserterror with a call, a block and the last error text
+================================================================================
+
+codeunit 50101 "Tour Tests"
+{
+    [Test]
+    procedure DeleteFails()
+    begin
+        asserterror Member.Delete(true);
+        asserterror begin
+            Member.Validate(Balance, -1);
+            Member.Modify();
+        end;
+        asserterror Error('Balance %1', 5);
+        if GetLastErrorText() <> 'Balance 5' then
+            Error('Unexpected error: %1', GetLastErrorText());
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (attribute
+          name: (identifier))
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (asserterror_statement
+                (kw_asserterror)
+                body: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (member_call_suffix
+                            member: (name
+                              (identifier))
+                            call: (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (name
+                                          (identifier))))))))))))))))
+            (semicolon)
+            (statement
+              (asserterror_statement
+                (kw_asserterror)
+                body: (statement
+                  (begin_end_block
+                    (kw_begin)
+                    (statement_list
+                      (statement
+                        (expression_statement
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (name
+                                    (identifier)))
+                                (member_call_suffix
+                                  member: (name
+                                    (identifier))
+                                  call: (argument_list
+                                    (expression_list
+                                      (expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (name
+                                                (identifier))))))
+                                      (comma)
+                                      (expression
+                                        (unary_expression
+                                          (unary_operator)
+                                          (unary_expression
+                                            (postfix_expression
+                                              (primary_expression
+                                                (integer))))))))))))))
+                      (semicolon)
+                      (statement
+                        (expression_statement
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (name
+                                    (identifier)))
+                                (member_call_suffix
+                                  member: (name
+                                    (identifier))
+                                  call: (argument_list)))))))
+                      (semicolon))
+                    (kw_end)))))
+            (semicolon)
+            (statement
+              (asserterror_statement
+                (kw_asserterror)
+                body: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            call: (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (string)))))
+                                (comma)
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (integer)))))))))))))))
+            (semicolon)
+            (statement
+              (if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (call_suffix
+                        call: (argument_list))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string)))))
+                (kw_then)
+                consequence: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            call: (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (string)))))
+                                (comma)
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (name
+                                          (identifier)))
+                                      (call_suffix
+                                        call: (argument_list)))))))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+quoted identifiers with doubled quotes
+================================================================================
+
+codeunit 50100 "Say ""Hi"" Tests"
+{
+    procedure "Greet ""Everyone"""(): Text
+    var
+        "Quoted ""Name""": Text;
+    begin
+        "Quoted ""Name""" := 'x';
+        Rec."Field ""A""" := "Quoted ""Name""";
+        exit("Quoted ""Name""");
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (quoted_identifier))
+        parameters: (parameter_list)
+        returns: (operator)
+        return_type: (type_reference
+          (kw_text))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (quoted_identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (quoted_identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_suffix
+                        member: (name
+                          (quoted_identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (quoted_identifier))))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (quoted_identifier))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
