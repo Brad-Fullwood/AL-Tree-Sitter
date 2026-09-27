@@ -1218,8 +1218,10 @@ module.exports = grammar({
 
   // Keep legacy punctuation permissive, but split slash out so comment
   // openers are not swallowed into adjacent operators (`+//`, `://`).
+  // A sign after a dot starts a new token, so `-5..-2` is the range
+  // operator `..` followed by a unary minus.
   operator: _ => choice(
-    token(/[!$%&*+\-.:<=>?@^|~]+/),
+    token(/[!$%&*+\-:<=>?@^|~]+(\.[!$%&*.:<=>?@^|~]*)?|\.[!$%&*.:<=>?@^|~]*/),
     token(choice('/=', '/')),
   ),
 
