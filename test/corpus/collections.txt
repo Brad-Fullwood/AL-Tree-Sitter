@@ -1,0 +1,562 @@
+================================================================================
+List and Dictionary declarations
+================================================================================
+
+codeunit 50101 "List Probe"
+{
+    procedure Declarations(Names: List of [Text]; var Prices: Dictionary of [Code[20], Decimal])
+    var
+        Words: List of [Text];
+        Grid: List of [List of [Integer]];
+        Totals: Dictionary of [Code[20], Decimal];
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_list)
+              (of_clause
+                (kw_of)
+                (bracketed_block
+                  (control_keyword)))))
+          (semicolon)
+          (parameter
+            (kw_var)
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_dictionary)
+              (of_clause
+                (kw_of)
+                (bracketed_block
+                  (control_keyword)
+                  (bracketed_block
+                    (integer))
+                  (comma)
+                  (control_keyword))))))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_list)
+                (of_clause
+                  (kw_of)
+                  (bracketed_block
+                    (control_keyword))))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (metadata_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_list)
+                (of_clause
+                  (kw_of)
+                  (bracketed_block
+                    (control_keyword)
+                    (control_keyword)
+                    (bracketed_block
+                      (control_keyword)))))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_dictionary)
+                (of_clause
+                  (kw_of)
+                  (bracketed_block
+                    (control_keyword)
+                    (bracketed_block
+                      (integer))
+                    (comma)
+                    (control_keyword))))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+List range methods and the var result form of GetRange
+================================================================================
+
+codeunit 50101 "List Probe"
+{
+    procedure Ranges(var Names: List of [Text]; Other: List of [Text]): Integer
+    var
+        Part: List of [Text];
+    begin
+        Names.AddRange(Other);
+        Names.AddRange('a', 'b');
+        Part := Names.GetRange(1, 2);
+        Names.GetRange(2, 1, Part);
+        Names.RemoveRange(1, 2);
+        Names.Reverse();
+        exit(Names.LastIndexOf('a'));
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            (kw_var)
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_list)
+              (of_clause
+                (kw_of)
+                (bracketed_block
+                  (control_keyword)))))
+          (semicolon)
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_list)
+              (of_clause
+                (kw_of)
+                (bracketed_block
+                  (control_keyword))))))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (metadata_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_list)
+                (of_clause
+                  (kw_of)
+                  (bracketed_block
+                    (control_keyword))))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (name
+                                      (identifier))))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer)))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (name
+                                      (identifier))))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer)))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list)))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (member_call_suffix
+                            member: (name
+                              (identifier))
+                            call: (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (string)))))))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+foreach over a List and over Dictionary keys with Get in an if
+================================================================================
+
+codeunit 50101 "List Probe"
+{
+    procedure Loops(Names: List of [Text]; Prices: Dictionary of [Code[20], Decimal]) Total: Decimal
+    var
+        Name: Text;
+        ItemNo: Code[20];
+        Value: Decimal;
+    begin
+        foreach Name in Names do
+            Total += StrLen(Name);
+        foreach ItemNo in Prices.Keys do
+            if Prices.Get(ItemNo, Value) then
+                Total += Value;
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_list)
+              (of_clause
+                (kw_of)
+                (bracketed_block
+                  (control_keyword)))))
+          (semicolon)
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_dictionary)
+              (of_clause
+                (kw_of)
+                (bracketed_block
+                  (control_keyword)
+                  (bracketed_block
+                    (integer))
+                  (comma)
+                  (control_keyword))))))
+        return_var: (name_or_keyword
+          (name
+            (identifier)))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_decimal))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_code)
+                (bracketed_block
+                  (integer)))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (object_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_decimal))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (foreach_statement
+                (kw_foreach)
+                iterator: (name_or_keyword
+                  (name
+                    (identifier)))
+                (kw_in)
+                collection: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_do)
+                body: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            call: (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (name
+                                          (identifier))))))))))))))))
+            (semicolon)
+            (statement
+              (foreach_statement
+                (kw_foreach)
+                iterator: (name_or_keyword
+                  (name
+                    (identifier)))
+                (kw_in)
+                collection: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_suffix
+                        member: (name
+                          (identifier))))))
+                (kw_do)
+                body: (statement
+                  (if_statement
+                    (kw_if)
+                    condition: (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (member_call_suffix
+                            member: (name
+                              (identifier))
+                            call: (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (name
+                                          (identifier))))))
+                                (comma)
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (object_keyword)))))))))))
+                    (kw_then)
+                    consequence: (statement
+                      (expression_statement
+                        (expression
+                          (unary_expression
+                            (postfix_expression
+                              (primary_expression
+                                (name
+                                  (identifier)))))
+                          (binary_operator
+                            (operator))
+                          (unary_expression
+                            (postfix_expression
+                              (primary_expression
+                                (object_keyword)))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))

@@ -1,0 +1,660 @@
+================================================================================
+JSON variable types
+================================================================================
+
+codeunit 50100 "Json Probe"
+{
+    procedure Types()
+    var
+        Doc: JsonObject;
+        Items: JsonArray;
+        Token: JsonToken;
+        Scalar: JsonValue;
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_jsonobject))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_jsonarray))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_jsontoken))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_jsonvalue))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+ReadFrom and SelectToken with a var token
+================================================================================
+
+codeunit 50100 "Json Probe"
+{
+    procedure Read(): Text
+    begin
+        if not Doc.ReadFrom('{"order":{"no":"SO1"}}') then
+            exit('');
+        Doc.SelectToken('$.order.no', Token);
+        exit(Token.AsValue().AsText());
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        returns: (operator)
+        return_type: (type_reference
+          (kw_text))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (unary_operator
+                      (op_not))
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (name
+                            (identifier)))
+                        (member_call_suffix
+                          member: (name
+                            (identifier))
+                          call: (argument_list
+                            (expression_list
+                              (expression
+                                (unary_expression
+                                  (postfix_expression
+                                    (primary_expression
+                                      (string))))))))))))
+                (kw_then)
+                consequence: (statement
+                  (exit_statement
+                    (kw_exit)
+                    (argument_list
+                      (expression_list
+                        (expression
+                          (unary_expression
+                            (postfix_expression
+                              (primary_expression
+                                (string)))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (name
+                                      (identifier))))))))))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (member_call_suffix
+                            member: (name
+                              (identifier))
+                            call: (argument_list))
+                          (member_call_suffix
+                            member: (name
+                              (identifier))
+                            call: (argument_list)))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+JSON array access inside a for loop
+================================================================================
+
+codeunit 50100 "Json Probe"
+{
+    procedure Sum(): Decimal
+    begin
+        Items := Token.AsArray();
+        for i := 0 to Items.Count() - 1 do begin
+            Items.Get(i, Token);
+            Total += Token.AsObject().GetDecimal('qty');
+        end;
+        exit(Total);
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        returns: (operator)
+        return_type: (type_reference
+          (kw_decimal))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list)))))))
+            (semicolon)
+            (statement
+              (for_statement
+                (kw_for)
+                iterator: (identifier)
+                assign: (operator)
+                from: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                direction: (kw_to)
+                to: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                (kw_do)
+                body: (statement
+                  (begin_end_block
+                    (kw_begin)
+                    (statement_list
+                      (statement
+                        (expression_statement
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (name
+                                    (identifier)))
+                                (member_call_suffix
+                                  member: (name
+                                    (identifier))
+                                  call: (argument_list
+                                    (expression_list
+                                      (expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (name
+                                                (identifier))))))
+                                      (comma)
+                                      (expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (name
+                                                (identifier))))))))))))))
+                      (semicolon)
+                      (statement
+                        (expression_statement
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (name
+                                    (identifier)))))
+                            (binary_operator
+                              (operator))
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (name
+                                    (identifier)))
+                                (member_call_suffix
+                                  member: (name
+                                    (identifier))
+                                  call: (argument_list))
+                                (member_call_suffix
+                                  member: (name
+                                    (identifier))
+                                  call: (argument_list
+                                    (expression_list
+                                      (expression
+                                        (unary_expression
+                                          (postfix_expression
+                                            (primary_expression
+                                              (string)))))))))))))
+                      (semicolon))
+                    (kw_end)))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+building and writing a JSON object
+================================================================================
+
+codeunit 50100 "Json Probe"
+{
+    procedure Write(): Text
+    begin
+        Customer.Add('name', 'Ann');
+        Customer.Add('vip', true);
+        Lines.Add(1);
+        Customer.Add('lines', Lines);
+        Customer.Replace('name', 'Bo');
+        Customer.WriteTo(Out);
+        exit(Format(Customer.Contains('name')) + Out);
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        returns: (operator)
+        return_type: (type_reference
+          (kw_text))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (name
+                                      (identifier))))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer)))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (name
+                                      (identifier))))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (name
+                                      (identifier))))))))))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            call: (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (name
+                                          (identifier)))
+                                      (member_call_suffix
+                                        member: (name
+                                          (identifier))
+                                        call: (argument_list
+                                          (expression_list
+                                            (expression
+                                              (unary_expression
+                                                (postfix_expression
+                                                  (primary_expression
+                                                    (string))))))))))))))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+variable named Value reads as an object keyword
+================================================================================
+
+codeunit 50100 "Json Probe"
+{
+    procedure KeywordName(): Text
+    var
+        Value: JsonValue;
+    begin
+        Value := Token.AsValue();
+        exit(Value.AsText());
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        returns: (operator)
+        return_type: (type_reference
+          (kw_text))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (object_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_jsonvalue))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (object_keyword))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list)))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (object_keyword))
+                          (member_call_suffix
+                            member: (name
+                              (identifier))
+                            call: (argument_list)))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))

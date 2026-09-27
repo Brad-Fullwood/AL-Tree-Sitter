@@ -1,0 +1,613 @@
+================================================================================
+table triggers OnInsert, OnModify, OnDelete and OnRename
+================================================================================
+
+table 50100 "Tour Member"
+{
+    fields
+    {
+        field(1; "No."; Code[20]) { }
+    }
+
+    trigger OnInsert()
+    begin
+        if Balance = 0 then
+            Balance := 100;
+    end;
+
+    trigger OnModify()
+    begin
+        "Last Balance" := xRec.Balance;
+    end;
+
+    trigger OnDelete()
+    begin
+        Error('Cannot delete %1', Rec."No.");
+    end;
+
+    trigger OnRename()
+    begin
+        "Old No." := xRec."No.";
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_table)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_section
+        keyword: (metadata_keyword)
+        body: (object_body
+          (object_section
+            keyword: (metadata_keyword)
+            (parenthesized_block
+              (integer)
+              (semicolon)
+              (quoted_identifier)
+              (semicolon)
+              (control_keyword)
+              (bracketed_block
+                (integer)))
+            body: (object_body))))
+      (trigger_declaration
+        (kw_trigger)
+        name: (name_or_keyword
+          (name
+            (identifier)))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                (kw_then)
+                consequence: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon))
+      (trigger_declaration
+        (kw_trigger)
+        name: (name_or_keyword
+          (name
+            (identifier)))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (quoted_identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_suffix
+                        member: (name
+                          (identifier))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon))
+      (trigger_declaration
+        (kw_trigger)
+        name: (name_or_keyword
+          (name
+            (identifier)))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (call_suffix
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (name
+                                      (identifier)))
+                                  (member_suffix
+                                    member: (name
+                                      (quoted_identifier))))))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon))
+      (trigger_declaration
+        (kw_trigger)
+        name: (name_or_keyword
+          (name
+            (identifier)))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (quoted_identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_suffix
+                        member: (name
+                          (quoted_identifier))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+field OnValidate and OnLookup triggers
+================================================================================
+
+table 50100 "Tour Member"
+{
+    fields
+    {
+        field(2; Name; Text[50])
+        {
+            trigger OnValidate()
+            begin
+                if Name <> xRec.Name then
+                    Changes += CurrFieldNo;
+            end;
+
+            trigger OnLookup()
+            begin
+                Page.RunModal(0, Rec);
+            end;
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_table)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_section
+        keyword: (metadata_keyword)
+        body: (object_body
+          (object_section
+            keyword: (metadata_keyword)
+            (parenthesized_block
+              (integer)
+              (semicolon)
+              (identifier)
+              (semicolon)
+              (control_keyword)
+              (bracketed_block
+                (integer)))
+            body: (object_body
+              (trigger_declaration
+                (kw_trigger)
+                name: (name_or_keyword
+                  (name
+                    (identifier)))
+                parameters: (parameter_list)
+                (begin_end_block
+                  (kw_begin)
+                  (statement_list
+                    (statement
+                      (if_statement
+                        (kw_if)
+                        condition: (expression
+                          (unary_expression
+                            (postfix_expression
+                              (primary_expression
+                                (name
+                                  (identifier)))))
+                          (binary_operator
+                            (operator))
+                          (unary_expression
+                            (postfix_expression
+                              (primary_expression
+                                (name
+                                  (identifier)))
+                              (member_suffix
+                                member: (name
+                                  (identifier))))))
+                        (kw_then)
+                        consequence: (statement
+                          (expression_statement
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (name
+                                      (identifier)))))
+                              (binary_operator
+                                (operator))
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (name
+                                      (identifier))))))))))
+                    (semicolon))
+                  (kw_end))
+                (semicolon))
+              (trigger_declaration
+                (kw_trigger)
+                name: (name_or_keyword
+                  (name
+                    (identifier)))
+                parameters: (parameter_list)
+                (begin_end_block
+                  (kw_begin)
+                  (statement_list
+                    (statement
+                      (expression_statement
+                        (expression
+                          (unary_expression
+                            (postfix_expression
+                              (primary_expression
+                                (object_keyword))
+                              (member_call_suffix
+                                member: (name
+                                  (identifier))
+                                call: (argument_list
+                                  (expression_list
+                                    (expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (integer)))))
+                                    (comma)
+                                    (expression
+                                      (unary_expression
+                                        (postfix_expression
+                                          (primary_expression
+                                            (name
+                                              (identifier))))))))))))))
+                    (semicolon))
+                  (kw_end))
+                (semicolon)))))))))
+
+================================================================================
+TableRelation with where filters
+================================================================================
+
+table 50100 "Tour Member"
+{
+    fields
+    {
+        field(6; "Item No."; Code[20])
+        {
+            TableRelation = Item."No." where(Blocked = const(false), "Item Type" = filter(Stock | Service));
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_table)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_section
+        keyword: (metadata_keyword)
+        body: (object_body
+          (object_section
+            keyword: (metadata_keyword)
+            (parenthesized_block
+              (integer)
+              (semicolon)
+              (quoted_identifier)
+              (semicolon)
+              (control_keyword)
+              (bracketed_block
+                (integer)))
+            body: (object_body
+              (property_assignment
+                name: (name
+                  (identifier))
+                value: (qualified_name
+                  (name
+                    (identifier))
+                  (name
+                    (quoted_identifier)))
+                value: (property_keyword)
+                value: (parenthesized_block
+                  (identifier)
+                  (operator)
+                  (property_keyword)
+                  (parenthesized_block
+                    (identifier))
+                  (comma)
+                  (quoted_identifier)
+                  (operator)
+                  (metadata_keyword)
+                  (parenthesized_block
+                    (identifier)
+                    (operator)
+                    (identifier)))
+                (semicolon)))))))))
+
+================================================================================
+conditional TableRelation with if and else
+================================================================================
+
+table 50100 "Tour Member"
+{
+    fields
+    {
+        field(3; "No."; Code[20])
+        {
+            TableRelation = if (Kind = const(Customer)) Customer
+            else if (Kind = const(Vendor)) Vendor
+            else "G/L Account";
+        }
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_table)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_section
+        keyword: (metadata_keyword)
+        body: (object_body
+          (object_section
+            keyword: (metadata_keyword)
+            (parenthesized_block
+              (integer)
+              (semicolon)
+              (quoted_identifier)
+              (semicolon)
+              (control_keyword)
+              (bracketed_block
+                (integer)))
+            body: (object_body
+              (property_assignment
+                name: (name
+                  (identifier))
+                value: (control_keyword)
+                value: (parenthesized_block
+                  (identifier)
+                  (operator)
+                  (property_keyword)
+                  (parenthesized_block
+                    (identifier)))
+                value: (name
+                  (identifier))
+                value: (control_keyword)
+                value: (control_keyword)
+                value: (parenthesized_block
+                  (identifier)
+                  (operator)
+                  (property_keyword)
+                  (parenthesized_block
+                    (identifier)))
+                value: (name
+                  (identifier))
+                value: (control_keyword)
+                value: (name
+                  (quoted_identifier))
+                (semicolon)))))))))
+
+================================================================================
+codeunit declared after a table in one file
+================================================================================
+
+table 50100 "Tour Member"
+{
+    fields
+    {
+        field(1; "No."; Code[20]) { }
+    }
+    keys
+    {
+        key(PK; "No.") { Clustered = true; }
+    }
+}
+
+codeunit 50101 "Tour Tests"
+{
+    Subtype = Test;
+
+    [Test]
+    procedure InsertRuns()
+    var
+        Member: Record "Tour Member";
+    begin
+        Member."No." := 'A';
+        Member.Insert(true);
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_table)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_section
+        keyword: (metadata_keyword)
+        body: (object_body
+          (object_section
+            keyword: (metadata_keyword)
+            (parenthesized_block
+              (integer)
+              (semicolon)
+              (quoted_identifier)
+              (semicolon)
+              (control_keyword)
+              (bracketed_block
+                (integer)))
+            body: (object_body))))
+      (key_section
+        keyword: (kw_keys)
+        body: (object_body
+          (key_declaration
+            keyword: (kw_key)
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            (semicolon)
+            fields: (key_field_list
+              (name_or_keyword
+                (name
+                  (quoted_identifier))))
+            body: (object_body
+              (property_assignment
+                name: (name
+                  (identifier))
+                value: (name
+                  (identifier))
+                (semicolon))))))))
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (property_assignment
+        name: (name
+          (identifier))
+        value: (name
+          (identifier))
+        (semicolon))
+      (procedure_declaration
+        (attribute
+          name: (identifier))
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_record)
+                (name_or_keyword
+                  (name
+                    (quoted_identifier))))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_suffix
+                        member: (name
+                          (quoted_identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (name
+                                      (identifier))))))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))

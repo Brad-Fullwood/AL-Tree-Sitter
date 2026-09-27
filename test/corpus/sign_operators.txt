@@ -1,0 +1,638 @@
+================================================================================
+sign after an assignment, a multiplication and a subtraction
+================================================================================
+
+codeunit 50102 "Sign Probe"
+{
+    procedure Arithmetic(A: Integer; B: Integer)
+    var
+        X: Integer;
+        Y: Integer;
+        Z: Integer;
+    begin
+        X := -1;
+        X:=-1;
+        Y := A*-1;
+        Y := A - -1;
+        Z := 2*-B;
+        Z := A/-2;
+        Z := A+-1;
+        Z := A--1;
+        X+=-1;
+        X -= -1;
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer)))
+          (semicolon)
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_integer))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_integer))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_integer))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (name
+                            (identifier)))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+sign after a comparison, a bracket, a parenthesis and a comma
+================================================================================
+
+table 50102 "Sign Ledger"
+{
+    fields
+    {
+        field(1; Amount; Decimal) { }
+    }
+}
+
+codeunit 50102 "Sign Probe"
+{
+    procedure Compare(X: Integer): Integer
+    var
+        Rec: Record "Sign Ledger";
+    begin
+        if X<-1 then
+            X := 0;
+        if X>-1 then
+            X := 0;
+        if (X<>-1) and (X=-1) then
+            X := 0;
+        if X<=-1 then
+            X := 0;
+        if X in [-5..-2] then
+            X := 0;
+        Rec.SetRange(Amount, -100, 0);
+        exit(-1);
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_table)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_section
+        keyword: (metadata_keyword)
+        body: (object_body
+          (object_section
+            keyword: (metadata_keyword)
+            (parenthesized_block
+              (integer)
+              (semicolon)
+              (identifier)
+              (semicolon)
+              (control_keyword))
+            body: (object_body))))))
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_record)
+                (name_or_keyword
+                  (name
+                    (quoted_identifier))))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))
+                (kw_then)
+                consequence: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))))
+            (semicolon)
+            (statement
+              (if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))
+                (kw_then)
+                consequence: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))))
+            (semicolon)
+            (statement
+              (if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (parenthesized_expression
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (name
+                                    (identifier)))))
+                            (binary_operator
+                              (operator))
+                            (unary_expression
+                              (unary_operator)
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer))))))))))
+                  (binary_operator
+                    (operator_word))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (parenthesized_expression
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (name
+                                    (identifier)))))
+                            (binary_operator
+                              (operator))
+                            (unary_expression
+                              (unary_operator)
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer)))))))))))
+                (kw_then)
+                consequence: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))))
+            (semicolon)
+            (statement
+              (if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (unary_operator)
+                    (unary_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer))))))
+                (kw_then)
+                consequence: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))))
+            (semicolon)
+            (statement
+              (if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (kw_in))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (bracketed_block
+                          (operator)
+                          (integer)
+                          (operator)
+                          (operator)
+                          (integer))))))
+                (kw_then)
+                consequence: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (name
+                                      (identifier))))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (unary_operator)
+                                (unary_expression
+                                  (postfix_expression
+                                    (primary_expression
+                                      (integer))))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer)))))))))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (unary_operator)
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (integer))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))

@@ -55,6 +55,18 @@ jobs:
       - name: Validate focused fixtures and pinned repositories
         run: tests/run_repo_tests.sh
 
+      # Zed loads this grammar as a wasm module, so parser.c and the external
+      # scanner must compile against a wasi-libc sysroot, not just the host's.
+      # The CLI downloads and caches its own wasi-sdk.
+      - name: Cache the tree-sitter wasi-sdk
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/tree-sitter/wasi-sdk
+          key: wasi-sdk-${{ runner.os }}-${{ hashFiles('.tree-sitter-cli-version') }}
+
+      - name: Build the grammar for wasm
+        run: tree-sitter build --wasm -o "$RUNNER_TEMP/tree-sitter-al.wasm"
+
       - name: Validate publishable package contents
         run: cargo package --list
 

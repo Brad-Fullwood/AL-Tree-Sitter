@@ -1,0 +1,269 @@
+================================================================================
+global labels with placeholders, Comment, Locked and MaxLength
+================================================================================
+
+codeunit 50100 "Label Probe"
+{
+    var
+        GreetingLbl: Label 'Hello %1, you have %2 items', Comment = '%1 = name, %2 = count';
+        ApiTok: Label 'API', Locked = true;
+        ShortLbl: Label 'Short', MaxLength = 10;
+        OrderLbl: Label 'Order %1', Comment = '%1 = order number', Locked = true, MaxLength = 30;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (label_declaration
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (metadata_keyword)
+            value: (string)
+            (label_property
+              (comma)
+              name: (identifier)
+              (operator)
+              value: (string))
+            (semicolon)))
+        (object_variable_declaration
+          (label_declaration
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (metadata_keyword)
+            value: (string)
+            (label_property
+              (comma)
+              name: (identifier)
+              (operator)
+              value: (identifier))
+            (semicolon)))
+        (object_variable_declaration
+          (label_declaration
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (metadata_keyword)
+            value: (string)
+            (label_property
+              (comma)
+              name: (identifier)
+              (operator)
+              value: (integer))
+            (semicolon)))
+        (object_variable_declaration
+          (label_declaration
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (metadata_keyword)
+            value: (string)
+            (label_property
+              (comma)
+              name: (identifier)
+              (operator)
+              value: (string))
+            (label_property
+              (comma)
+              name: (identifier)
+              (operator)
+              value: (identifier))
+            (label_property
+              (comma)
+              name: (identifier)
+              (operator)
+              value: (integer))
+            (semicolon)))))))
+
+================================================================================
+label text with a doubled quote
+================================================================================
+
+codeunit 50100 "Label Probe"
+{
+    var
+        QuoteLbl: Label 'It''s %1', Comment = 'Don''t translate %1';
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (label_declaration
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (metadata_keyword)
+            value: (string)
+            (label_property
+              (comma)
+              name: (identifier)
+              (operator)
+              value: (string))
+            (semicolon)))))))
+
+================================================================================
+local label used by StrSubstNo and Error
+================================================================================
+
+codeunit 50100 "Label Probe"
+{
+    procedure Greet(Name: Text): Text
+    var
+        GreetingLbl: Label 'Hello %1, you have %2 items', Comment = '%1 = name, %2 = count';
+        EmptyErr: Label 'Name must not be empty.';
+    begin
+        if Name = '' then
+            Error(EmptyErr);
+        exit(StrSubstNo(GreetingLbl, Name, 3));
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_text))))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_text))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (label_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (metadata_keyword)
+              value: (string)
+              (label_property
+                (comma)
+                name: (identifier)
+                (operator)
+                value: (string))
+              (semicolon)))
+          (variable_declaration
+            (label_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (metadata_keyword)
+              value: (string)
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string)))))
+                (kw_then)
+                consequence: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            call: (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (name
+                                          (identifier))))))))))))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            call: (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (name
+                                          (identifier))))))
+                                (comma)
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (name
+                                          (identifier))))))
+                                (comma)
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (integer)))))))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))

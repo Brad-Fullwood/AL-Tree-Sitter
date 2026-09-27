@@ -1,0 +1,382 @@
+================================================================================
+enum declaration with quoted value names
+================================================================================
+
+enum 50100 "Member Level"
+{
+    Extensible = true;
+
+    value(0; Bronze) { Caption = 'Bronze'; }
+    value(1; "Gold Plus") { }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_enum)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (property_assignment
+        name: (name
+          (identifier))
+        value: (name
+          (identifier))
+        (semicolon))
+      (enum_value_declaration
+        keyword: (object_keyword)
+        id: (integer)
+        (semicolon)
+        name: (name
+          (identifier))
+        (object_body
+          (property_assignment
+            name: (name
+              (identifier))
+            value: (string)
+            (semicolon))))
+      (enum_value_declaration
+        keyword: (object_keyword)
+        id: (integer)
+        (semicolon)
+        name: (name
+          (quoted_identifier))
+        (object_body)))))
+
+================================================================================
+enum variable and scoped enum values
+================================================================================
+
+codeunit 50100 "Enum Probe"
+{
+    procedure Levels()
+    var
+        Level: Enum "Member Level";
+    begin
+        Level := Enum::"Member Level"::Bronze;
+        Level := "Member Level"::"Gold Plus";
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_enum)
+                (name_or_keyword
+                  (name
+                    (quoted_identifier))))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (object_keyword))
+                      (scope_suffix
+                        member: (name
+                          (quoted_identifier)))
+                      (scope_suffix
+                        member: (name
+                          (identifier))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (quoted_identifier)))
+                      (scope_suffix
+                        member: (name
+                          (quoted_identifier))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+AsInteger, Names, Ordinals and FromInteger
+================================================================================
+
+codeunit 50100 "Enum Probe"
+{
+    procedure Convert(): Integer
+    begin
+        Names := Level.Names();
+        Ordinals := Enum::"Member Level".Ordinals();
+        Level := Enum::"Member Level".FromInteger(1);
+        exit("Member Level"::Bronze.AsInteger() + Level.AsInteger());
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (object_keyword))
+                      (scope_suffix
+                        member: (name
+                          (quoted_identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (object_keyword))
+                      (scope_suffix
+                        member: (name
+                          (quoted_identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (integer)))))))))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (quoted_identifier)))
+                          (scope_suffix
+                            member: (name
+                              (identifier)))
+                          (member_call_suffix
+                            member: (name
+                              (identifier))
+                            call: (argument_list))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (member_call_suffix
+                            member: (name
+                              (identifier))
+                            call: (argument_list)))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+case over enum values
+================================================================================
+
+codeunit 50100 "Enum Probe"
+{
+    procedure Describe(): Text
+    begin
+        case Level of
+            "Member Level"::Bronze:
+                exit('B');
+            "Member Level"::"Gold Plus", Enum::"Member Level"::Silver:
+                exit('G');
+        end;
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        returns: (operator)
+        return_type: (type_reference
+          (kw_text))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (case_statement
+                (kw_case)
+                value: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_of)
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (name
+                            (quoted_identifier)))
+                        (scope_suffix
+                          member: (name
+                            (identifier))))))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (string)))))))))
+                  (semicolon))
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (name
+                            (quoted_identifier)))
+                        (scope_suffix
+                          member: (name
+                            (quoted_identifier)))))
+                    (comma)
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (object_keyword))
+                        (scope_suffix
+                          member: (name
+                            (quoted_identifier)))
+                        (scope_suffix
+                          member: (name
+                            (identifier))))))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (string)))))))))
+                  (semicolon))
+                (kw_end)))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))

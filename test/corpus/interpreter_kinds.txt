@@ -1,0 +1,271 @@
+================================================================================
+if with an empty then, an empty else and both branches
+================================================================================
+
+codeunit 50111 "If Shapes"
+{
+    procedure Run(A: Boolean) Result: Integer
+    var
+        Flag: Boolean;
+    begin
+        Flag := true;
+        if A then;
+        if A then
+            Result := 1
+        else;
+        if A and (Flag <> false) then
+            Result := 3
+        else
+            Result := 4;
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_boolean))))
+        return_var: (name_or_keyword
+          (name
+            (identifier)))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_boolean))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))))
+            (semicolon)
+            (statement
+              (empty_if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_then)))
+            (semicolon)
+            (statement
+              (if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_then)
+                consequence: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))
+                (kw_else)))
+            (semicolon)
+            (statement
+              (if_statement
+                (kw_if)
+                condition: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator_word))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (parenthesized_expression
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (name
+                                    (identifier)))))
+                            (binary_operator
+                              (operator))
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (name
+                                    (identifier)))))))))))
+                (kw_then)
+                consequence: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))
+                (kw_else)
+                alternative: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+call on a member reached through a scope operator
+================================================================================
+
+codeunit 50112 "Scope Other"
+{
+    procedure DoIt(): Integer
+    begin
+        exit(1);
+    end;
+}
+
+codeunit 50113 "Scope Call"
+{
+    procedure Fetch(): Integer
+    begin
+        exit(Codeunit::"Scope Other"::DoIt());
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon))))
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (object_keyword))
+                          (scope_suffix
+                            member: (name
+                              (quoted_identifier)))
+                          (scope_call_suffix
+                            member: (name
+                              (identifier))
+                            call: (argument_list)))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))

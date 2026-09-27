@@ -214,3 +214,96 @@ codeunit 50100 T
             (semicolon))
           (kw_end))
         (semicolon)))))
+
+================================================================================
+object id after a scope operator is an error confined to that argument
+================================================================================
+
+codeunit 50101 Subscribers
+{
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::50100, 'OnBeforePost', '', false, false)]
+    local procedure AddTen(var Total: Integer)
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body
+      (procedure_declaration
+        (attribute
+          name: (identifier)
+          (attribute_argument_list
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (type_keyword))
+                    (scope_suffix
+                      member: (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (object_keyword))))))
+            (ERROR
+              (integer))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))))
+        (member_modifier
+          (kw_local))
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            (kw_var)
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
