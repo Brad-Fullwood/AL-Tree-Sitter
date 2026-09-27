@@ -1,0 +1,828 @@
+================================================================================
+globals and locals named after object and type keywords
+================================================================================
+
+codeunit 50103 "Keyword Names"
+{
+    var
+        Page: Text;
+        Report: TextBuilder;
+        Code: Code[10];
+        Value: Decimal;
+        Record: Integer;
+        Codeunit: Text;
+        Enum: Integer;
+        Label: Text;
+        Object: Text;
+
+    procedure Locals()
+    var
+        Page: Text;
+        Report: TextBuilder;
+        Code: Code[10];
+        Value: Decimal;
+        Record: Integer;
+        Codeunit: Text;
+        Enum: Integer;
+        Label: Text;
+        Object: Text;
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (object_keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_text))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (object_keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_textbuilder))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_code)
+              (bracketed_block
+                (integer)))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (object_keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_decimal))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (object_keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_text))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (object_keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (metadata_keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_text))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_text))
+            (semicolon))))
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (object_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (object_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_textbuilder))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_code)
+                (bracketed_block
+                  (integer)))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (object_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_decimal))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_integer))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (object_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (object_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_integer))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (metadata_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+reads, writes and member calls on variables named after keywords
+================================================================================
+
+codeunit 50103 "Keyword Names"
+{
+    var
+        Report: TextBuilder;
+
+    procedure Use(): Integer
+    var
+        Page: Text;
+        Code: Code[10];
+        Record: Integer;
+        Codeunit: Text;
+        Enum: Integer;
+        Label: Text;
+        Object: Text;
+    begin
+        Page := 'p';
+        Report.Append(Page);
+        Code := 'C1';
+        Record := 2;
+        Codeunit := Code;
+        Enum := Record + 1;
+        Label := Codeunit;
+        Object := Label;
+        exit(Report.Length + StrLen(Object) + Enum);
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (object_keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_textbuilder))
+            (semicolon))))
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (object_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_code)
+                (bracketed_block
+                  (integer)))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_integer))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (object_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (object_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_integer))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (metadata_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (object_keyword))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (object_keyword))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (object_keyword)))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (type_keyword))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (type_keyword))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (object_keyword))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (type_keyword)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (object_keyword))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (type_keyword))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (object_keyword)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (object_keyword))
+                          (member_suffix
+                            member: (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            call: (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (name
+                                          (identifier)))))))))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (object_keyword)))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+parameters, loop counters, indexes and calls without parentheses on keyword names
+================================================================================
+
+codeunit 50104 "Keyword Names More"
+{
+    procedure Params(Value: Decimal; Code: Code[20]; var Page: Text; Record: Integer): Text
+    var
+        Enum: Integer;
+        Object: Text;
+        Label: Text;
+        Letter: Char;
+    begin
+        for Enum := 1 to 3 do
+            Value += Enum;
+        for Record := 3 downto 1 do
+            Value -= Record;
+        case Code of
+            'A':
+                Page := Code;
+        end;
+        Evaluate(Value, '1.5');
+        Label := Page.ToUpper;
+        Object := Label.Trim();
+        Page[1] := 'x';
+        Letter := Code[2];
+        exit(LowerCase(Code) + Object);
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (object_keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_decimal)))
+          (semicolon)
+          (parameter
+            name: (name_or_keyword
+              (keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_code)
+              (bracketed_block
+                (integer))))
+          (semicolon)
+          (parameter
+            (kw_var)
+            name: (name_or_keyword
+              (object_keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_text)))
+          (semicolon)
+          (parameter
+            name: (name_or_keyword
+              (keyword))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_text))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (object_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_integer))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (metadata_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_text))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_char))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (for_statement
+                (kw_for)
+                iterator: (identifier)
+                assign: (operator)
+                from: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                direction: (kw_to)
+                to: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                (kw_do)
+                body: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (object_keyword))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (object_keyword)))))))))
+            (semicolon)
+            (statement
+              (for_statement
+                (kw_for)
+                iterator: (identifier)
+                assign: (operator)
+                from: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                direction: (kw_downto)
+                to: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))
+                (kw_do)
+                body: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (object_keyword))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (type_keyword)))))))))
+            (semicolon)
+            (statement
+              (case_statement
+                (kw_case)
+                value: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (type_keyword)))))
+                (kw_of)
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (string)))))
+                  body: (statement
+                    (expression_statement
+                      (expression
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (object_keyword))))
+                        (binary_operator
+                          (operator))
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (type_keyword)))))))
+                  (semicolon))
+                (kw_end)))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (call_suffix
+                        call: (argument_list
+                          (expression_list
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (object_keyword)))))
+                            (comma)
+                            (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (object_keyword))
+                      (member_suffix
+                        member: (name
+                          (identifier))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (object_keyword))
+                      (index_suffix
+                        index: (bracketed_block
+                          (integer)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (string)))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (type_keyword))
+                      (index_suffix
+                        index: (bracketed_block
+                          (integer))))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            call: (argument_list
+                              (expression_list
+                                (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (type_keyword))))))))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
