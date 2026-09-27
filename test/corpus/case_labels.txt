@@ -1,0 +1,738 @@
+================================================================================
+signed case labels, negative ranges and a subtraction ending an arm
+================================================================================
+
+enum 50105 Level
+{
+    value(0; Bronze) { }
+    value(1; Silver) { }
+    value(2; Gold) { }
+}
+
+codeunit 50105 "Case Labels"
+{
+    procedure Classify(X: Integer; A: Integer): Integer
+    var
+        Y: Integer;
+    begin
+        case X of
+            -1:
+                exit(1);
+            - 2:
+                exit(2);
+            -Level::Gold.AsInteger():
+                exit(3);
+            -5..-3:
+                exit(4);
+            -10..-6, 10..20:
+                exit(5);
+            0:
+                Y := A -1;
+            else
+                exit(0);
+        end;
+        exit(Y);
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_enum)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body
+      (enum_value_declaration
+        keyword: (object_keyword)
+        id: (integer)
+        (semicolon)
+        name: (name
+          (identifier))
+        (object_body))
+      (enum_value_declaration
+        keyword: (object_keyword)
+        id: (integer)
+        (semicolon)
+        name: (name
+          (identifier))
+        (object_body))
+      (enum_value_declaration
+        keyword: (object_keyword)
+        id: (integer)
+        (semicolon)
+        name: (name
+          (identifier))
+        (object_body))))
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer)))
+          (semicolon)
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_integer))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (case_statement
+                (kw_case)
+                value: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_of)
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (signed_case_label)))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))
+                  (semicolon))
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (signed_case_label)))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))
+                  (semicolon))
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (signed_case_label)))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))
+                  (semicolon))
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (signed_case_label)
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (unary_operator)
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (integer)))))))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))
+                  (semicolon))
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (signed_case_label)
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (unary_operator)
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (integer))))))
+                    (comma)
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer)))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer))))))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))
+                  (semicolon))
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer)))))
+                  body: (statement
+                    (expression_statement
+                      (expression
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (name
+                                (identifier)))))
+                        (binary_operator
+                          (operator))
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (name
+                                (identifier)))))
+                        (binary_operator
+                          (operator))
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (integer)))))))
+                  (semicolon))
+                (kw_else)
+                else_body: (statement
+                  (exit_statement
+                    (kw_exit)
+                    (argument_list
+                      (expression_list
+                        (expression
+                          (unary_expression
+                            (postfix_expression
+                              (primary_expression
+                                (integer)))))))))
+                (semicolon)
+                (kw_end)))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+text range labels and enum labels listed with a comma
+================================================================================
+
+enum 50105 Level
+{
+    value(0; Bronze) { }
+    value(1; Silver) { }
+    value(2; Gold) { }
+}
+
+codeunit 50105 "Case Labels"
+{
+    procedure Letters(C: Text[1]): Integer
+    begin
+        case C of
+            'a'..'f':
+                exit(1);
+            'g', 'h':
+                exit(2);
+        end;
+    end;
+
+    procedure Levels(L: Enum Level): Integer
+    begin
+        case L of
+            Enum::Level::Bronze, Enum::Level::Silver:
+                exit(1);
+            Level::Gold:
+                exit(2);
+        end;
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_enum)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (identifier)))
+    body: (object_body
+      (enum_value_declaration
+        keyword: (object_keyword)
+        id: (integer)
+        (semicolon)
+        name: (name
+          (identifier))
+        (object_body))
+      (enum_value_declaration
+        keyword: (object_keyword)
+        id: (integer)
+        (semicolon)
+        name: (name
+          (identifier))
+        (object_body))
+      (enum_value_declaration
+        keyword: (object_keyword)
+        id: (integer)
+        (semicolon)
+        name: (name
+          (identifier))
+        (object_body))))
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_text)
+              (bracketed_block
+                (integer)))))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (case_statement
+                (kw_case)
+                value: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_of)
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (string)))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (string))))))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))
+                  (semicolon))
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (string))))
+                    (comma)
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (string)))))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))
+                  (semicolon))
+                (kw_end)))
+            (semicolon))
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_enum)
+              (name_or_keyword
+                (name
+                  (identifier))))))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (case_statement
+                (kw_case)
+                value: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_of)
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (object_keyword))
+                        (scope_suffix
+                          member: (name
+                            (identifier)))
+                        (scope_suffix
+                          member: (name
+                            (identifier)))))
+                    (comma)
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (object_keyword))
+                        (scope_suffix
+                          member: (name
+                            (identifier)))
+                        (scope_suffix
+                          member: (name
+                            (identifier))))))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))
+                  (semicolon))
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (name
+                            (identifier)))
+                        (scope_suffix
+                          member: (name
+                            (identifier))))))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))
+                  (semicolon))
+                (kw_end)))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+else arms with and without a semicolon
+================================================================================
+
+codeunit 50106 "Case Else"
+{
+    procedure EmptyElse(X: Integer): Integer
+    begin
+        case X of
+            1:
+                exit(1);
+            else;
+        end;
+        case X of
+            1:
+                exit(1)
+            else
+        end;
+        case X of
+            1:
+                ;
+            else
+                exit(2);
+        end;
+        case X of
+            2:
+                X := 3
+            else
+                X := 4;
+        end;
+        exit(X);
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (case_statement
+                (kw_case)
+                value: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_of)
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer)))))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer)))))))))
+                  (semicolon))
+                (kw_else)
+                (semicolon)
+                (kw_end)))
+            (semicolon)
+            (statement
+              (case_statement
+                (kw_case)
+                value: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_of)
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer)))))
+                  body: (statement
+                    (exit_statement
+                      (kw_exit)
+                      (argument_list
+                        (expression_list
+                          (expression
+                            (unary_expression
+                              (postfix_expression
+                                (primary_expression
+                                  (integer))))))))))
+                (kw_else)
+                (kw_end)))
+            (semicolon)
+            (statement
+              (case_statement
+                (kw_case)
+                value: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_of)
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer)))))
+                  (semicolon))
+                (kw_else)
+                else_body: (statement
+                  (exit_statement
+                    (kw_exit)
+                    (argument_list
+                      (expression_list
+                        (expression
+                          (unary_expression
+                            (postfix_expression
+                              (primary_expression
+                                (integer)))))))))
+                (semicolon)
+                (kw_end)))
+            (semicolon)
+            (statement
+              (case_statement
+                (kw_case)
+                value: (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier))))))
+                (kw_of)
+                (case_branch
+                  labels: (case_label_list
+                    (case_label_expression
+                      (postfix_expression
+                        (primary_expression
+                          (integer)))))
+                  body: (statement
+                    (expression_statement
+                      (expression
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (name
+                                (identifier)))))
+                        (binary_operator
+                          (operator))
+                        (unary_expression
+                          (postfix_expression
+                            (primary_expression
+                              (integer))))))))
+                (kw_else)
+                else_body: (statement
+                  (expression_statement
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (integer)))))))
+                (semicolon)
+                (kw_end)))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
