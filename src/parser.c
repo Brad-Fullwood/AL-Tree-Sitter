@@ -5183,7 +5183,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
     case 37:
       ACCEPT_TOKEN(anon_sym_EQ);
       if (lookahead == '.') ADVANCE(126);
-      if (set_contains(aux_sym_operator_token1_character_set_1, 9, lookahead)) ADVANCE(125);
+      if (set_contains(aux_sym_operator_token1_character_set_2, 9, lookahead)) ADVANCE(125);
       END_STATE();
     case 38:
       ACCEPT_TOKEN(anon_sym_COLON_COLON);
@@ -5191,7 +5191,7 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
     case 39:
       ACCEPT_TOKEN(anon_sym_COLON_COLON);
       if (lookahead == '.') ADVANCE(126);
-      if (set_contains(aux_sym_operator_token1_character_set_1, 9, lookahead)) ADVANCE(125);
+      if (set_contains(aux_sym_operator_token1_character_set_2, 9, lookahead)) ADVANCE(125);
       END_STATE();
     case 40:
       ACCEPT_TOKEN(anon_sym_COLON);
@@ -5200,12 +5200,18 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       ACCEPT_TOKEN(anon_sym_COLON);
       if (lookahead == '.') ADVANCE(126);
       if (lookahead == ':') ADVANCE(39);
-      if (set_contains(aux_sym_operator_token1_character_set_1, 9, lookahead)) ADVANCE(125);
+      if (lookahead == '!' ||
+          ('$' <= lookahead && lookahead <= '&') ||
+          lookahead == '*' ||
+          ('<' <= lookahead && lookahead <= '@') ||
+          lookahead == '^' ||
+          lookahead == '|' ||
+          lookahead == '~') ADVANCE(125);
       END_STATE();
     case 42:
       ACCEPT_TOKEN(anon_sym_COLON);
       if (lookahead == '.') ADVANCE(126);
-      if (set_contains(aux_sym_operator_token1_character_set_1, 9, lookahead)) ADVANCE(125);
+      if (set_contains(aux_sym_operator_token1_character_set_2, 9, lookahead)) ADVANCE(125);
       END_STATE();
     case 43:
       ACCEPT_TOKEN(anon_sym_COLON);
@@ -5996,18 +6002,24 @@ static bool ts_lex(TSLexer *lexer, TSStateId state) {
       ACCEPT_TOKEN(aux_sym_operator_token1);
       if (lookahead == '\'') ADVANCE(14);
       if (lookahead == '.') ADVANCE(126);
-      if (set_contains(aux_sym_operator_token1_character_set_1, 9, lookahead)) ADVANCE(125);
+      if (set_contains(aux_sym_operator_token1_character_set_2, 9, lookahead)) ADVANCE(125);
       END_STATE();
     case 124:
       ACCEPT_TOKEN(aux_sym_operator_token1);
       if (lookahead == '.') ADVANCE(126);
       if (lookahead == ':') ADVANCE(39);
-      if (set_contains(aux_sym_operator_token1_character_set_1, 9, lookahead)) ADVANCE(125);
+      if (lookahead == '!' ||
+          ('$' <= lookahead && lookahead <= '&') ||
+          lookahead == '*' ||
+          ('<' <= lookahead && lookahead <= '@') ||
+          lookahead == '^' ||
+          lookahead == '|' ||
+          lookahead == '~') ADVANCE(125);
       END_STATE();
     case 125:
       ACCEPT_TOKEN(aux_sym_operator_token1);
       if (lookahead == '.') ADVANCE(126);
-      if (set_contains(aux_sym_operator_token1_character_set_1, 9, lookahead)) ADVANCE(125);
+      if (set_contains(aux_sym_operator_token1_character_set_2, 9, lookahead)) ADVANCE(125);
       END_STATE();
     case 126:
       ACCEPT_TOKEN(aux_sym_operator_token1);
