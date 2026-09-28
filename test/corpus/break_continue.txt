@@ -46,7 +46,9 @@ codeunit 50100 T
             (statement
               (for_statement
                 (kw_for)
-                (identifier)
+                (name_or_keyword
+                  (name
+                    (identifier)))
                 (operator)
                 (expression
                   (unary_expression

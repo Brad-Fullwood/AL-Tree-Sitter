@@ -611,7 +611,8 @@ codeunit 50104 "Keyword Names More"
             (statement
               (for_statement
                 (kw_for)
-                iterator: (identifier)
+                iterator: (name_or_keyword
+                  (object_keyword))
                 assign: (operator)
                 from: (expression
                   (unary_expression
@@ -642,7 +643,8 @@ codeunit 50104 "Keyword Names More"
             (statement
               (for_statement
                 (kw_for)
-                iterator: (identifier)
+                iterator: (name_or_keyword
+                  (keyword))
                 assign: (operator)
                 from: (expression
                   (unary_expression

@@ -957,7 +957,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "name_or_keyword",
             "named": true
           }
         ]

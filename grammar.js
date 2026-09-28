@@ -946,7 +946,7 @@ module.exports = grammar({
 
   for_statement: $ => prec.right(seq(
     $.kw_for,
-    field('iterator', $.identifier),
+    field('iterator', $.name_or_keyword),
     field('assign', $.operator),
     field('from', $.expression),
     field('direction', choice($.kw_to, $.kw_downto)),

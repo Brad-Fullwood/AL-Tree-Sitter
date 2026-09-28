@@ -252,7 +252,9 @@ codeunit 50100 "Json Probe"
             (statement
               (for_statement
                 (kw_for)
-                iterator: (identifier)
+                iterator: (name_or_keyword
+                  (name
+                    (identifier)))
                 assign: (operator)
                 from: (expression
                   (unary_expression

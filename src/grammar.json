@@ -3580,7 +3580,7 @@
             "name": "iterator",
             "content": {
               "type": "SYMBOL",
-              "name": "identifier"
+              "name": "name_or_keyword"
             }
           },
           {
