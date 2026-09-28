@@ -1727,9 +1727,12 @@ fn generate_locals_scm(
         ("trigger_declaration", "method"),
         ("event_declaration", "method"),
         ("regular_variable_declaration", "var"),
+        ("label_declaration", "var"),
         ("object_variable_declaration", "field"),
         ("parameter", "parameter"),
     ];
+
+    let name_keywords = name_keyword_alternation(node_map);
 
     for &(node_type, def_kind) in def_rules {
         let Some(node) = node_map.get(node_type) else {
@@ -1780,6 +1783,12 @@ fn generate_locals_scm(
                     }
                 }
             }
+            if let Some(keywords) = &name_keywords {
+                out.push_str(&format!(
+                    "({}\n  name: (name_or_keyword {} {}))\n\n",
+                    node_type, keywords, capture
+                ));
+            }
         } else if field_type_names.contains(&"name") {
             if let Some(name_node) = node_map.get("name") {
                 let has_ident = name_node
@@ -1821,8 +1830,43 @@ fn generate_locals_scm(
         }
     }
 
+    if let Some(keywords) = &name_keywords {
+        out.push_str(&keyword_name_references(keywords));
+    }
+
     fs::write(out_path, out)?;
     Ok(())
+}
+
+/// The keyword leaves a `name_or_keyword` holds in place of a `name`, as a
+/// query alternation such as `[(keyword) (object_keyword)]`. A variable,
+/// parameter or label may be named after one of these words (`Page`, `Value`).
+fn name_keyword_alternation(node_map: &BTreeMap<&str, &GrammarNodeType>) -> Option<String> {
+    let children = node_map.get("name_or_keyword")?.children.as_ref()?;
+    let keywords: Vec<String> = children
+        .types
+        .iter()
+        .filter(|t| t.named && t.type_name != "name")
+        .map(|t| format!("({})", t.type_name))
+        .collect();
+    if keywords.is_empty() {
+        return None;
+    }
+    Some(format!("[{}]", keywords.join(" ")))
+}
+
+/// References to a variable named after a keyword. An expression holds such a
+/// name as a bare `object_keyword` or `type_keyword`, and only where nothing
+/// follows it or an index follows it is it a variable for certain: before a
+/// member or scope suffix it may be the object itself (`Page.RunModal(...)`).
+fn keyword_name_references(name_keywords: &str) -> String {
+    format!(
+        "; Variables named after keywords, read or written as values\n\n\
+         (for_statement\n  iterator: (name_or_keyword {name_keywords} @local.reference))\n\n\
+         (foreach_statement\n  iterator: (name_or_keyword {name_keywords} @local.reference))\n\n\
+         (postfix_expression\n  (primary_expression [(object_keyword) (type_keyword)] @local.reference) .)\n\n\
+         (postfix_expression\n  (primary_expression [(object_keyword) (type_keyword)] @local.reference)\n  .\n  (index_suffix))\n"
+    )
 }
 
 fn generate_textobjects_scm(

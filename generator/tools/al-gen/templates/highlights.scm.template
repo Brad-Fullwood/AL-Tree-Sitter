@@ -104,6 +104,58 @@
 (regular_variable_declaration name: (name_or_keyword (name (quoted_identifier) @variable.declaration)))
 (parameter name: (name_or_keyword (name (identifier) @variable.parameter)))
 (parameter name: (name_or_keyword (name (quoted_identifier) @variable.parameter)))
+(label_declaration name: (name_or_keyword (name [(identifier) (quoted_identifier)] @variable.declaration)))
+
+; A variable, label or parameter may be named after a keyword (Page, Value,
+; Code). Where it is declared, and where it is used as a plain value, it keeps
+; the variable capture. Before a member or scope suffix the word may be the
+; object itself (Page.RunModal), so there it keeps the keyword capture.
+(regular_variable_declaration
+  name: (name_or_keyword [
+    (object_keyword)
+    (metadata_keyword)
+    (property_keyword)
+    (kw_function)
+    (keyword)
+  ] @variable.declaration))
+(label_declaration
+  name: (name_or_keyword [
+    (object_keyword)
+    (metadata_keyword)
+    (property_keyword)
+    (kw_function)
+    (keyword)
+  ] @variable.declaration))
+(parameter
+  name: (name_or_keyword [
+    (object_keyword)
+    (metadata_keyword)
+    (property_keyword)
+    (kw_function)
+    (keyword)
+  ] @variable.parameter))
+(for_statement
+  iterator: (name_or_keyword [
+    (object_keyword)
+    (metadata_keyword)
+    (property_keyword)
+    (kw_function)
+    (keyword)
+  ] {{VARIABLE_CAPTURE}}))
+(foreach_statement
+  iterator: (name_or_keyword [
+    (object_keyword)
+    (metadata_keyword)
+    (property_keyword)
+    (kw_function)
+    (keyword)
+  ] {{VARIABLE_CAPTURE}}))
+(postfix_expression
+  (primary_expression [(object_keyword) (type_keyword)] {{VARIABLE_CAPTURE}}) .)
+(postfix_expression
+  (primary_expression [(object_keyword) (type_keyword)] {{VARIABLE_CAPTURE}})
+  .
+  (index_suffix))
 
 ; Types
 (type_reference (name_or_keyword (name (identifier) {{TYPE_CAPTURE}})))
@@ -168,6 +220,11 @@
   (call_suffix))
 (postfix_expression
   (primary_expression (name (quoted_identifier) @function.call))
+  (call_suffix))
+; A method named after a keyword, such as TestField in table code.
+(postfix_expression
+  (primary_expression [(object_keyword) (type_keyword)] @function.call)
+  .
   (call_suffix))
 
 (member_call_suffix member: (name (identifier) @function.method.call))

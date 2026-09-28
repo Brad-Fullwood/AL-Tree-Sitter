@@ -14,7 +14,7 @@
 //! Entries whose tree has an error (`recovery.txt`) are skipped, since the
 //! leaves inside an `ERROR` node have no role to check.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Range;
 
 use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator, Tree};
@@ -216,6 +216,61 @@ fn is_name_kind(node: Node) -> bool {
     NAME_KINDS.contains(&node.kind())
 }
 
+/// The node a name stands for: a leaf inside `name` or `name_or_keyword`
+/// stands for that wrapper.
+fn name_wrapper(leaf: Node) -> Node {
+    let mut node = leaf;
+    if let Some(parent) = node.parent().filter(|p| p.kind() == "name") {
+        node = parent;
+    }
+    if let Some(parent) = node.parent().filter(|p| p.kind() == "name_or_keyword") {
+        node = parent;
+    }
+    node
+}
+
+/// The position a name holds, such as `parameter.name` or
+/// `primary_expression before index_suffix`. Names with no field in their
+/// parent and outside an expression have no role and are skipped.
+fn name_role(leaf: Node) -> Option<String> {
+    let wrapper = name_wrapper(leaf);
+    let parent = wrapper.parent()?;
+    if parent.kind() == "primary_expression" {
+        let next = parent
+            .next_named_sibling()
+            .map(|s| s.kind())
+            .unwrap_or("nothing");
+        return Some(format!("primary_expression before {next}"));
+    }
+    let field = field_name(wrapper)?;
+    Some(format!("{}.{}", parent.kind(), field))
+}
+
+/// Roles whose capture depends on spelling on purpose.
+///
+/// - Before a member or scope suffix a keyword kind may be the object itself
+///   (`Page.RunModal(...)`, `Codeunit::"Sales-Post"`) or a variable named after
+///   it (`Page.ToUpper`). Only a symbol table tells them apart, so the keyword
+///   capture stays.
+/// - A property value that is a quoted name is an object reference
+///   (`TableRelation = "Sales Header"`) and a bare name is an option value
+///   (`DataClassification = CustomerContent`).
+/// - An object section header keyword (`field`, `area`, `addafter`) is a
+///   keyword whatever kind the scanner gives it.
+const SPELLING_ROLES: &[&str] = &[
+    "primary_expression before member_call_suffix",
+    "primary_expression before member_suffix",
+    "primary_expression before scope_suffix",
+    "primary_expression before scope_call_suffix",
+    "property_assignment.value",
+    "object_section.keyword",
+];
+
+fn is_boolean_literal(parsed: &Parsed, leaf: Node) -> bool {
+    leaf.kind() == "identifier"
+        && ["true", "false"].contains(&text(parsed, leaf).to_ascii_lowercase().as_str())
+}
+
 #[test]
 fn highlight_captures_land_on_leaves() {
     let highlights = query(super::HIGHLIGHTS_QUERY);
@@ -231,6 +286,44 @@ fn highlight_captures_land_on_leaves() {
         "highlight captures on wrapper nodes, which the leaf capture inside hides in Zed",
         failures,
     );
+}
+
+#[test]
+fn a_name_is_highlighted_by_its_role_and_not_its_spelling() {
+    let highlights = query(super::HIGHLIGHTS_QUERY);
+    // role -> capture -> first example
+    let mut seen: BTreeMap<String, BTreeMap<String, String>> = BTreeMap::new();
+    for parsed in &corpus() {
+        let captures = captures(&highlights, parsed);
+        for leaf in leaves(parsed) {
+            if !is_name_kind(leaf) || is_boolean_literal(parsed, leaf) {
+                continue;
+            }
+            let Some(role) = name_role(leaf) else {
+                continue;
+            };
+            if SPELLING_ROLES.contains(&role.as_str()) {
+                continue;
+            }
+            let capture = highlight(&captures, leaf).unwrap_or("none").to_string();
+            seen.entry(role)
+                .or_default()
+                .entry(capture)
+                .or_insert_with(|| locate(parsed, leaf));
+        }
+    }
+    let failures = seen
+        .into_iter()
+        .filter(|(_, by_capture)| by_capture.len() > 1)
+        .map(|(role, by_capture)| {
+            let examples: Vec<_> = by_capture
+                .into_iter()
+                .map(|(capture, example)| format!("@{capture}: {example}"))
+                .collect();
+            format!("{role}\n    {}", examples.join("\n    "))
+        })
+        .collect();
+    assert_no_failures("names in one role with different highlights", failures);
 }
 
 /// Leaves inside a type that are not part of the type name: brackets,
@@ -438,6 +531,42 @@ fn every_outline_item_has_a_name() {
         }
     }
     assert_no_failures("outline items without a name", failures);
+}
+
+/// Declarations whose `name` field is a local definition.
+const DECLARATIONS: &[&str] = &[
+    "object_declaration",
+    "procedure_declaration",
+    "trigger_declaration",
+    "event_declaration",
+    "regular_variable_declaration",
+    "label_declaration",
+    "parameter",
+];
+
+#[test]
+fn every_declared_name_is_a_local_definition() {
+    let locals = query(super::LOCALS_QUERY);
+    let mut failures = Vec::new();
+    for parsed in &corpus() {
+        let definitions: Vec<Range<usize>> = captures(&locals, parsed)
+            .into_iter()
+            .filter(|(_, name)| name.starts_with("local.definition."))
+            .map(|(node, _)| node.byte_range())
+            .collect();
+        for node in nodes(parsed) {
+            if !DECLARATIONS.contains(&node.kind()) {
+                continue;
+            }
+            let Some(name) = node.child_by_field_name("name") else {
+                continue;
+            };
+            if !definitions.iter().any(|d| covers(&name.byte_range(), d)) {
+                failures.push(locate(parsed, name));
+            }
+        }
+    }
+    assert_no_failures("declared names that locals.scm does not define", failures);
 }
 
 #[test]
