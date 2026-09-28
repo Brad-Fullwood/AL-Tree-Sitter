@@ -125,7 +125,7 @@ codeunit 50100 "Json Probe"
                             (identifier))
                           call: (argument_list
                             (expression_list
-                              (expression
+                              argument: (expression
                                 (unary_expression
                                   (postfix_expression
                                     (primary_expression
@@ -136,7 +136,7 @@ codeunit 50100 "Json Probe"
                     (kw_exit)
                     (argument_list
                       (expression_list
-                        (expression
+                        argument: (expression
                           (unary_expression
                             (postfix_expression
                               (primary_expression
@@ -155,13 +155,13 @@ codeunit 50100 "Json Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (string)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -173,7 +173,7 @@ codeunit 50100 "Json Probe"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -296,14 +296,14 @@ codeunit 50100 "Json Probe"
                                     (identifier))
                                   call: (argument_list
                                     (expression_list
-                                      (expression
+                                      argument: (expression
                                         (unary_expression
                                           (postfix_expression
                                             (primary_expression
                                               (name
                                                 (identifier))))))
                                       (comma)
-                                      (expression
+                                      argument: (expression
                                         (unary_expression
                                           (postfix_expression
                                             (primary_expression
@@ -334,7 +334,7 @@ codeunit 50100 "Json Probe"
                                     (identifier))
                                   call: (argument_list
                                     (expression_list
-                                      (expression
+                                      argument: (expression
                                         (unary_expression
                                           (postfix_expression
                                             (primary_expression
@@ -347,7 +347,7 @@ codeunit 50100 "Json Probe"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -409,13 +409,13 @@ codeunit 50100 "Json Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (string)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -434,13 +434,13 @@ codeunit 50100 "Json Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (string)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -460,7 +460,7 @@ codeunit 50100 "Json Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -479,13 +479,13 @@ codeunit 50100 "Json Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (string)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -505,13 +505,13 @@ codeunit 50100 "Json Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (string)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -530,7 +530,7 @@ codeunit 50100 "Json Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -542,7 +542,7 @@ codeunit 50100 "Json Probe"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -551,7 +551,7 @@ codeunit 50100 "Json Probe"
                           (call_suffix
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -562,7 +562,7 @@ codeunit 50100 "Json Probe"
                                           (identifier))
                                         call: (argument_list
                                           (expression_list
-                                            (expression
+                                            argument: (expression
                                               (unary_expression
                                                 (postfix_expression
                                                   (primary_expression
@@ -648,7 +648,7 @@ codeunit 50100 "Json Probe"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression

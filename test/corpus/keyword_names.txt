@@ -353,7 +353,7 @@ codeunit 50103 "Keyword Names"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -457,7 +457,7 @@ codeunit 50103 "Keyword Names"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -475,7 +475,7 @@ codeunit 50103 "Keyword Names"
                           (call_suffix
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -714,13 +714,13 @@ codeunit 50104 "Keyword Names More"
                       (call_suffix
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (object_keyword)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -804,7 +804,7 @@ codeunit 50104 "Keyword Names More"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -813,7 +813,7 @@ codeunit 50104 "Keyword Names More"
                           (call_suffix
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression

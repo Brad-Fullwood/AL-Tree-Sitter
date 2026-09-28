@@ -873,17 +873,24 @@
   {
     "type": "expression_list",
     "named": true,
-    "fields": {},
+    "fields": {
+      "argument": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "comma",
-          "named": true
-        },
-        {
-          "type": "expression",
           "named": true
         }
       ]

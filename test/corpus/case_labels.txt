@@ -129,7 +129,7 @@ codeunit 50105 "Case Labels"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -144,7 +144,7 @@ codeunit 50105 "Case Labels"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -159,7 +159,7 @@ codeunit 50105 "Case Labels"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -182,7 +182,7 @@ codeunit 50105 "Case Labels"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -216,7 +216,7 @@ codeunit 50105 "Case Labels"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -256,7 +256,7 @@ codeunit 50105 "Case Labels"
                     (kw_exit)
                     (argument_list
                       (expression_list
-                        (expression
+                        argument: (expression
                           (unary_expression
                             (postfix_expression
                               (primary_expression
@@ -269,7 +269,7 @@ codeunit 50105 "Case Labels"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -398,7 +398,7 @@ codeunit 50105 "Case Labels"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -420,7 +420,7 @@ codeunit 50105 "Case Labels"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -489,7 +489,7 @@ codeunit 50105 "Case Labels"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -510,7 +510,7 @@ codeunit 50105 "Case Labels"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -604,7 +604,7 @@ codeunit 50106 "Case Else"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -635,7 +635,7 @@ codeunit 50106 "Case Else"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -666,7 +666,7 @@ codeunit 50106 "Case Else"
                     (kw_exit)
                     (argument_list
                       (expression_list
-                        (expression
+                        argument: (expression
                           (unary_expression
                             (postfix_expression
                               (primary_expression
@@ -727,7 +727,7 @@ codeunit 50106 "Case Else"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression

@@ -236,7 +236,7 @@ codeunit 50100 "Enum Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -247,7 +247,7 @@ codeunit 50100 "Enum Probe"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -338,7 +338,7 @@ codeunit 50100 "Enum Probe"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -370,7 +370,7 @@ codeunit 50100 "Enum Probe"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression

@@ -200,7 +200,7 @@ codeunit 50101 "List Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -220,13 +220,13 @@ codeunit 50101 "List Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (string)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -252,13 +252,13 @@ codeunit 50101 "List Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (integer)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -277,19 +277,19 @@ codeunit 50101 "List Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (integer)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (integer)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -309,13 +309,13 @@ codeunit 50101 "List Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (integer)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -339,7 +339,7 @@ codeunit 50101 "List Probe"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -350,7 +350,7 @@ codeunit 50101 "List Probe"
                               (identifier))
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -492,7 +492,7 @@ codeunit 50101 "List Probe"
                           (call_suffix
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -530,14 +530,14 @@ codeunit 50101 "List Probe"
                               (identifier))
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
                                         (name
                                           (identifier))))))
                                 (comma)
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression

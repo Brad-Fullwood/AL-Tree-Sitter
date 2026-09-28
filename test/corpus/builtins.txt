@@ -72,7 +72,7 @@ codeunit 50100 "Builtin Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -91,7 +91,7 @@ codeunit 50100 "Builtin Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -127,7 +127,7 @@ codeunit 50100 "Builtin Probe"
                       (call_suffix
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -139,7 +139,7 @@ codeunit 50100 "Builtin Probe"
                     (kw_exit)
                     (argument_list
                       (expression_list
-                        (expression
+                        argument: (expression
                           (unary_expression
                             (postfix_expression
                               (primary_expression
@@ -150,7 +150,7 @@ codeunit 50100 "Builtin Probe"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -170,7 +170,7 @@ codeunit 50100 "Builtin Probe"
                           (call_suffix
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -297,7 +297,7 @@ codeunit 50100 "Builtin Probe"
                       (call_suffix
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -395,7 +395,7 @@ codeunit 50100 "Builtin Probe"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -404,20 +404,20 @@ codeunit 50100 "Builtin Probe"
                           (call_suffix
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
                                         (name
                                           (identifier))))))
                                 (comma)
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
                                         (integer)))))
                                 (comma)
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -432,20 +432,20 @@ codeunit 50100 "Builtin Probe"
                           (call_suffix
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
                                         (name
                                           (identifier))))))
                                 (comma)
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
                                         (integer)))))
                                 (comma)
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -460,19 +460,19 @@ codeunit 50100 "Builtin Probe"
                           (call_suffix
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
                                         (decimal)))))
                                 (comma)
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
                                         (integer)))))
                                 (comma)
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -536,13 +536,13 @@ codeunit 50100 "Builtin Probe"
                       (call_suffix
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (string)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -566,13 +566,13 @@ codeunit 50100 "Builtin Probe"
                       (call_suffix
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (string)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -596,14 +596,14 @@ codeunit 50100 "Builtin Probe"
                         (call_suffix
                           call: (argument_list
                             (expression_list
-                              (expression
+                              argument: (expression
                                 (unary_expression
                                   (postfix_expression
                                     (primary_expression
                                       (name
                                         (identifier))))))
                               (comma)
-                              (expression
+                              argument: (expression
                                 (unary_expression
                                   (postfix_expression
                                     (primary_expression
@@ -629,7 +629,7 @@ codeunit 50100 "Builtin Probe"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -638,20 +638,20 @@ codeunit 50100 "Builtin Probe"
                           (call_suffix
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
                                         (string)))))
                                 (comma)
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
                                         (name
                                           (identifier))))))
                                 (comma)
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -724,7 +724,7 @@ codeunit 50100 "Builtin Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -745,7 +745,7 @@ codeunit 50100 "Builtin Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -754,7 +754,7 @@ codeunit 50100 "Builtin Probe"
                                     member: (name
                                       (identifier))))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -773,7 +773,7 @@ codeunit 50100 "Builtin Probe"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression

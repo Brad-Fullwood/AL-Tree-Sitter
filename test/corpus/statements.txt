@@ -542,7 +542,7 @@ codeunit 50100 "Loop Names"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression
@@ -707,7 +707,7 @@ codeunit 50100 "Case Probe"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (unary_operator)
                               (unary_expression
@@ -731,7 +731,7 @@ codeunit 50100 "Case Probe"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -814,7 +814,7 @@ codeunit 50100 "Case Probe"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -829,7 +829,7 @@ codeunit 50100 "Case Probe"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -902,7 +902,7 @@ codeunit 50100 "Case Probe"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -975,7 +975,7 @@ codeunit 50100 "Case Probe"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -1056,7 +1056,7 @@ codeunit 50100 "Case Probe"
                       (kw_exit)
                       (argument_list
                         (expression_list
-                          (expression
+                          argument: (expression
                             (unary_expression
                               (postfix_expression
                                 (primary_expression
@@ -1236,7 +1236,7 @@ codeunit 50100 "Case Probe"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression

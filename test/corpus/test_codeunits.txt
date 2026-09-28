@@ -164,7 +164,7 @@ codeunit 50101 "Tour Tests"
                               (identifier))
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -191,14 +191,14 @@ codeunit 50101 "Tour Tests"
                                     (identifier))
                                   call: (argument_list
                                     (expression_list
-                                      (expression
+                                      argument: (expression
                                         (unary_expression
                                           (postfix_expression
                                             (primary_expression
                                               (name
                                                 (identifier))))))
                                       (comma)
-                                      (expression
+                                      argument: (expression
                                         (unary_expression
                                           (unary_operator)
                                           (unary_expression
@@ -235,13 +235,13 @@ codeunit 50101 "Tour Tests"
                           (call_suffix
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
                                         (string)))))
                                 (comma)
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -276,13 +276,13 @@ codeunit 50101 "Tour Tests"
                           (call_suffix
                             call: (argument_list
                               (expression_list
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
                                         (string)))))
                                 (comma)
-                                (expression
+                                argument: (expression
                                   (unary_expression
                                     (postfix_expression
                                       (primary_expression
@@ -381,7 +381,7 @@ codeunit 50100 "Say ""Hi"" Tests"
                 (kw_exit)
                 (argument_list
                   (expression_list
-                    (expression
+                    argument: (expression
                       (unary_expression
                         (postfix_expression
                           (primary_expression

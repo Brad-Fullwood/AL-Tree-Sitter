@@ -649,8 +649,8 @@ module.exports = grammar({
   expression_statement: $ => $.expression,
 
   expression_list: $ => seq(
-    $.expression,
-    repeat(seq($.comma, $.expression)),
+    field('argument', $.expression),
+    repeat(seq($.comma, field('argument', $.expression))),
   ),
 
   argument_list: $ => prec(4, seq(

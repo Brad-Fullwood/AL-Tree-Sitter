@@ -459,3 +459,147 @@ codeunit 50100 T
             (semicolon))
           (kw_end))
         (semicolon)))))
+
+================================================================================
+each call argument is an argument field with a comma between them
+================================================================================
+
+codeunit 50101 "Call Arguments"
+{
+    procedure Add(A: Integer; B: Integer): Integer
+    begin
+        exit(A + B);
+    end;
+
+    procedure Total(): Integer
+    var
+        First: Integer;
+    begin
+        First := 1;
+        exit(Add(First, 2));
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer)))
+          (semicolon)
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_integer))))
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    argument: (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))))
+                      (binary_operator
+                        (operator))
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        returns: (operator)
+        return_type: (type_reference
+          (kw_integer))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_integer))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (integer)))))))
+            (semicolon)
+            (statement
+              (exit_statement
+                (kw_exit)
+                (argument_list
+                  (expression_list
+                    argument: (expression
+                      (unary_expression
+                        (postfix_expression
+                          (primary_expression
+                            (name
+                              (identifier)))
+                          (call_suffix
+                            call: (argument_list
+                              (expression_list
+                                argument: (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (name
+                                          (identifier))))))
+                                (comma)
+                                argument: (expression
+                                  (unary_expression
+                                    (postfix_expression
+                                      (primary_expression
+                                        (integer)))))))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))

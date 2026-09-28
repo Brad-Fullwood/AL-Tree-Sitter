@@ -142,7 +142,7 @@ table 50108 "Sales Header"
                                   (call_suffix
                                     call: (argument_list
                                       (expression_list
-                                        (expression
+                                        argument: (expression
                                           (unary_expression
                                             (postfix_expression
                                               (primary_expression
@@ -183,7 +183,7 @@ table 50108 "Sales Header"
                       (call_suffix
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -458,7 +458,7 @@ codeunit 50109 "Header Subscribers"
                       (call_suffix
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -765,7 +765,7 @@ codeunit 50110 "Codeunit Variables"
                       (call_suffix
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -783,7 +783,7 @@ codeunit 50110 "Codeunit Variables"
                       (call_suffix
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -804,7 +804,7 @@ codeunit 50110 "Codeunit Variables"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -816,7 +816,7 @@ codeunit 50110 "Codeunit Variables"
                     (kw_exit)
                     (argument_list
                       (expression_list
-                        (expression
+                        argument: (expression
                           (unary_expression
                             (postfix_expression
                               (primary_expression
@@ -834,7 +834,7 @@ codeunit 50110 "Codeunit Variables"
                       (call_suffix
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression

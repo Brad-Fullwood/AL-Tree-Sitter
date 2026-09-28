@@ -3897,8 +3897,12 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "expression"
+          "type": "FIELD",
+          "name": "argument",
+          "content": {
+            "type": "SYMBOL",
+            "name": "expression"
+          }
         },
         {
           "type": "REPEAT",
@@ -3910,8 +3914,12 @@
                 "name": "comma"
               },
               {
-                "type": "SYMBOL",
-                "name": "expression"
+                "type": "FIELD",
+                "name": "argument",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "expression"
+                }
               }
             ]
           }

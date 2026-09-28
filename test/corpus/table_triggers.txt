@@ -147,13 +147,13 @@ table 50100 "Tour Member"
                       (call_suffix
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
                                     (string)))))
                             (comma)
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
@@ -312,13 +312,13 @@ table 50100 "Tour Member"
                                   (identifier))
                                 call: (argument_list
                                   (expression_list
-                                    (expression
+                                    argument: (expression
                                       (unary_expression
                                         (postfix_expression
                                           (primary_expression
                                             (integer)))))
                                     (comma)
-                                    (expression
+                                    argument: (expression
                                       (unary_expression
                                         (postfix_expression
                                           (primary_expression
@@ -602,7 +602,7 @@ codeunit 50101 "Tour Tests"
                           (identifier))
                         call: (argument_list
                           (expression_list
-                            (expression
+                            argument: (expression
                               (unary_expression
                                 (postfix_expression
                                   (primary_expression
