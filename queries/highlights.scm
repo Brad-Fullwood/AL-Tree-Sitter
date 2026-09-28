@@ -222,9 +222,19 @@
 
 ; Punctuation and operators
 (operator) @operator
+; A sign is a leaf. The `not` form wraps op_not, which has its own capture.
+((unary_operator) @operator
+ (#match? @operator "^[-+!]$"))
 (semicolon) @punctuation
 (comma) @punctuation
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
+
+; A case label with a leading minus is one token: `-1`, `-Limit`,
+; `-Level::Gold.AsInteger()`. A number reads as a number, anything else as a
+; variable.
+(signed_case_label) @variable
+((signed_case_label) @number
+ (#match? @number "^-[ \t\r\n]*[0-9]"))
 
 ; Object declarations. The leaf is captured rather than the name_or_keyword
 ; wrapper so the generic (identifier)/(quoted_identifier) captures above do not
@@ -269,6 +279,57 @@
 (type_reference (name_or_keyword (name (quoted_identifier) @type.builtin)))
 (type_reference (qualified_name) @type.builtin)
 (label_declaration type: (_) @type.builtin)
+
+; Element types after `of`: `array[3] of Enum "Level"`, `List of [Text]`,
+; `Dictionary of [Code[20], List of [Integer]]`. The words inside the brackets
+; are plain tokens in the tree, so each nesting level has its own pattern.
+(of_clause (name_or_keyword (name [(identifier) (quoted_identifier)] @type.builtin)))
+(of_clause
+  (name_or_keyword [
+    (object_keyword)
+    (metadata_keyword)
+    (property_keyword)
+    (keyword)
+  ] @type.builtin))
+(of_clause
+  (bracketed_block [
+    (control_keyword)
+    (type_keyword)
+    (object_keyword)
+    (metadata_keyword)
+    (property_keyword)
+    (keyword)
+    (identifier)
+    (quoted_identifier)
+  ] @type.builtin))
+(of_clause
+  (bracketed_block
+    (bracketed_block [
+      (control_keyword)
+      (type_keyword)
+      (object_keyword)
+      (metadata_keyword)
+      (property_keyword)
+      (keyword)
+      (identifier)
+      (quoted_identifier)
+    ] @type.builtin)))
+(of_clause
+  (bracketed_block
+    (bracketed_block
+      (bracketed_block [
+        (control_keyword)
+        (type_keyword)
+        (object_keyword)
+        (metadata_keyword)
+        (property_keyword)
+        (keyword)
+        (identifier)
+        (quoted_identifier)
+      ] @type.builtin))))
+; The `of` of a nested List or Dictionary type is a control keyword token.
+((control_keyword) @keyword.control
+ (#match? @keyword.control "^[oO][fF]$"))
 
 ; Calls
 (postfix_expression

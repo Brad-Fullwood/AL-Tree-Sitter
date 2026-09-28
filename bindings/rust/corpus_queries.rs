@@ -216,6 +216,116 @@ fn is_name_kind(node: Node) -> bool {
     NAME_KINDS.contains(&node.kind())
 }
 
+/// Leaves inside a type that are not part of the type name: brackets,
+/// separators, lengths and array sizes, the word `of`, and `temporary`.
+fn is_type_syntax(parsed: &Parsed, leaf: Node) -> bool {
+    matches!(
+        leaf.kind(),
+        "[" | "]" | "(" | ")" | "comma" | "integer" | "kw_of" | "kw_temporary"
+    ) || text(parsed, leaf).eq_ignore_ascii_case("of")
+}
+
+#[test]
+fn type_names_are_highlighted_as_types() {
+    let highlights = query(super::HIGHLIGHTS_QUERY);
+    let mut failures = Vec::new();
+    for parsed in &corpus() {
+        let captures = captures(&highlights, parsed);
+        for leaf in leaves(parsed) {
+            let mut in_type = false;
+            let mut in_option = false;
+            let mut ancestor = leaf.parent();
+            while let Some(node) = ancestor {
+                match node.kind() {
+                    "option_type" => in_option = true,
+                    "type_reference" => {
+                        in_type = true;
+                        break;
+                    }
+                    _ => {}
+                }
+                ancestor = node.parent();
+            }
+            // Option member names are values, not types.
+            if !in_type || in_option || is_type_syntax(parsed, leaf) {
+                continue;
+            }
+            let capture = highlight(&captures, leaf);
+            if capture != Some("type.builtin") {
+                failures.push(format!(
+                    "@{} {}",
+                    capture.unwrap_or("none"),
+                    locate(parsed, leaf)
+                ));
+            }
+        }
+    }
+    assert_no_failures("type names without the type capture", failures);
+}
+
+/// Shapes with one expected highlight: every leaf in the entry whose text is
+/// `text` has `capture`.
+const EXPECTED_HIGHLIGHTS: &[(&str, &str, &str, &str)] = &[
+    // A sign is an operator, and a signed case label is one token that reads
+    // as a number when it is one.
+    (SIGNS, SIGN_ENTRY, "-", "operator"),
+    (CASE_LABELS, SIGNED_LABELS, "-1", "number"),
+    (CASE_LABELS, SIGNED_LABELS, "- 2", "number"),
+    (
+        CASE_LABELS,
+        SIGNED_LABELS,
+        "-Level::Gold.AsInteger()",
+        "variable",
+    ),
+    (STATEMENTS, SIGNED_NAME_LABEL, "-Limit", "variable"),
+    // The `of` inside a nested List or Dictionary type stays a keyword.
+    (COLLECTIONS, ELEMENT_TYPES, "of", "keyword.control"),
+];
+
+const SIGNS: &str = "sign_operators.txt";
+const SIGN_ENTRY: &str = "sign after an assignment, a multiplication and a subtraction";
+const CASE_LABELS: &str = "case_labels.txt";
+const SIGNED_LABELS: &str = "signed case labels, negative ranges and a subtraction ending an arm";
+const STATEMENTS: &str = "statements.txt";
+const SIGNED_NAME_LABEL: &str = "case labels with a leading minus on a number and a name";
+const COLLECTIONS: &str = "collections.txt";
+const ELEMENT_TYPES: &str = "element types of nested List, Dictionary and array types";
+
+#[test]
+fn listed_shapes_have_their_highlight() {
+    let highlights = query(super::HIGHLIGHTS_QUERY);
+    let corpus = corpus();
+    let mut failures = Vec::new();
+    for &(file, entry, wanted_text, wanted) in EXPECTED_HIGHLIGHTS {
+        let Some(parsed) = corpus
+            .iter()
+            .find(|p| p.entry.file == file && p.entry.name == entry)
+        else {
+            failures.push(format!("no corpus entry {file} \"{entry}\""));
+            continue;
+        };
+        let captures = captures(&highlights, parsed);
+        let matching: Vec<_> = leaves(parsed)
+            .into_iter()
+            .filter(|leaf| text(parsed, *leaf) == wanted_text)
+            .collect();
+        if matching.is_empty() {
+            failures.push(format!("no leaf {wanted_text:?} in {file} \"{entry}\""));
+        }
+        for leaf in matching {
+            let capture = highlight(&captures, leaf);
+            if capture != Some(wanted) {
+                failures.push(format!(
+                    "@{} where @{wanted} was expected: {}",
+                    capture.unwrap_or("none"),
+                    locate(parsed, leaf)
+                ));
+            }
+        }
+    }
+    assert_no_failures("expected highlights", failures);
+}
+
 /// For each query, the captures that tag a whole construct. A node kind that
 /// gets one of them in one place must get it everywhere.
 const CONSTRUCT_CAPTURES: &[(&str, &str, &[&str])] = &[

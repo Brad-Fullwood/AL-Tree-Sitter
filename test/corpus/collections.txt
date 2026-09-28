@@ -560,3 +560,185 @@ codeunit 50101 "List Probe"
             (semicolon))
           (kw_end))
         (semicolon)))))
+
+================================================================================
+element types of nested List, Dictionary and array types
+================================================================================
+
+codeunit 50102 "Nested Collections"
+{
+    procedure Nested(var Index: Dictionary of [Text, List of [Integer]]; Groups: List of [Dictionary of [Code[20], Decimal]])
+    var
+        Keys: List of [Text];
+        Numbers: List of [Integer];
+        Levels: array[3] of Enum "Level";
+        Customers: array[2] of Record Customer;
+    begin
+        Keys := Index.Keys;
+        Numbers := Index.Get('a');
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list
+          (parameter
+            (kw_var)
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_dictionary)
+              (of_clause
+                (kw_of)
+                (bracketed_block
+                  (control_keyword)
+                  (comma)
+                  (control_keyword)
+                  (control_keyword)
+                  (bracketed_block
+                    (control_keyword))))))
+          (semicolon)
+          (parameter
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_list)
+              (of_clause
+                (kw_of)
+                (bracketed_block
+                  (control_keyword)
+                  (control_keyword)
+                  (bracketed_block
+                    (control_keyword)
+                    (bracketed_block
+                      (integer))
+                    (comma)
+                    (control_keyword)))))))
+        (var_section
+          (kw_var)
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (metadata_keyword))
+              sep: (operator)
+              type: (type_reference
+                (kw_list)
+                (of_clause
+                  (kw_of)
+                  (bracketed_block
+                    (control_keyword))))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_list)
+                (of_clause
+                  (kw_of)
+                  (bracketed_block
+                    (control_keyword))))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_array)
+                (bracketed_block
+                  (integer))
+                (of_clause
+                  (kw_of)
+                  (name_or_keyword
+                    (object_keyword)))
+                (name_or_keyword
+                  (name
+                    (quoted_identifier))))
+              (semicolon)))
+          (variable_declaration
+            (regular_variable_declaration
+              name: (name_or_keyword
+                (name
+                  (identifier)))
+              sep: (operator)
+              type: (type_reference
+                (kw_array)
+                (bracketed_block
+                  (integer))
+                (of_clause
+                  (kw_of)
+                  (type_keyword))
+                (name_or_keyword
+                  (name
+                    (identifier))))
+              (semicolon))))
+        (begin_end_block
+          (kw_begin)
+          (statement_list
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_suffix
+                        member: (name
+                          (identifier))))))))
+            (semicolon)
+            (statement
+              (expression_statement
+                (expression
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))))
+                  (binary_operator
+                    (operator))
+                  (unary_expression
+                    (postfix_expression
+                      (primary_expression
+                        (name
+                          (identifier)))
+                      (member_call_suffix
+                        member: (name
+                          (identifier))
+                        call: (argument_list
+                          (expression_list
+                            argument: (expression
+                              (unary_expression
+                                (postfix_expression
+                                  (primary_expression
+                                    (string)))))))))))))
+            (semicolon))
+          (kw_end))
+        (semicolon)))))
