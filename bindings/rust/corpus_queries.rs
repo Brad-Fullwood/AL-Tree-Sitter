@@ -216,12 +216,30 @@ fn is_name_kind(node: Node) -> bool {
     NAME_KINDS.contains(&node.kind())
 }
 
+#[test]
+fn highlight_captures_land_on_leaves() {
+    let highlights = query(super::HIGHLIGHTS_QUERY);
+    let mut failures = Vec::new();
+    for parsed in &corpus() {
+        for (node, name) in captures(&highlights, parsed) {
+            if node.child_count() > 0 {
+                failures.push(format!("@{name} on {}", locate(parsed, node)));
+            }
+        }
+    }
+    assert_no_failures(
+        "highlight captures on wrapper nodes, which the leaf capture inside hides in Zed",
+        failures,
+    );
+}
+
 /// Leaves inside a type that are not part of the type name: brackets,
-/// separators, lengths and array sizes, the word `of`, and `temporary`.
+/// separators, the dots of a namespace, lengths and array sizes, the word
+/// `of`, and `temporary`.
 fn is_type_syntax(parsed: &Parsed, leaf: Node) -> bool {
     matches!(
         leaf.kind(),
-        "[" | "]" | "(" | ")" | "comma" | "integer" | "kw_of" | "kw_temporary"
+        "[" | "]" | "(" | ")" | "." | "comma" | "integer" | "kw_of" | "kw_temporary"
     ) || text(parsed, leaf).eq_ignore_ascii_case("of")
 }
 
@@ -280,6 +298,9 @@ const EXPECTED_HIGHLIGHTS: &[(&str, &str, &str, &str)] = &[
     (STATEMENTS, SIGNED_NAME_LABEL, "-Limit", "variable"),
     // The `of` inside a nested List or Dictionary type stays a keyword.
     (COLLECTIONS, ELEMENT_TYPES, "of", "keyword.control"),
+    // Trigger and property names show their own capture, not the identifier's.
+    (DECLARATIONS_FILE, TRIGGERS, "OnRun", "function"),
+    (DECLARATIONS_FILE, KEYS, "Clustered", "property"),
 ];
 
 const SIGNS: &str = "sign_operators.txt";
@@ -290,6 +311,9 @@ const STATEMENTS: &str = "statements.txt";
 const SIGNED_NAME_LABEL: &str = "case labels with a leading minus on a number and a name";
 const COLLECTIONS: &str = "collections.txt";
 const ELEMENT_TYPES: &str = "element types of nested List, Dictionary and array types";
+const DECLARATIONS_FILE: &str = "declarations.txt";
+const TRIGGERS: &str = "triggers and events";
+const KEYS: &str = "table keys with single-field, multi-field and quoted keys";
 
 #[test]
 fn listed_shapes_have_their_highlight() {

@@ -684,3 +684,75 @@ table 50100 T
           (kw_begin)
           (kw_end))
         (semicolon)))))
+
+================================================================================
+record and codeunit types qualified by a namespace
+================================================================================
+
+codeunit 50103 "Namespaced Types"
+{
+    var
+        Company: Record Microsoft.Foundation.Company."Company Information";
+        Mgt: Codeunit System.Utilities."Type Helper";
+
+    trigger OnRun()
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_var_section
+        (kw_var)
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_record)
+              (qualified_name
+                (name
+                  (identifier))
+                (name
+                  (identifier))
+                (name
+                  (identifier))
+                (name
+                  (quoted_identifier))))
+            (semicolon)))
+        (object_variable_declaration
+          (regular_variable_declaration
+            name: (name_or_keyword
+              (name
+                (identifier)))
+            sep: (operator)
+            type: (type_reference
+              (kw_codeunit)
+              (qualified_name
+                (name
+                  (identifier))
+                (name
+                  (identifier))
+                (name
+                  (quoted_identifier))))
+            (semicolon))))
+      (trigger_declaration
+        (kw_trigger)
+        name: (name_or_keyword
+          (name
+            (identifier)))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))

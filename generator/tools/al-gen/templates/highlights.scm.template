@@ -62,8 +62,10 @@
     (keyword)
   ] @title))
 
-; Properties
-(property_assignment name: (_) @property)
+; Properties. Each capture is on a leaf: a capture on the name wrapper loses
+; to the identifier capture inside it.
+(property_assignment name: [(property_keyword) (metadata_keyword) (keyword)] @property)
+(property_assignment name: (name [(identifier) (quoted_identifier)] @property))
 
 (property_assignment
   name: (_)
@@ -78,8 +80,24 @@
 ; Definitions
 (procedure_declaration name: (name (identifier) {{FUNCTION_CAPTURE}}))
 (procedure_declaration name: (name (quoted_identifier) {{FUNCTION_CAPTURE}}))
-(trigger_declaration name: (_) {{FUNCTION_CAPTURE}})
-(event_declaration name: (_) {{FUNCTION_CAPTURE}})
+(trigger_declaration name: (name_or_keyword (name [(identifier) (quoted_identifier)] {{FUNCTION_CAPTURE}})))
+(trigger_declaration
+  name: (name_or_keyword [
+    (object_keyword)
+    (metadata_keyword)
+    (property_keyword)
+    (kw_function)
+    (keyword)
+  ] {{FUNCTION_CAPTURE}}))
+(event_declaration name: (name_or_keyword (name [(identifier) (quoted_identifier)] {{FUNCTION_CAPTURE}})))
+(event_declaration
+  name: (name_or_keyword [
+    (object_keyword)
+    (metadata_keyword)
+    (property_keyword)
+    (kw_function)
+    (keyword)
+  ] {{FUNCTION_CAPTURE}}))
 
 ; Variables
 (regular_variable_declaration name: (name_or_keyword (name (identifier) @variable.declaration)))
@@ -90,7 +108,7 @@
 ; Types
 (type_reference (name_or_keyword (name (identifier) {{TYPE_CAPTURE}})))
 (type_reference (name_or_keyword (name (quoted_identifier) {{TYPE_CAPTURE}})))
-(type_reference (qualified_name) {{TYPE_CAPTURE}})
+(type_reference (qualified_name (name [(identifier) (quoted_identifier)] {{TYPE_CAPTURE}})))
 (label_declaration type: (_) {{TYPE_CAPTURE}})
 
 ; Element types after `of`: `array[3] of Enum "Level"`, `List of [Text]`,
