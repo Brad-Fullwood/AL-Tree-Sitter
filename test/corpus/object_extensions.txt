@@ -195,3 +195,104 @@ enum 50105 MyEnum implements IMyInterface
               (identifier))
             value: (string)
             (semicolon)))))))
+
+================================================================================
+pageextension layout with add, modify and move directives
+================================================================================
+
+pageextension 50110 "Customer Card Ext" extends "Customer Card"
+{
+    layout
+    {
+        addafter(Name)
+        {
+            field(Nickname; Rec."Search Name")
+            {
+                ApplicationArea = All;
+            }
+        }
+        modify(Address)
+        {
+            Visible = false;
+        }
+        movefirst(General; Name, Address)
+        moveafter(Address; County)
+        movebefore("Balance (LCY)"; "Credit Limit (LCY)")
+        movelast(General; "Last Date Modified")
+    }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_pageextension)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    (implements_clause
+      (metadata_keyword)
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (object_section
+        keyword: (metadata_keyword)
+        body: (object_body
+          (object_section
+            keyword: (metadata_keyword)
+            (parenthesized_block
+              (identifier))
+            body: (object_body
+              (object_section
+                keyword: (metadata_keyword)
+                (parenthesized_block
+                  (identifier)
+                  (semicolon)
+                  (identifier)
+                  (operator)
+                  (quoted_identifier))
+                body: (object_body
+                  (property_assignment
+                    name: (name
+                      (identifier))
+                    value: (name
+                      (identifier))
+                    (semicolon))))))
+          (object_section
+            keyword: (metadata_keyword)
+            (parenthesized_block
+              (identifier))
+            body: (object_body
+              (property_assignment
+                name: (name
+                  (identifier))
+                value: (name
+                  (identifier))
+                (semicolon))))
+          (object_section
+            keyword: (movement_directive)
+            (parenthesized_block
+              (identifier)
+              (semicolon)
+              (identifier)
+              (comma)
+              (identifier)))
+          (object_section
+            keyword: (movement_directive)
+            (parenthesized_block
+              (identifier)
+              (semicolon)
+              (identifier)))
+          (object_section
+            keyword: (movement_directive)
+            (parenthesized_block
+              (quoted_identifier)
+              (semicolon)
+              (quoted_identifier)))
+          (object_section
+            keyword: (movement_directive)
+            (parenthesized_block
+              (identifier)
+              (semicolon)
+              (quoted_identifier))))))))

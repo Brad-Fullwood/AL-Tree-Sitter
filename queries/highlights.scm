@@ -219,6 +219,9 @@
 (property_keyword) @property
 (keyword) @keyword
 (control_keyword) @keyword.control
+(kw_keys) @keyword
+(kw_key) @keyword
+(movement_directive) @keyword
 
 ; Punctuation and operators
 (operator) @operator
@@ -227,6 +230,8 @@
  (#match? @operator "^[-+!]$"))
 (semicolon) @punctuation
 (comma) @punctuation
+["." ":" "::"] @punctuation
+"=" @operator
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
 
 ; A case label with a leading minus is one token: `-1`, `-Limit`,

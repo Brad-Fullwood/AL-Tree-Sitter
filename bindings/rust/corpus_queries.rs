@@ -272,6 +272,21 @@ fn is_boolean_literal(parsed: &Parsed, leaf: Node) -> bool {
 }
 
 #[test]
+fn every_corpus_leaf_has_a_highlight() {
+    let highlights = query(super::HIGHLIGHTS_QUERY);
+    let mut failures = Vec::new();
+    for parsed in &corpus() {
+        let captures = captures(&highlights, parsed);
+        for leaf in leaves(parsed) {
+            if highlight(&captures, leaf).is_none() {
+                failures.push(locate(parsed, leaf));
+            }
+        }
+    }
+    assert_no_failures("leaves with no highlight capture", failures);
+}
+
+#[test]
 fn highlight_captures_land_on_leaves() {
     let highlights = query(super::HIGHLIGHTS_QUERY);
     let mut failures = Vec::new();
@@ -394,6 +409,13 @@ const EXPECTED_HIGHLIGHTS: &[(&str, &str, &str, &str)] = &[
     // Trigger and property names show their own capture, not the identifier's.
     (DECLARATIONS_FILE, TRIGGERS, "OnRun", "function"),
     (DECLARATIONS_FILE, KEYS, "Clustered", "property"),
+    // Key sections and layout move directives are keywords.
+    (DECLARATIONS_FILE, KEYS, "keys", "keyword"),
+    (DECLARATIONS_FILE, KEYS, "key", "keyword"),
+    (EXTENSIONS, MOVES, "movefirst", "keyword"),
+    (EXTENSIONS, MOVES, "moveafter", "keyword"),
+    (EXTENSIONS, MOVES, "movebefore", "keyword"),
+    (EXTENSIONS, MOVES, "movelast", "keyword"),
 ];
 
 const SIGNS: &str = "sign_operators.txt";
@@ -407,6 +429,8 @@ const ELEMENT_TYPES: &str = "element types of nested List, Dictionary and array 
 const DECLARATIONS_FILE: &str = "declarations.txt";
 const TRIGGERS: &str = "triggers and events";
 const KEYS: &str = "table keys with single-field, multi-field and quoted keys";
+const EXTENSIONS: &str = "object_extensions.txt";
+const MOVES: &str = "pageextension layout with add, modify and move directives";
 
 #[test]
 fn listed_shapes_have_their_highlight() {

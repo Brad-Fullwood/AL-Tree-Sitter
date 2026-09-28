@@ -32,6 +32,9 @@
 (property_keyword) {{PROPERTY_CAPTURE}}
 (keyword) {{KEYWORD_CAPTURE}}
 (control_keyword) @keyword.control
+(kw_keys) {{KEYWORD_CAPTURE}}
+(kw_key) {{KEYWORD_CAPTURE}}
+(movement_directive) {{KEYWORD_CAPTURE}}
 
 ; Punctuation and operators
 (operator) {{OPERATOR_CAPTURE}}
@@ -40,6 +43,8 @@
  (#match? {{OPERATOR_CAPTURE}} "^[-+!]$"))
 (semicolon) {{PUNCTUATION_CAPTURE}}
 (comma) {{PUNCTUATION_CAPTURE}}
+["." ":" "::"] {{PUNCTUATION_CAPTURE}}
+"=" {{OPERATOR_CAPTURE}}
 ["(" ")" "[" "]" "{" "}"] @punctuation.bracket
 
 ; A case label with a leading minus is one token: `-1`, `-Limit`,
