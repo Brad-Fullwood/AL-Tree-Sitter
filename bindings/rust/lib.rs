@@ -62,6 +62,9 @@ pub mod data {
 }
 
 #[cfg(test)]
+mod corpus_queries;
+
+#[cfg(test)]
 mod tests {
     use tree_sitter::{Node, Parser, Query, QueryCursor, StreamingIterator, Tree};
 
