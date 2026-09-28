@@ -621,3 +621,49 @@ fn a_variable_highlight_is_a_local_reference_or_definition() {
         failures,
     );
 }
+
+/// A multi-line attribute is the first child of the declaration it
+/// decorates, so the declaration's fold starts where the attribute starts. A
+/// fold on the attribute would start on the same line as that fold, which is
+/// why `folds.scm` has no `(attribute)` entry. This fails if the grammar moves
+/// attributes out of their declaration or the attribute gets a fold of its own.
+#[test]
+fn a_multi_line_attribute_starts_the_fold_of_its_declaration() {
+    let folds = query(super::FOLDS_QUERY);
+    let mut multi_line = 0;
+    let mut failures = Vec::new();
+    for parsed in &corpus() {
+        let folded: Vec<Range<usize>> = captures(&folds, parsed)
+            .into_iter()
+            .filter(|(_, name)| *name == "fold")
+            .map(|(node, _)| node.byte_range())
+            .collect();
+        for node in nodes(parsed) {
+            if node.kind() != "attribute" || node.start_position().row == node.end_position().row {
+                continue;
+            }
+            multi_line += 1;
+            if folded.contains(&node.byte_range()) {
+                failures.push(format!(
+                    "the attribute folds on its own: {}",
+                    locate(parsed, node)
+                ));
+            }
+            let declaration_fold = node.parent().filter(|declaration| {
+                declaration.start_byte() == node.start_byte()
+                    && folded.contains(&declaration.byte_range())
+            });
+            if declaration_fold.is_none() {
+                failures.push(format!(
+                    "no fold of the declaration starts at the attribute: {}",
+                    locate(parsed, node)
+                ));
+            }
+        }
+    }
+    assert!(
+        multi_line > 0,
+        "the corpus has no attribute that spans several lines"
+    );
+    assert_no_failures("multi-line attributes", failures);
+}

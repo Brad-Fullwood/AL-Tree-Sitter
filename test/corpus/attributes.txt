@@ -604,3 +604,158 @@ codeunit 50199 "Tick Counter"
           (kw_begin)
           (kw_end))
         (semicolon)))))
+
+================================================================================
+event subscriber attribute with its arguments over two lines
+================================================================================
+
+codeunit 50120 "Multi Line Attributes"
+{
+    [EventSubscriber(ObjectType::Codeunit, Codeunit::"Sales-Post",
+        'OnAfterPostSalesDoc', '', false, false)]
+    local procedure HandleAfterPost()
+    begin
+    end;
+
+    [EventSubscriber(ObjectType::Table, Database::Customer, 'OnAfterInsertEvent', '', false, false)]
+    local procedure HandleInsert()
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    kind: (kw_codeunit)
+    id: (integer)
+    name: (name_or_keyword
+      (name
+        (quoted_identifier)))
+    body: (object_body
+      (procedure_declaration
+        (attribute
+          name: (identifier)
+          (attribute_argument_list
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (type_keyword))
+                    (scope_suffix
+                      member: (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (object_keyword))
+                    (scope_suffix
+                      member: (name
+                        (quoted_identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))))
+        (member_modifier
+          (kw_local))
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon))
+      (procedure_declaration
+        (attribute
+          name: (identifier)
+          (attribute_argument_list
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (type_keyword))
+                    (scope_suffix
+                      member: (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (type_keyword))
+                    (scope_suffix
+                      member: (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (string))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))
+            (comma)
+            (attribute_argument
+              (expression
+                (unary_expression
+                  (postfix_expression
+                    (primary_expression
+                      (name
+                        (identifier)))))))))
+        (member_modifier
+          (kw_local))
+        (kw_procedure)
+        name: (name
+          (identifier))
+        parameters: (parameter_list)
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
