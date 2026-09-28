@@ -17,6 +17,7 @@ include = [
     "grammar.js",
     "queries/*",
     "src/*",
+    "/test/corpus/*.txt",
     "/tests/fixtures/**",
     "/tests/test_repos.toml",
     "tree-sitter.json",
