@@ -396,6 +396,21 @@
     "category": "string"
   },
   {
+    "name": "MaxStrLen",
+    "signature": "MaxStrLen(Text): Integer",
+    "parameters": [
+      {
+        "name": "String",
+        "type": "Text",
+        "required": true,
+        "description": "The string variable or field whose declared maximum length is returned."
+      }
+    ],
+    "return_type": "Integer",
+    "description": "Returns the maximum length declared for a string variable or field.",
+    "category": "string"
+  },
+  {
     "name": "CopyStr",
     "signature": "CopyStr(Text; Position: Integer [; Length: Integer]): Text",
     "parameters": [

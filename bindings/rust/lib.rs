@@ -1032,4 +1032,27 @@ codeunit 50100 "Procedure Boundary"
             "bounded recovery must not claim valid begin/end syntax"
         );
     }
+
+    /// The highlight query's global built-in patterns, in code and in a
+    /// section's arguments, list exactly the functions in
+    /// `data/builtin_functions.json`, which the server classifies with.
+    #[test]
+    fn the_builtin_function_patterns_list_the_builtin_functions() {
+        // A function's own `name` is indented four spaces, a parameter's eight.
+        let mut names: Vec<&str> = super::data::BUILTIN_FUNCTIONS
+            .lines()
+            .filter_map(|line| line.strip_prefix("    \"name\": \""))
+            .filter_map(|rest| rest.strip_suffix("\","))
+            .collect();
+        names.sort_unstable();
+        let pattern = format!(
+            "@function.builtin.al \"^(?i)({})$\"",
+            names.join("|")
+        );
+        assert_eq!(
+            super::HIGHLIGHTS_QUERY.matches(&pattern).count(),
+            2,
+            "expected two patterns matching {pattern}"
+        );
+    }
 }
