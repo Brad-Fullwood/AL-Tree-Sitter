@@ -2,6 +2,24 @@
 
 ; Literals
 (comment) @comment
+
+; Documentation comments, in the parts Microsoft's server colors. The value
+; of a `name` attribute names a parameter.
+(doc_comment_delimiter) @comment.doc.delimiter.al
+(doc_comment_name) @comment.doc.name.al
+(doc_comment_attribute) @comment.doc.attribute.al
+(doc_comment_quote) @comment.doc.attribute.al
+(doc_comment_value) @comment.doc.attribute.al
+(doc_comment_text) @comment.doc.text.al
+(doc_comment_tag
+  (doc_comment_attribute) @_attribute
+  .
+  (doc_comment_delimiter)
+  .
+  (doc_comment_quote)
+  .
+  (doc_comment_value) @variable.parameter
+  (#match? @_attribute "^[nN][aA][mM][eE]$"))
 (string) @string
 (verbatim_string) @string
 (integer) @number

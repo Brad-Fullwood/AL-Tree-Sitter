@@ -445,6 +445,21 @@ fn build_external_tokens(keywords: &Keywords) -> Result<Vec<ExternalTokenSpec>> 
     // global variable rather than on the member that follows the var section.
     out.push(token_spec("_var_attribute_marker", "VAR_ATTRIBUTE_MARKER"));
 
+    // The parts of a `///` documentation comment. The scanner produces them
+    // only inside one, so error recovery never sees them, and ends the comment
+    // with a zero-width token at the line break: a grammar rule used as an
+    // extra needs a definite last token.
+    out.push(token_spec("_doc_comment_end", "DOC_COMMENT_END"));
+    out.push(token_spec("doc_comment_text", "DOC_COMMENT_TEXT"));
+    out.push(token_spec("_doc_comment_open", "DOC_COMMENT_OPEN"));
+    out.push(token_spec("doc_comment_name", "DOC_COMMENT_NAME"));
+    out.push(token_spec("doc_comment_attribute", "DOC_COMMENT_ATTRIBUTE"));
+    out.push(token_spec("_doc_comment_equals", "DOC_COMMENT_EQUALS"));
+    out.push(token_spec("_doc_comment_quote_open", "DOC_COMMENT_QUOTE_OPEN"));
+    out.push(token_spec("doc_comment_value", "DOC_COMMENT_VALUE"));
+    out.push(token_spec("_doc_comment_quote_close", "DOC_COMMENT_QUOTE_CLOSE"));
+    out.push(token_spec("_doc_comment_close", "DOC_COMMENT_CLOSE"));
+
     Ok(out)
 }
 

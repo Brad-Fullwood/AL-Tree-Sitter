@@ -1,0 +1,149 @@
+================================================================================
+documentation comment split into its XML parts
+================================================================================
+
+codeunit 50100 Docs
+{
+    /// <summary>Posts the pallet.</summary>
+    /// <param name="Qty">The quantity.</param>
+    /// <see cref="Codeunit::Foo"/>
+    procedure Run(Qty: Decimal)
+    begin
+    end;
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (comment
+        (doc_comment_delimiter)
+        (doc_comment_tag
+          (doc_comment_delimiter)
+          (doc_comment_name)
+          (doc_comment_delimiter))
+        (doc_comment_text)
+        (doc_comment_tag
+          (doc_comment_delimiter)
+          (doc_comment_name)
+          (doc_comment_delimiter)))
+      (comment
+        (doc_comment_delimiter)
+        (doc_comment_tag
+          (doc_comment_delimiter)
+          (doc_comment_name)
+          (doc_comment_attribute)
+          (doc_comment_delimiter)
+          (doc_comment_quote)
+          (doc_comment_value)
+          (doc_comment_quote)
+          (doc_comment_delimiter))
+        (doc_comment_text)
+        (doc_comment_tag
+          (doc_comment_delimiter)
+          (doc_comment_name)
+          (doc_comment_delimiter)))
+      (comment
+        (doc_comment_delimiter)
+        (doc_comment_tag
+          (doc_comment_delimiter)
+          (doc_comment_name)
+          (doc_comment_attribute)
+          (doc_comment_delimiter)
+          (doc_comment_quote)
+          (doc_comment_value)
+          (doc_comment_quote)
+          (doc_comment_delimiter)))
+      (procedure_declaration
+        (kw_procedure)
+        (name
+          (identifier))
+        (parameter_list
+          (parameter
+            (name_or_keyword
+              (name
+                (identifier)))
+            (operator)
+            (type_reference
+              (kw_decimal))))
+        (begin_end_block
+          (kw_begin)
+          (kw_end))
+        (semicolon)))))
+
+================================================================================
+two slashes and four slashes are plain comments
+================================================================================
+
+codeunit 50100 Docs
+{
+    // plain
+    //// four slashes
+    ///
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (comment)
+      (comment)
+      (comment
+        (doc_comment_delimiter)))))
+
+================================================================================
+malformed tags and text after a documentation comment's tag
+================================================================================
+
+codeunit 50100 Docs
+{
+    /// a < b and c > d <see cref="unterminated
+    /// <a>// not a comment #if not a directive
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (object_declaration
+    (kw_codeunit)
+    (integer)
+    (name_or_keyword
+      (name
+        (identifier)))
+    (object_body
+      (comment
+        (doc_comment_delimiter)
+        (doc_comment_text)
+        (doc_comment_tag
+          (doc_comment_delimiter)
+          (doc_comment_name)
+          (doc_comment_attribute)
+          (doc_comment_attribute)
+          (doc_comment_delimiter))
+        (doc_comment_text)
+        (doc_comment_tag
+          (doc_comment_delimiter)
+          (doc_comment_name)
+          (doc_comment_attribute)
+          (doc_comment_delimiter)
+          (doc_comment_quote)
+          (doc_comment_value)))
+      (comment
+        (doc_comment_delimiter)
+        (doc_comment_tag
+          (doc_comment_delimiter)
+          (doc_comment_name)
+          (doc_comment_delimiter))
+        (doc_comment_text)))))

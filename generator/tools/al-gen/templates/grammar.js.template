@@ -854,14 +854,43 @@ module.exports = grammar({
 
   // AL has no `#` line comments; `#` starts a preprocessor directive, which the
   // external scanner owns. Matching it here would swallow directive lines.
-  comment: _ => token(choice(
-    seq('//', /[^\r\n]*/),
+  //
+  // Exactly three slashes start a documentation comment. The external scanner
+  // splits the rest of the line into its XML parts (`scanner_scan_doc_comment`).
+  // Two slashes, or four or more, start a plain comment.
+  comment: $ => choice(
+    token(choice(
+      seq('//', /([^/\r\n][^\r\n]*)?/),
+      seq('////', /[^\r\n]*/),
+      seq(
+        '/*',
+        /[^*]*\*+([^/*][^*]*\*+)*/,
+        '/'
+      ),
+    )),
     seq(
-      '/*',
-      /[^*]*\*+([^/*][^*]*\*+)*/,
-      '/'
+      alias('///', $.doc_comment_delimiter),
+      repeat(choice($.doc_comment_text, $.doc_comment_tag)),
+      $._doc_comment_end,
     ),
-  )),
+  ),
+
+  doc_comment_tag: $ => seq(
+    alias($._doc_comment_open, $.doc_comment_delimiter),
+    optional($.doc_comment_name),
+    repeat(choice(
+      $.doc_comment_attribute,
+      seq(
+        alias($._doc_comment_equals, $.doc_comment_delimiter),
+        optional(seq(
+          alias($._doc_comment_quote_open, $.doc_comment_quote),
+          optional($.doc_comment_value),
+          optional(alias($._doc_comment_quote_close, $.doc_comment_quote)),
+        )),
+      ),
+    )),
+    optional(alias($._doc_comment_close, $.doc_comment_delimiter)),
+  ),
 
   // Keep legacy punctuation permissive, but split slash out so comment
   // openers are not swallowed into adjacent operators (`+//`, `://`).

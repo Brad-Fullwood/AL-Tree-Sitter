@@ -305,7 +305,9 @@ fn highlight_captures_land_on_leaves() {
     let mut failures = Vec::new();
     for parsed in &corpus() {
         for (node, name) in captures(&highlights, parsed) {
-            if node.child_count() > 0 {
+            // A documentation comment's parts have their own captures, and the
+            // comment's capture colors the spaces between them.
+            if node.child_count() > 0 && node.kind() != "comment" {
                 failures.push(format!("@{name} on {}", locate(parsed, node)));
             }
         }

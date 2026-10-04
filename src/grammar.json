@@ -4859,42 +4859,214 @@
       }
     },
     "comment": {
-      "type": "TOKEN",
-      "content": {
-        "type": "CHOICE",
-        "members": [
-          {
-            "type": "SEQ",
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "TOKEN",
+          "content": {
+            "type": "CHOICE",
             "members": [
               {
-                "type": "STRING",
-                "value": "//"
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "//"
+                  },
+                  {
+                    "type": "PATTERN",
+                    "value": "([^/\\r\\n][^\\r\\n]*)?"
+                  }
+                ]
               },
               {
-                "type": "PATTERN",
-                "value": "[^\\r\\n]*"
-              }
-            ]
-          },
-          {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "STRING",
-                "value": "/*"
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "////"
+                  },
+                  {
+                    "type": "PATTERN",
+                    "value": "[^\\r\\n]*"
+                  }
+                ]
               },
               {
-                "type": "PATTERN",
-                "value": "[^*]*\\*+([^/*][^*]*\\*+)*"
-              },
-              {
-                "type": "STRING",
-                "value": "/"
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": "/*"
+                  },
+                  {
+                    "type": "PATTERN",
+                    "value": "[^*]*\\*+([^/*][^*]*\\*+)*"
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "/"
+                  }
+                ]
               }
             ]
           }
-        ]
-      }
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "STRING",
+                "value": "///"
+              },
+              "named": true,
+              "value": "doc_comment_delimiter"
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "doc_comment_text"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "doc_comment_tag"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_doc_comment_end"
+            }
+          ]
+        }
+      ]
+    },
+    "doc_comment_tag": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_doc_comment_open"
+          },
+          "named": true,
+          "value": "doc_comment_delimiter"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "doc_comment_name"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "doc_comment_attribute"
+              },
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_doc_comment_equals"
+                    },
+                    "named": true,
+                    "value": "doc_comment_delimiter"
+                  },
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SEQ",
+                        "members": [
+                          {
+                            "type": "ALIAS",
+                            "content": {
+                              "type": "SYMBOL",
+                              "name": "_doc_comment_quote_open"
+                            },
+                            "named": true,
+                            "value": "doc_comment_quote"
+                          },
+                          {
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SYMBOL",
+                                "name": "doc_comment_value"
+                              },
+                              {
+                                "type": "BLANK"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "ALIAS",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "_doc_comment_quote_close"
+                                },
+                                "named": true,
+                                "value": "doc_comment_quote"
+                              },
+                              {
+                                "type": "BLANK"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_doc_comment_close"
+              },
+              "named": true,
+              "value": "doc_comment_delimiter"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
     },
     "operator": {
       "type": "CHOICE",
@@ -5780,6 +5952,46 @@
     {
       "type": "SYMBOL",
       "name": "_var_attribute_marker"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_doc_comment_end"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "doc_comment_text"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_doc_comment_open"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "doc_comment_name"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "doc_comment_attribute"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_doc_comment_equals"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_doc_comment_quote_open"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "doc_comment_value"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_doc_comment_quote_close"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_doc_comment_close"
     }
   ],
   "inline": [],

@@ -227,6 +227,16 @@ typedef enum {
   KW_KEY,
   KW_KEYS,
   VAR_ATTRIBUTE_MARKER,
+  DOC_COMMENT_END,
+  DOC_COMMENT_TEXT,
+  DOC_COMMENT_OPEN,
+  DOC_COMMENT_NAME,
+  DOC_COMMENT_ATTRIBUTE,
+  DOC_COMMENT_EQUALS,
+  DOC_COMMENT_QUOTE_OPEN,
+  DOC_COMMENT_VALUE,
+  DOC_COMMENT_QUOTE_CLOSE,
+  DOC_COMMENT_CLOSE,
 
 } TokenType;
 
@@ -895,6 +905,117 @@ static bool scanner_scan_var_attribute_marker(TSLexer *lexer, const bool *valid_
   return true;
 }
 
+static bool al_is_doc_name_start(int32_t c) {
+  return c == '_' || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c > 127;
+}
+
+static bool al_is_doc_name_part(int32_t c) {
+  return al_is_doc_name_start(c) || (c >= '0' && c <= '9') || c == ':' || c == '.' || c == '-';
+}
+
+// The parts of a `///` documentation comment after the slashes, split the way
+// Microsoft's server colors them: text, the brackets `<`, `</`, `>` and `/>`,
+// a tag name, attribute names, `=`, quotes and a quoted value. The comment
+// ends with a zero-width token at the line break or the end of the file.
+//
+// The end token is valid in every state inside a documentation comment, so it
+// marks being inside one, and `*inside` tells the caller to stop scanning.
+// Error recovery marks every symbol valid, `KW_BEGIN` among them, and must not
+// produce these tokens.
+static bool scanner_scan_doc_comment(TSLexer *lexer, const bool *valid_symbols, bool *inside) {
+  if (!valid_symbols[DOC_COMMENT_END] || valid_symbols[KW_BEGIN]) return false;
+  *inside = true;
+
+  if (valid_symbols[DOC_COMMENT_VALUE] && lexer->lookahead != '"' && lexer->lookahead != '\'' &&
+      lexer->lookahead != '\n' && lexer->lookahead != '\r' && !lexer->eof(lexer)) {
+    while (lexer->lookahead != '"' && lexer->lookahead != '\'' && lexer->lookahead != '\n' &&
+           lexer->lookahead != '\r' && !lexer->eof(lexer)) {
+      lexer->advance(lexer, false);
+    }
+    lexer->mark_end(lexer);
+    lexer->result_symbol = DOC_COMMENT_VALUE;
+    return true;
+  }
+
+  while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
+    lexer->advance(lexer, true);
+  }
+  int32_t c = lexer->lookahead;
+
+  if (c == '\n' || c == '\r' || lexer->eof(lexer)) {
+    lexer->mark_end(lexer);
+    lexer->result_symbol = DOC_COMMENT_END;
+    return true;
+  }
+  if ((c == '"' || c == '\'') &&
+      (valid_symbols[DOC_COMMENT_QUOTE_CLOSE] || valid_symbols[DOC_COMMENT_QUOTE_OPEN])) {
+    lexer->advance(lexer, false);
+    lexer->mark_end(lexer);
+    lexer->result_symbol =
+        valid_symbols[DOC_COMMENT_QUOTE_CLOSE] ? DOC_COMMENT_QUOTE_CLOSE : DOC_COMMENT_QUOTE_OPEN;
+    return true;
+  }
+  if (c == '=' && valid_symbols[DOC_COMMENT_EQUALS]) {
+    lexer->advance(lexer, false);
+    lexer->mark_end(lexer);
+    lexer->result_symbol = DOC_COMMENT_EQUALS;
+    return true;
+  }
+  if (c == '>' && valid_symbols[DOC_COMMENT_CLOSE]) {
+    lexer->advance(lexer, false);
+    lexer->mark_end(lexer);
+    lexer->result_symbol = DOC_COMMENT_CLOSE;
+    return true;
+  }
+  if (c == '/' && valid_symbols[DOC_COMMENT_CLOSE]) {
+    lexer->advance(lexer, false);
+    if (lexer->lookahead == '>') {
+      lexer->advance(lexer, false);
+      lexer->mark_end(lexer);
+      lexer->result_symbol = DOC_COMMENT_CLOSE;
+      return true;
+    }
+    // A slash that does not close the tag starts text.
+    if (!valid_symbols[DOC_COMMENT_TEXT]) return false;
+    while (lexer->lookahead != '<' && lexer->lookahead != '\n' && lexer->lookahead != '\r' &&
+           !lexer->eof(lexer)) {
+      lexer->advance(lexer, false);
+    }
+    lexer->mark_end(lexer);
+    lexer->result_symbol = DOC_COMMENT_TEXT;
+    return true;
+  }
+  if (al_is_doc_name_start(c) &&
+      (valid_symbols[DOC_COMMENT_NAME] || valid_symbols[DOC_COMMENT_ATTRIBUTE])) {
+    while (al_is_doc_name_part(lexer->lookahead)) {
+      lexer->advance(lexer, false);
+    }
+    lexer->mark_end(lexer);
+    lexer->result_symbol =
+        valid_symbols[DOC_COMMENT_NAME] ? DOC_COMMENT_NAME : DOC_COMMENT_ATTRIBUTE;
+    return true;
+  }
+  if (c == '<' && valid_symbols[DOC_COMMENT_OPEN]) {
+    lexer->advance(lexer, false);
+    if (lexer->lookahead == '/') lexer->advance(lexer, false);
+    lexer->mark_end(lexer);
+    lexer->result_symbol = DOC_COMMENT_OPEN;
+    return true;
+  }
+  // Text runs to the next tag or the line break. Inside a tag, any character
+  // the tag rules do not take ends the tag and starts text.
+  if (c != '<' && valid_symbols[DOC_COMMENT_TEXT]) {
+    while (lexer->lookahead != '<' && lexer->lookahead != '\n' && lexer->lookahead != '\r' &&
+           !lexer->eof(lexer)) {
+      lexer->advance(lexer, false);
+    }
+    lexer->mark_end(lexer);
+    lexer->result_symbol = DOC_COMMENT_TEXT;
+    return true;
+  }
+  return false;
+}
+
 static bool scan_word(TSLexer *lexer, char *out, int out_cap) {
   // Treat a UTF-8 BOM as leading whitespace. Some legacy sources contain
   // more than one BOM, and the keyword scanner must skip each one.
@@ -1122,10 +1243,28 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
       !valid_symbols[INACTIVE_CODE] &&
       !valid_symbols[KW_KEY] &&
       !valid_symbols[KW_KEYS] &&
-      !valid_symbols[VAR_ATTRIBUTE_MARKER]) {
+      !valid_symbols[VAR_ATTRIBUTE_MARKER] &&
+      !valid_symbols[DOC_COMMENT_END] &&
+      !valid_symbols[DOC_COMMENT_TEXT] &&
+      !valid_symbols[DOC_COMMENT_OPEN] &&
+      !valid_symbols[DOC_COMMENT_NAME] &&
+      !valid_symbols[DOC_COMMENT_ATTRIBUTE] &&
+      !valid_symbols[DOC_COMMENT_EQUALS] &&
+      !valid_symbols[DOC_COMMENT_QUOTE_OPEN] &&
+      !valid_symbols[DOC_COMMENT_VALUE] &&
+      !valid_symbols[DOC_COMMENT_QUOTE_CLOSE] &&
+      !valid_symbols[DOC_COMMENT_CLOSE]) {
     return false;
   }
 
+
+  bool in_doc_comment = false;
+  if (scanner_scan_doc_comment(lexer, valid_symbols, &in_doc_comment)) {
+    return true;
+  }
+  if (in_doc_comment) {
+    return false;
+  }
 
   if (scanner_scan_directive(scanner, lexer, valid_symbols)) {
     return true;
