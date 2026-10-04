@@ -1334,6 +1334,14 @@ fn gen_choice_fragment(elements: &BTreeSet<String>, exclude: &[&str]) -> Result<
 /// Microsoft's BC themes draw it.
 const PROPERTY_KEYWORD_CAPTURE: &str = "@keyword";
 
+/// Capture for a builtin type keyword such as `Text`, `Integer` or `Record`.
+///
+/// Microsoft's AL extension tags these as `builtintypes`, which it scopes
+/// `keyword.other.builtintypes`, so BC themes draw them in the keyword color.
+/// The BC theme defines this `.al` key with that color. Other themes fall back
+/// to `type.builtin`.
+const BUILTIN_TYPE_CAPTURE: &str = "@type.builtin.al";
+
 fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     let template_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tools/al-gen/templates");
     let template = fs::read_to_string(format!("{}/highlights.scm.template", template_dir))?;
@@ -1446,7 +1454,7 @@ fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     // Query matches are last-wins, so type captures follow keyword captures.
     specific_tokens.push_str("\n; Type keywords (override control keyword captures)\n");
     for kw in &keywords.types {
-        specific_tokens.push_str(&format!("(kw_{}) {}\n", kw, type_capture));
+        specific_tokens.push_str(&format!("(kw_{}) {}\n", kw, BUILTIN_TYPE_CAPTURE));
     }
 
     let object_capture = find_capture(

@@ -307,15 +307,54 @@ enum 50101 MyEnum
         }
     }
 
+    /// Microsoft's AL extension tags a declared object's name as a type
+    /// (`class`), so BC themes draw it in the type color.
     #[test]
-    fn highlights_query_titles_object_names() {
+    fn highlights_query_types_object_names() {
         for (label, source) in OBJECT_SOURCES {
-            let titles = captured_texts(super::HIGHLIGHTS_QUERY, "title", source);
+            let types = captured_texts(super::HIGHLIGHTS_QUERY, "type", source);
             assert!(
-                titles.iter().any(|t| *t == "MyName" || *t == "\"My Name\""),
-                "{label}: @title captured {titles:?}"
+                types.iter().any(|t| *t == "MyName" || *t == "\"My Name\""),
+                "{label}: @type captured {types:?}"
             );
         }
+    }
+
+    /// The colors Microsoft's AL extension gives these, through BC themes:
+    /// builtin types the keyword color, property values and `::` members the
+    /// enum member color, object references the type color, attribute names
+    /// and permission letters the foreground.
+    #[test]
+    fn highlights_match_microsoft_tokens_for_types_values_and_references() {
+        let source = "codeunit 50010 X\n{\n    Permissions = tabledata Bin = r, tabledata \"Item\" = rimd;\n    ApplicationArea = All;\n    Editable = false;\n    SourceTable = Customer;\n    [EventSubscriber(ObjectType::Codeunit, Codeunit::\"Sales-Post\", 'OnRun', '', false, false)]\n    procedure P(T: Text)\n    begin\n        R.SetRange(Status, R.Status::Released);\n        x := Database::Vendor;\n    end;\n}\n";
+        let highlights = winning_highlights(source);
+        let expect = [
+            ("X", "type"),
+            ("Bin", "type.builtin"),
+            ("\"Item\"", "type.builtin"),
+            ("All", "constant.enum.al"),
+            ("false", "constant.builtin"),
+            ("Customer", "type.builtin"),
+            ("EventSubscriber", "attribute.al"),
+            ("ObjectType", "type.builtin.al"),
+            ("Text", "type.builtin.al"),
+            ("Released", "constant.enum.al"),
+            ("Database", "type.builtin.al"),
+            ("Vendor", "type.builtin"),
+        ];
+        for (text, capture) in expect {
+            if capture.is_empty() {
+                continue;
+            }
+            assert_eq!(highlight_of(&highlights, source, text), capture, "{text}");
+        }
+        assert_eq!(highlight_of(&highlights, source, "rimd"), "permission.al");
+        let codeunit_member = source.find("::Codeunit").unwrap() + 2;
+        assert_eq!(
+            highlights.get(&format!("Codeunit@{codeunit_member}")).map(String::as_str),
+            Some("constant.enum.al"),
+            "an option member after ObjectType::"
+        );
     }
 
     #[test]

@@ -114,7 +114,13 @@ fn captures<'t>(query: &'t Query, parsed: &'t Parsed) -> Vec<(Node<'t>, &'t str)
     let mut out = Vec::new();
     while let Some((m, index)) = iter.next() {
         let capture = m.captures[*index];
-        out.push((capture.node, query.capture_names()[capture.index as usize]));
+        let name = query.capture_names()[capture.index as usize];
+        // A capture named with a leading underscore only feeds a predicate.
+        // Zed draws nothing for it.
+        if name.starts_with('_') {
+            continue;
+        }
+        out.push((capture.node, name));
     }
     out
 }
@@ -264,6 +270,9 @@ const SPELLING_ROLES: &[&str] = &[
     "primary_expression before scope_call_suffix",
     "property_assignment.value",
     "object_section.keyword",
+    // What precedes `::` decides: an option or enum member after a type
+    // (`Status::Released`), an object after an object kind (`Codeunit::"X"`).
+    "scope_suffix.member",
 ];
 
 fn is_boolean_literal(parsed: &Parsed, leaf: Node) -> bool {
@@ -376,8 +385,11 @@ fn type_names_are_highlighted_as_types() {
             if !in_type || in_option || is_type_syntax(parsed, leaf) {
                 continue;
             }
+            // A builtin type keyword (`Integer`, `Record`) is type.builtin.al,
+            // which BC themes draw in the keyword color. A type's name is
+            // type.builtin.
             let capture = highlight(&captures, leaf);
-            if capture != Some("type.builtin") {
+            if !matches!(capture, Some("type.builtin" | "type.builtin.al")) {
                 failures.push(format!(
                     "@{} {}",
                     capture.unwrap_or("none"),

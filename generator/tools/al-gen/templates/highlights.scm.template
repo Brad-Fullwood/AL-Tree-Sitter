@@ -27,7 +27,9 @@
 
 (operator_word) @keyword.operator
 (object_keyword) {{OBJECT_CAPTURE}}
-(type_keyword) {{TYPE_CAPTURE}}
+; A builtin type used in code (`Database`, `ObjectType`) is a builtin type
+; keyword, which BC themes draw in the keyword color.
+(type_keyword) @type.builtin.al
 (metadata_keyword) {{METADATA_CAPTURE}}
 (property_keyword) {{PROPERTY_CAPTURE}}
 (keyword) {{KEYWORD_CAPTURE}}
@@ -67,31 +69,51 @@
 
 ; Object declarations. The leaf is captured rather than the name_or_keyword
 ; wrapper so the generic (identifier)/(quoted_identifier) captures above do not
-; win inside the wrapper's span.
-(object_declaration name: (name_or_keyword (name (quoted_identifier) @title)))
-(object_declaration name: (name_or_keyword (name (identifier) @title)))
+; win inside the wrapper's span. The name is a type, as Microsoft's AL
+; extension tags it (`class`).
+(object_declaration name: (name_or_keyword (name (quoted_identifier) @type)))
+(object_declaration name: (name_or_keyword (name (identifier) @type)))
 (object_declaration
   name: (name_or_keyword [
     (object_keyword)
     (metadata_keyword)
     (property_keyword)
     (keyword)
-  ] @title))
+  ] @type))
 
 ; Properties. Each capture is on a leaf: a capture on the name wrapper loses
 ; to the identifier capture inside it.
 (property_assignment name: [(property_keyword) (metadata_keyword) (keyword)] @property)
 (property_assignment name: (name [(identifier) (quoted_identifier)] @property))
 
+; A word in a property's value is one of the property's values, an enum
+; member (`DataClassification = ToBeClassified`), except `true` and `false`.
 (property_assignment
   name: (_)
-  (name (identifier) {{CONSTANT_CAPTURE}}))
+  (name (identifier) @constant.enum.al)
+  (#not-match? @constant.enum.al "^([tT][rR][uU][eE]|[fF][aA][lL][sS][eE])$"))
 (property_assignment
   name: (_)
   (name (quoted_identifier) {{TYPE_CAPTURE}}))
+; The value of a property that names an object is that object.
+(property_assignment
+  name: (_) @_property
+  (name (identifier) {{TYPE_CAPTURE}})
+  (#match? @_property "^(?i)(SourceTable|TableRelation|LookupPageId|DrillDownPageId|CardPageId|RunObject|LinkedObject|DataItemTable|SourceTableView|PageId|TableNo)$"))
+; In `Permissions`, the object after `tabledata` (or another object kind) is
+; that object, and the permission letters (`r`, `rimd`) are plain text.
+(property_assignment
+  name: (_) @_property
+  (name (identifier) @permission.al)
+  (#match? @_property "^(?i)Permissions$"))
+(property_assignment
+  value: (property_keyword)
+  .
+  value: (name (identifier) {{TYPE_CAPTURE}}))
 
-; Attributes
-(attribute name: (identifier) @attribute)
+; Attributes. Microsoft's AL extension scopes an attribute name
+; entity.other.attribute, which BC themes draw in the foreground.
+(attribute name: (identifier) @attribute.al)
 
 ; Definitions
 (procedure_declaration name: (name (identifier) {{FUNCTION_CAPTURE}}))
@@ -249,6 +271,18 @@
 (scope_call_suffix member: (name (identifier) @function.call))
 (scope_call_suffix member: (name (quoted_identifier) @function.call))
 
-; Scope references
-(scope_suffix member: (name (identifier) {{TYPE_CAPTURE}}))
+; Scope references. A word after `::` is an enum or option member
+; (`Status::Released`), unless what precedes `::` is an object kind,
+; `Database`, `Enum` or `Interface`, which names an object. A quoted name after
+; `::` is an object.
+(scope_suffix member: (name (identifier) @constant.enum.al))
 (scope_suffix member: (name (quoted_identifier) {{TYPE_CAPTURE}}))
+(postfix_expression
+  (primary_expression (object_keyword))
+  .
+  (scope_suffix member: (name (identifier) {{TYPE_CAPTURE}})))
+(postfix_expression
+  (primary_expression (type_keyword) @_scope)
+  .
+  (scope_suffix member: (name (identifier) {{TYPE_CAPTURE}}))
+  (#match? @_scope "^(?i)(Database|Enum|Interface)$"))
