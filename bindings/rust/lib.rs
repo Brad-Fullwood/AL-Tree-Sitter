@@ -249,6 +249,64 @@ enum 50101 MyEnum
         }
     }
 
+    /// The capture an editor draws for the text at each captured range: Zed
+    /// takes the capture of the last pattern that matched the node.
+    fn winning_highlights(source: &str) -> std::collections::HashMap<String, String> {
+        let tree = parse(source);
+        let query = query(super::HIGHLIGHTS_QUERY);
+        let mut cursor = QueryCursor::new();
+        let mut matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
+        let mut best: std::collections::HashMap<std::ops::Range<usize>, (usize, String)> =
+            std::collections::HashMap::new();
+        while let Some(m) = matches.next() {
+            for c in m.captures {
+                let name = query.capture_names()[c.index as usize];
+                if name.starts_with('_') {
+                    continue;
+                }
+                let entry = best
+                    .entry(c.node.byte_range())
+                    .or_insert((m.pattern_index, name.to_string()));
+                if m.pattern_index >= entry.0 {
+                    *entry = (m.pattern_index, name.to_string());
+                }
+            }
+        }
+        best.into_iter()
+            .map(|(range, (_, name))| (format!("{}@{}", &source[range.clone()], range.start), name))
+            .collect()
+    }
+
+    fn highlight_of(
+        highlights: &std::collections::HashMap<String, String>,
+        source: &str,
+        text: &str,
+    ) -> String {
+        let start = source
+            .find(text)
+            .unwrap_or_else(|| panic!("{text} is in the source"));
+        highlights
+            .get(&format!("{text}@{start}"))
+            .cloned()
+            .unwrap_or_else(|| panic!("{text} has no capture"))
+    }
+
+    /// Microsoft's BC themes draw these as keyword, keyword, type and property.
+    /// `tabledata` was a property, the object kind `codeunit` a builtin type and
+    /// namespace names variables.
+    #[test]
+    fn highlights_match_the_bc_theme_for_declarations_and_properties() {
+        let source = "namespace AdvaniaUK.Pallets;\n\nusing Microsoft.Inventory;\n\ncodeunit 50010 X\n{\n    Permissions = tabledata \"Item Ledger Entry\" = r;\n}\n";
+        let highlights = winning_highlights(source);
+
+        assert_eq!(highlight_of(&highlights, source, "codeunit"), "keyword");
+        assert_eq!(highlight_of(&highlights, source, "tabledata"), "keyword");
+        assert_eq!(highlight_of(&highlights, source, "Permissions"), "property");
+        for name in ["AdvaniaUK", "Pallets", "Microsoft", "Inventory"] {
+            assert_eq!(highlight_of(&highlights, source, name), "type", "{name}");
+        }
+    }
+
     #[test]
     fn highlights_query_titles_object_names() {
         for (label, source) in OBJECT_SOURCES {

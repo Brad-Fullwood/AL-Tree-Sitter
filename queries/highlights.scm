@@ -216,7 +216,7 @@
 (object_keyword) @keyword
 (type_keyword) @type.builtin
 (metadata_keyword) @keyword
-(property_keyword) @property
+(property_keyword) @keyword
 (keyword) @keyword
 (control_keyword) @keyword.control
 (kw_keys) @keyword
@@ -240,6 +240,17 @@
 (signed_case_label) @variable
 ((signed_case_label) @number
  (#match? @number "^-[ \t\r\n]*[0-9]"))
+
+; The kind of an object declaration is a keyword, as Microsoft's BC themes draw
+; it. `codeunit`, `table` and the other kinds that also name a variable type are
+; type.builtin above, so this pattern comes later.
+(object_declaration kind: _ @keyword)
+
+; Namespace names, in `namespace` and `using`, are drawn as types, as Microsoft's
+; BC themes color entity.name.namespace.
+(namespace_or_using_declaration name: (name [(identifier) (quoted_identifier)] @type))
+(namespace_or_using_declaration
+  name: (qualified_name (name [(identifier) (quoted_identifier)] @type)))
 
 ; Object declarations. The leaf is captured rather than the name_or_keyword
 ; wrapper so the generic (identifier)/(quoted_identifier) captures above do not

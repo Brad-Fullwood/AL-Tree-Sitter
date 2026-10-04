@@ -1324,12 +1324,15 @@ fn gen_choice_fragment(elements: &BTreeSet<String>, exclude: &[&str]) -> Result<
     Ok(out)
 }
 
-/// Capture for the `property_keyword` token.
+/// Capture for the `property_keyword` token outside a property name.
 ///
 /// The TextMate grammar files AL property names under an `operators` scope, so
 /// deriving this from the scope map rendered `Caption`/`ApplicationArea` and
-/// friends with the same style as `:=`. They are property names, not operators.
-const PROPERTY_KEYWORD_CAPTURE: &str = "@property";
+/// friends with the same style as `:=`. In a property's name position a later
+/// pattern in the template captures it as `@property`. Anywhere else, such as
+/// `tabledata` in the value of `Permissions`, it is a keyword, which is how
+/// Microsoft's BC themes draw it.
+const PROPERTY_KEYWORD_CAPTURE: &str = "@keyword";
 
 fn generate_highlights(keywords: &Keywords, out_path: &str) -> Result<()> {
     let template_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tools/al-gen/templates");
@@ -3348,7 +3351,14 @@ mod tests {
     fn property_keywords_are_not_styled_as_operators() {
         // The TextMate grammar files property names under `keyword.operators.*`,
         // which would render `Caption = 'x'` with the same style as `:=`.
-        assert_eq!(PROPERTY_KEYWORD_CAPTURE, "@property");
+        assert_eq!(PROPERTY_KEYWORD_CAPTURE, "@keyword");
+        let template = include_str!("../templates/highlights.scm.template");
+        assert!(
+            template.contains(
+                "(property_assignment name: [(property_keyword) (metadata_keyword) (keyword)] @property)"
+            ),
+            "a property keyword in a property's name position is still a property"
+        );
     }
 
     #[test]
