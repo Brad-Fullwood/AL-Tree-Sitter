@@ -2616,13 +2616,15 @@ fn convert_vscode_theme_to_zed(vscode_theme: &serde_json::Value) -> Result<serde
     }
 
     let mut syntax = map_token_colors(token_colors);
-    // VS Code's BC themes color no property scope, so an AL property is drawn
-    // in the editor foreground. Zed falls back from `property` to nothing, so
-    // the foreground is set explicitly.
-    syntax.insert(
-        "property".to_string(),
-        serde_json::json!({ "color": text, "font_style": null, "font_weight": null }),
-    );
+    // Styles for what Microsoft's AL extension tags with semantic tokens. Each
+    // takes the color VS Code gives the token's scope in this theme.
+    for (key, scope) in VSCODE_SCOPE_STYLES {
+        let color = resolve_vscode_scope(token_colors, scope).unwrap_or_else(|| text.clone());
+        syntax.insert(
+            (*key).to_string(),
+            serde_json::json!({ "color": color, "font_style": null, "font_weight": null }),
+        );
+    }
     for (override_appearance, token, color) in SYNTAX_OVERRIDES {
         if *override_appearance != appearance {
             continue;
@@ -3075,6 +3077,68 @@ fn build_players(
             })
             .collect(),
     ))
+}
+
+/// Zed style keys and the VS Code scope Microsoft's AL extension gives the
+/// same construct: the semantic token's standard scope, or the scope the
+/// extension's `semanticTokenScopes` assigns. `property` is a generic key.
+/// The `.al` keys are for AL tokens and captures, and fall back to their
+/// generic prefix in other themes.
+const VSCODE_SCOPE_STYLES: &[(&str, &str)] = &[
+    ("property", "variable.other.property"),
+    ("function.builtin.al", "support.function"),
+    ("type.builtin.al", "keyword.other.builtintypes"),
+    ("constant.enum.al", "variable.other.enummember"),
+    ("attribute.al", "entity.other.attribute"),
+    (
+        "comment.doc.delimiter.al",
+        "comment.documentation.delimiter",
+    ),
+    ("comment.doc.name.al", "comment.documentation.name"),
+    (
+        "comment.doc.attribute.al",
+        "comment.documentation.attribute.name",
+    ),
+    ("comment.doc.text.al", "comment.documentation"),
+];
+
+/// The foreground VS Code draws `scope` in: the rule whose scope is the
+/// longest dot-separated prefix of `scope`, and the later rule when two name
+/// the same scope. `None` when no rule matches, which VS Code draws in the
+/// editor foreground.
+fn resolve_vscode_scope(token_colors: &[serde_json::Value], scope: &str) -> Option<String> {
+    let mut best: Option<(usize, String)> = None;
+    for entry in token_colors {
+        let Some(foreground) = entry
+            .get("settings")
+            .and_then(|settings| settings.get("foreground"))
+            .and_then(|value| value.as_str())
+        else {
+            continue;
+        };
+        let selectors: Vec<&str> = match entry.get("scope") {
+            Some(serde_json::Value::String(text)) => text.split(',').collect(),
+            Some(serde_json::Value::Array(items)) => {
+                items.iter().filter_map(|item| item.as_str()).collect()
+            }
+            _ => continue,
+        };
+        for selector in selectors {
+            let selector = selector.trim();
+            let matches = scope == selector
+                || scope
+                    .strip_prefix(selector)
+                    .is_some_and(|rest| rest.starts_with('.'));
+            if matches
+                && best
+                    .as_ref()
+                    .is_none_or(|(length, _)| selector.len() >= *length)
+            {
+                best = Some((selector.len(), foreground.to_string()));
+            }
+        }
+    }
+    best.map(|(_, color)| color)
 }
 
 /// Map VS Code `tokenColors` array to Zed `syntax` object.
@@ -3540,7 +3604,7 @@ mod tests {
     /// used to give Zed's `property` the JSON property-name color, which is the
     /// type color, so a property and the table names it lists looked the same.
     #[test]
-    fn an_al_property_takes_the_editor_foreground_and_a_json_key_keeps_its_color() {
+    fn an_al_property_takes_the_variable_color_and_a_json_key_keeps_its_color() {
         let theme = serde_json::json!({
             "name": "Business Central Dark",
             "type": "dark",
@@ -3549,6 +3613,7 @@ mod tests {
                 "editor.foreground": "#D4D4D4"
             },
             "tokenColors": [
+                { "scope": "variable", "settings": { "foreground": "#9CDCFE" } },
                 { "scope": "entity.name.type", "settings": { "foreground": "#4EC9B0" } },
                 { "scope": "support.type.property-name.json", "settings": { "foreground": "#4EC9B0" } }
             ]
@@ -3557,9 +3622,41 @@ mod tests {
         let zed = convert_vscode_theme_to_zed(&theme).unwrap();
         let syntax = &zed["style"]["syntax"];
 
-        assert_eq!(syntax["property"]["color"], "#D4D4D4");
+        assert_eq!(syntax["property"]["color"], "#9CDCFE");
         assert_eq!(syntax["property.json_key"]["color"], "#4EC9B0");
         assert_eq!(syntax["type"]["color"], "#4EC9B0");
+    }
+
+    /// A scope takes the rule with the longest matching prefix, matched on
+    /// whole dot-separated parts, and the editor foreground when none
+    /// matches, as VS Code resolves it.
+    #[test]
+    fn a_scope_resolves_to_its_longest_matching_rule_as_in_vs_code() {
+        let rules = vec![
+            serde_json::json!({ "scope": "keyword", "settings": { "foreground": "#00747F" } }),
+            serde_json::json!({ "scope": "constant.numeric, variable.other.enummember", "settings": { "foreground": "#9FD89F" } }),
+            serde_json::json!({ "scope": ["comment"], "settings": { "foreground": "#64707D" } }),
+            serde_json::json!({ "scope": "comment.documentation", "settings": { "foreground": "#56616C" } }),
+        ];
+
+        assert_eq!(
+            resolve_vscode_scope(&rules, "keyword.other.builtintypes").as_deref(),
+            Some("#00747F")
+        );
+        assert_eq!(
+            resolve_vscode_scope(&rules, "variable.other.enummember").as_deref(),
+            Some("#9FD89F")
+        );
+        assert_eq!(
+            resolve_vscode_scope(&rules, "comment.documentation.name").as_deref(),
+            Some("#56616C")
+        );
+        assert_eq!(
+            resolve_vscode_scope(&rules, "keywords"),
+            None,
+            "a prefix matches whole parts only"
+        );
+        assert_eq!(resolve_vscode_scope(&rules, "support.function"), None);
     }
 
     /// The generated file used to carry one player entry derived from a single
