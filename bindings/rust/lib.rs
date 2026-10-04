@@ -1045,10 +1045,7 @@ codeunit 50100 "Procedure Boundary"
             .filter_map(|rest| rest.strip_suffix("\","))
             .collect();
         names.sort_unstable();
-        let pattern = format!(
-            "@function.builtin.al \"^(?i)({})$\"",
-            names.join("|")
-        );
+        let pattern = format!("@function.builtin.al \"^(?i)({})$\"", names.join("|"));
         assert_eq!(
             super::HIGHLIGHTS_QUERY.matches(&pattern).count(),
             2,
