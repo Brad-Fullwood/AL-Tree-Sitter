@@ -3419,6 +3419,36 @@ mod tests {
         );
     }
 
+    /// `queries/highlights.scm` is generated from the template. Its
+    /// placeholders expand to keyword lists from Microsoft's extension, but
+    /// every other line comes from the template as written, so each literal
+    /// part of the template must appear in the committed query, in order. A
+    /// rule edited in only one of the two files fails here.
+    #[test]
+    fn committed_highlights_carry_every_literal_part_of_the_template() {
+        let template = include_str!("../templates/highlights.scm.template");
+        let query = include_str!("../../../../queries/highlights.scm");
+        let mut literals = Vec::new();
+        let mut rest = template;
+        while let Some(open) = rest.find("{{") {
+            literals.push(&rest[..open]);
+            let close = rest[open..].find("}}").expect("an unclosed placeholder") + open + 2;
+            rest = &rest[close..];
+        }
+        literals.push(rest);
+
+        let mut position = 0;
+        for literal in literals.into_iter().filter(|part| !part.trim().is_empty()) {
+            match query[position..].find(literal) {
+                Some(found) => position += found + literal.len(),
+                None => panic!(
+                    "queries/highlights.scm is missing this part of the template, or has it \
+                     out of order (regenerate with al-gen):\n{literal}"
+                ),
+            }
+        }
+    }
+
     #[test]
     fn property_keywords_are_not_styled_as_operators() {
         // The TextMate grammar files property names under `keyword.operators.*`,
