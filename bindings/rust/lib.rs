@@ -357,6 +357,61 @@ enum 50101 MyEnum
         );
     }
 
+    /// Names whose final color comes from a server token get that color on
+    /// the first paint, so nothing changes color when the tokens arrive.
+    #[test]
+    fn highlights_paint_built_ins_page_members_and_extended_objects_first() {
+        let calls = "codeunit 50000 C\n{\n    Permissions = tabledata Bin = r, tabledata Item = rimd;\n    procedure P()\n    var\n        Txt: Label 'x';\n    begin\n        R.SetRange(Status, 1);\n        Error('No order');\n        Report.Run(50001);\n        MyHelper.DoWork();\n    end;\n}\n";
+        let highlights = winning_highlights(calls);
+        for (text, capture) in [
+            ("Item", "type.builtin"),
+            ("Label", "type.builtin.al"),
+            ("SetRange", "function.builtin.al"),
+            ("Error", "function.builtin.al"),
+            ("Run", "function.builtin.al"),
+            ("DoWork", "function.method.call"),
+        ] {
+            assert_eq!(highlight_of(&highlights, calls, text), capture, "{text}");
+        }
+
+        let page = "pageextension 50001 \"AUK Item Card\" extends \"Item Card\"\n{\n    layout\n    {\n        addlast(General)\n        {\n            field(\"CoA Check\"; Rec.\"AUK CoA\") { }\n            part(Lines; \"Sub Page\") { }\n        }\n    }\n    actions\n    {\n        addlast(Processing)\n        {\n            action(PostPallet) { }\n        }\n    }\n}\nquery 50002 Q\n{\n    elements\n    {\n        dataitem(Cust; Customer)\n        {\n            column(CustNo; \"No.\") { }\n        }\n    }\n}\ntable 50003 T\n{\n    fields\n    {\n        field(1; Code; Code[20]) { }\n    }\n}\n";
+        let highlights = winning_highlights(page);
+        for (text, capture) in [
+            ("\"Item Card\"", "type"),
+            ("General", "type"),
+            ("\"CoA Check\"", "type"),
+            ("Lines", "type"),
+            ("\"Sub Page\"", "type.builtin"),
+            ("Processing", "type"),
+            ("PostPallet", "type"),
+            ("Cust", "type"),
+            ("Customer", "type.builtin"),
+            ("CustNo", "type"),
+        ] {
+            assert_eq!(highlight_of(&highlights, page, text), capture, "{text}");
+        }
+        let scopes = "codeunit 50004 S\n{\n    procedure P()\n    begin\n        x := \"Document Type\"::\"Purchase Receipt\";\n        Codeunit.Run(Codeunit::\"Sales-Post\");\n    end;\n}\nreport 50005 R\n{\n    DefaultRenderingLayout = RDLCLayout;\n}\n";
+        let scope_highlights = winning_highlights(scopes);
+        for (text, capture) in [
+            ("\"Purchase Receipt\"", "constant.enum.al"),
+            ("\"Sales-Post\"", "type.builtin"),
+            ("RDLCLayout", "type.builtin"),
+        ] {
+            assert_eq!(highlight_of(&scope_highlights, scopes, text), capture, "{text}");
+        }
+        assert_ne!(
+            highlight_of(&highlights, page, "\"AUK CoA\""),
+            "type",
+            "a field's source expression is not the control name"
+        );
+        let table_field = page.find("field(1; Code").unwrap() + "field(1; ".len();
+        assert_ne!(
+            highlights.get(&format!("Code@{table_field}")).map(String::as_str),
+            Some("type"),
+            "a table field name is not a page control"
+        );
+    }
+
     #[test]
     fn locals_query_defines_the_object_type() {
         for (label, source) in OBJECT_SOURCES {

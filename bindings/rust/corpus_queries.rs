@@ -273,6 +273,10 @@ const SPELLING_ROLES: &[&str] = &[
     // What precedes `::` decides: an option or enum member after a type
     // (`Status::Released`), an object after an object kind (`Codeunit::"X"`).
     "scope_suffix.member",
+    // A built-in call (`Rec.SetRange`, `Error`, `Report.Run`) is a built-in
+    // function, any other call a function. The name or the receiver decides.
+    "member_call_suffix.member",
+    "primary_expression before call_suffix",
 ];
 
 fn is_boolean_literal(parsed: &Parsed, leaf: Node) -> bool {
