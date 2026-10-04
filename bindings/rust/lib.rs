@@ -357,6 +357,24 @@ enum 50101 MyEnum
         );
     }
 
+    /// Keys, field groups, label options, a TableRelation's table and the
+    /// event an EventSubscriber handles are painted with the color their
+    /// server token gives.
+    #[test]
+    fn keys_label_options_table_relations_and_subscribed_events_paint_first() {
+        let source = "table 50000 T\n{\n    fields\n    {\n        field(1; \"V\"; Code[20])\n        {\n            TableRelation = Vendor.\"No.\";\n        }\n    }\n    keys\n    {\n        key(Key1; \"V\")\n        {\n        }\n    }\n    fieldgroups\n    {\n        fieldgroup(DropDown; \"V\")\n        {\n        }\n    }\n    var\n        BinErr: Label 'Bin', Comment = 'x';\n\n    [EventSubscriber(ObjectType::Codeunit, Codeunit::\"Sales-Post\", OnAfterRun, '', false, false)]\n    local procedure A()\n    begin\n    end;\n}\n";
+        let highlights = winning_highlights(source);
+        for (text, capture) in [
+            ("Vendor", "type.builtin"),
+            ("Key1", "type"),
+            ("DropDown", "type"),
+            ("Comment", "keyword"),
+            ("OnAfterRun", "function"),
+        ] {
+            assert_eq!(highlight_of(&highlights, source, text), capture, "{text}");
+        }
+    }
+
     /// Microsoft colors a report's data item names as variables and a
     /// query's as types.
     #[test]
