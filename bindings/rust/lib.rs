@@ -351,7 +351,9 @@ enum 50101 MyEnum
         assert_eq!(highlight_of(&highlights, source, "rimd"), "permission.al");
         let codeunit_member = source.find("::Codeunit").unwrap() + 2;
         assert_eq!(
-            highlights.get(&format!("Codeunit@{codeunit_member}")).map(String::as_str),
+            highlights
+                .get(&format!("Codeunit@{codeunit_member}"))
+                .map(String::as_str),
             Some("constant.enum.al"),
             "an option member after ObjectType::"
         );
@@ -426,7 +428,11 @@ enum 50101 MyEnum
             ("\"Sales-Post\"", "type.builtin"),
             ("RDLCLayout", "type.builtin"),
         ] {
-            assert_eq!(highlight_of(&scope_highlights, scopes, text), capture, "{text}");
+            assert_eq!(
+                highlight_of(&scope_highlights, scopes, text),
+                capture,
+                "{text}"
+            );
         }
         assert_ne!(
             highlight_of(&highlights, page, "\"AUK CoA\""),
@@ -435,7 +441,9 @@ enum 50101 MyEnum
         );
         let table_field = page.find("field(1; Code").unwrap() + "field(1; ".len();
         assert_ne!(
-            highlights.get(&format!("Code@{table_field}")).map(String::as_str),
+            highlights
+                .get(&format!("Code@{table_field}"))
+                .map(String::as_str),
             Some("type"),
             "a table field name is not a page control"
         );
