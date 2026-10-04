@@ -408,6 +408,10 @@
   (primary_expression) @_receiver
   (member_call_suffix member: (name (identifier) @function.builtin.al))
   (#match? @_receiver "^(?i)(Codeunit|Database|Page|Query|Report|XmlPort|Session|System|CurrentSession|CompanyProperty|NavApp|NumberSequence|TaskScheduler|Debugger|IsolatedStorage|ProductName)$"))
+; `AsInteger` is the method every enum value has.
+(member_call_suffix
+  member: (name (identifier) @function.builtin.al)
+  (#match? @function.builtin.al "^(?i)AsInteger$"))
 
 ; Scope references. A name after `::` is an enum or option member
 ; (`Status::Released`, `"Document Type"::"Purchase Receipt"`), unless what
