@@ -2613,6 +2613,13 @@ fn convert_vscode_theme_to_zed(vscode_theme: &serde_json::Value) -> Result<serde
     }
 
     let mut syntax = map_token_colors(token_colors);
+    // VS Code's BC themes color no property scope, so an AL property is drawn
+    // in the editor foreground. Zed falls back from `property` to nothing, so
+    // the foreground is set explicitly.
+    syntax.insert(
+        "property".to_string(),
+        serde_json::json!({ "color": text, "font_style": null, "font_weight": null }),
+    );
     for (override_appearance, token, color) in SYNTAX_OVERRIDES {
         if *override_appearance != appearance {
             continue;
@@ -3130,7 +3137,9 @@ fn map_token_colors(
         (&["variable"], "variable"),
         (&["entity.other.attribute-name"], "attribute"),
         (&["entity.name.tag"], "tag"),
-        (&["support.type.property-name.json"], "property"),
+        // Zed captures a JSON key as `property.json_key`. The plain `property`
+        // capture is AL's, which these themes leave in the editor foreground.
+        (&["support.type.property-name.json"], "property.json_key"),
         (&["markup.bold"], "emphasis.strong"),
         (&["markup.italic", "emphasis"], "emphasis"),
         (&["markup.heading"], "title"),
@@ -3514,6 +3523,33 @@ mod tests {
         assert!(syntax["embedded"].get("color").is_none());
         // An already-readable color is not disturbed.
         assert_eq!(syntax["variable"]["color"], "#9CDCFE");
+    }
+
+    /// Microsoft's BC themes color no `property` scope, so an AL property such
+    /// as `Permissions` renders in the editor foreground there. The converter
+    /// used to give Zed's `property` the JSON property-name color, which is the
+    /// type color, so a property and the table names it lists looked the same.
+    #[test]
+    fn an_al_property_takes_the_editor_foreground_and_a_json_key_keeps_its_color() {
+        let theme = serde_json::json!({
+            "name": "Business Central Dark",
+            "type": "dark",
+            "colors": {
+                "editor.background": "#1E1E1E",
+                "editor.foreground": "#D4D4D4"
+            },
+            "tokenColors": [
+                { "scope": "entity.name.type", "settings": { "foreground": "#4EC9B0" } },
+                { "scope": "support.type.property-name.json", "settings": { "foreground": "#4EC9B0" } }
+            ]
+        });
+
+        let zed = convert_vscode_theme_to_zed(&theme).unwrap();
+        let syntax = &zed["style"]["syntax"];
+
+        assert_eq!(syntax["property"]["color"], "#D4D4D4");
+        assert_eq!(syntax["property.json_key"]["color"], "#4EC9B0");
+        assert_eq!(syntax["type"]["color"], "#4EC9B0");
     }
 
     /// The generated file used to carry one player entry derived from a single
