@@ -24,6 +24,7 @@ codeunit 50100 Docs
     (object_body
       (comment
         (doc_comment_delimiter)
+        (doc_comment_text)
         (doc_comment_tag
           (doc_comment_delimiter)
           (doc_comment_name)
@@ -35,6 +36,7 @@ codeunit 50100 Docs
           (doc_comment_delimiter)))
       (comment
         (doc_comment_delimiter)
+        (doc_comment_text)
         (doc_comment_tag
           (doc_comment_delimiter)
           (doc_comment_name)
@@ -51,6 +53,7 @@ codeunit 50100 Docs
           (doc_comment_delimiter)))
       (comment
         (doc_comment_delimiter)
+        (doc_comment_text)
         (doc_comment_tag
           (doc_comment_delimiter)
           (doc_comment_name)
@@ -142,6 +145,7 @@ codeunit 50100 Docs
           (doc_comment_value)))
       (comment
         (doc_comment_delimiter)
+        (doc_comment_text)
         (doc_comment_tag
           (doc_comment_delimiter)
           (doc_comment_name)

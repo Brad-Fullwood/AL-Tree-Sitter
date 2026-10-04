@@ -938,6 +938,19 @@ static bool scanner_scan_doc_comment(TSLexer *lexer, const bool *valid_symbols, 
     return true;
   }
 
+  // Outside a tag, spaces belong to the text that follows them, as in
+  // Microsoft's tokens, and spaces before a tag are text of their own.
+  if (!valid_symbols[DOC_COMMENT_CLOSE] && valid_symbols[DOC_COMMENT_TEXT] &&
+      (lexer->lookahead == ' ' || lexer->lookahead == '\t')) {
+    while (lexer->lookahead != '<' && lexer->lookahead != '\n' && lexer->lookahead != '\r' &&
+           !lexer->eof(lexer)) {
+      lexer->advance(lexer, false);
+    }
+    lexer->mark_end(lexer);
+    lexer->result_symbol = DOC_COMMENT_TEXT;
+    return true;
+  }
+
   while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
     lexer->advance(lexer, true);
   }
