@@ -61,6 +61,7 @@ typedef enum {
   KW_DATABASE,
   KW_DATACLASSIFICATION,
   KW_DATASCOPE,
+  KW_DATASOURCECONTEXT,
   KW_DATATRANSFER,
   KW_DATE,
   KW_DATEFORMULA,
@@ -1078,6 +1079,7 @@ bool tree_sitter_al_external_scanner_scan(void *payload, TSLexer *lexer, const b
       !valid_symbols[KW_DATABASE] &&
       !valid_symbols[KW_DATACLASSIFICATION] &&
       !valid_symbols[KW_DATASCOPE] &&
+      !valid_symbols[KW_DATASOURCECONTEXT] &&
       !valid_symbols[KW_DATATRANSFER] &&
       !valid_symbols[KW_DATE] &&
       !valid_symbols[KW_DATEFORMULA] &&

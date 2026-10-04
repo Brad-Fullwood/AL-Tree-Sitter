@@ -3310,6 +3310,10 @@
           "named": true
         },
         {
+          "type": "kw_datasourcecontext",
+          "named": true
+        },
+        {
           "type": "kw_datatransfer",
           "named": true
         },
@@ -4156,6 +4160,10 @@
   },
   {
     "type": "kw_datascope",
+    "named": true
+  },
+  {
+    "type": "kw_datasourcecontext",
     "named": true
   },
   {

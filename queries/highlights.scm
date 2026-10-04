@@ -118,6 +118,7 @@
 (kw_database) @type.builtin.al
 (kw_dataclassification) @type.builtin.al
 (kw_datascope) @type.builtin.al
+(kw_datasourcecontext) @type.builtin.al
 (kw_datatransfer) @type.builtin.al
 (kw_date) @type.builtin.al
 (kw_dateformula) @type.builtin.al

@@ -117,6 +117,10 @@
       "node_kind": "kw_datascope"
     },
     {
+      "keyword": "datasourcecontext",
+      "node_kind": "kw_datasourcecontext"
+    },
+    {
       "keyword": "datatransfer",
       "node_kind": "kw_datatransfer"
     },
@@ -1217,6 +1221,10 @@
     {
       "keyword": "datascope",
       "node_kind": "kw_datascope"
+    },
+    {
+      "keyword": "datasourcecontext",
+      "node_kind": "kw_datasourcecontext"
     },
     {
       "keyword": "datatransfer",

@@ -1499,6 +1499,10 @@
                       },
                       {
                         "type": "SYMBOL",
+                        "name": "kw_datasourcecontext"
+                      },
+                      {
+                        "type": "SYMBOL",
                         "name": "kw_datatransfer"
                       },
                       {
@@ -5288,6 +5292,10 @@
     {
       "type": "SYMBOL",
       "name": "kw_datascope"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "kw_datasourcecontext"
     },
     {
       "type": "SYMBOL",
