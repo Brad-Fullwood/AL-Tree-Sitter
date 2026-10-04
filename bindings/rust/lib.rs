@@ -357,6 +357,17 @@ enum 50101 MyEnum
         );
     }
 
+    /// Microsoft colors a report's data item names as variables and a
+    /// query's as types.
+    #[test]
+    fn report_data_items_are_variables_and_query_data_items_are_types() {
+        let source = "report 50000 R\n{\n    dataset\n    {\n        dataitem(Header; \"Sales Header\")\n        {\n            dataitem(Line; \"Sales Line\")\n            {\n            }\n        }\n    }\n}\nquery 50001 Q\n{\n    elements\n    {\n        dataitem(CustomerItem; Customer)\n        {\n        }\n    }\n}\n";
+        let highlights = winning_highlights(source);
+        assert_eq!(highlight_of(&highlights, source, "Header"), "variable");
+        assert_eq!(highlight_of(&highlights, source, "Line"), "variable");
+        assert_eq!(highlight_of(&highlights, source, "CustomerItem"), "type");
+    }
+
     /// Names whose final color comes from a server token get that color on
     /// the first paint, so nothing changes color when the tokens arrive.
     #[test]
